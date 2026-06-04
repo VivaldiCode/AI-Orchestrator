@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import { useAuth } from './lib/auth';
+import { useI18n } from './i18n';
 import { Layout } from './components/Layout';
 import { Spinner } from './components/ui';
 import { AuthScreen } from './pages/AuthScreen';
@@ -12,11 +13,12 @@ import { SettingsPage } from './pages/Settings';
 
 export function App() {
   const { status } = useAuth();
+  const { t } = useI18n();
 
   if (status === 'loading') {
     return (
       <div className="grid min-h-screen place-items-center">
-        <Spinner label="Loading…" />
+        <Spinner label={t('common.loading')} />
       </div>
     );
   }

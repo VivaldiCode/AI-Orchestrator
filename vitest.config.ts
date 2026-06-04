@@ -7,7 +7,7 @@ export default defineConfig({
     environment: 'node',
     globals: false,
     include: ['apps/**/*.{test,spec}.ts', 'packages/**/*.{test,spec}.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**', '**/*.e2e.*'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**', '**/*.e2e.*', '**/._*'],
     pool: 'forks',
     coverage: {
       provider: 'v8',

@@ -1,23 +1,27 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
+import { useI18n } from '../i18n';
+import type { TranslationKey } from '../i18n/en';
 import { useRealtimeConnection } from '../lib/realtime';
 import { useRealtimeStore } from '../lib/store';
 import { Logo } from './Logo';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { cn } from './ui';
 
-const NAV = [
-  { to: '/', label: 'Overview', end: true },
-  { to: '/nodes', label: 'Nodes', end: false },
-  { to: '/providers', label: 'Providers', end: false },
-  { to: '/analytics', label: 'Analytics', end: false },
-  { to: '/api-keys', label: 'API Keys', end: false },
-  { to: '/settings', label: 'Settings', end: false },
+const NAV: { to: string; key: TranslationKey; end: boolean }[] = [
+  { to: '/', key: 'nav.overview', end: true },
+  { to: '/nodes', key: 'nav.nodes', end: false },
+  { to: '/providers', key: 'nav.providers', end: false },
+  { to: '/analytics', key: 'nav.analytics', end: false },
+  { to: '/api-keys', key: 'nav.apiKeys', end: false },
+  { to: '/settings', key: 'nav.settings', end: false },
 ];
 
 export function Layout() {
   useRealtimeConnection();
   const connected = useRealtimeStore((s) => s.connected);
   const { user, logout } = useAuth();
+  const { t } = useI18n();
 
   return (
     <div className="flex min-h-screen">
@@ -25,8 +29,8 @@ export function Layout() {
         <div className="mb-8 flex items-center gap-2">
           <Logo size={36} />
           <div>
-            <div className="text-sm font-semibold text-slate-100">AI Orchestrator</div>
-            <div className="text-xs text-slate-500">conducted by Vivaldi</div>
+            <div className="text-sm font-semibold text-slate-100">{t('app.name')}</div>
+            <div className="text-xs text-slate-500">{t('app.tagline')}</div>
           </div>
         </div>
 
@@ -45,22 +49,25 @@ export function Layout() {
                 )
               }
             >
-              {item.label}
+              {t(item.key)}
             </NavLink>
           ))}
         </nav>
 
-        <div className="mt-auto pt-4 text-xs text-slate-500">
-          <div className="mb-2 flex items-center gap-2" data-testid="realtime-status">
+        <div className="mt-auto space-y-3 pt-4 text-xs text-slate-500">
+          <LanguageSwitcher />
+          <div className="flex items-center gap-2" data-testid="realtime-status">
             <span
               className={cn('h-2 w-2 rounded-full', connected ? 'bg-emerald-400' : 'bg-slate-600')}
             />
-            {connected ? 'Live' : 'Offline'}
+            {connected ? t('common.live') : t('common.offline')}
           </div>
-          <div className="truncate text-slate-400">{user?.username}</div>
-          <button onClick={logout} className="mt-1 text-rose-400 hover:underline">
-            Sign out
-          </button>
+          <div>
+            <div className="truncate text-slate-400">{user?.username}</div>
+            <button onClick={logout} className="mt-1 text-rose-400 hover:underline">
+              {t('common.signOut')}
+            </button>
+          </div>
         </div>
       </aside>
 

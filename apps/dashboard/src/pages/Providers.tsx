@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CreateProviderInput, ProviderType } from '@ai-orchestrator/shared';
 import { api } from '../lib/api';
+import { useI18n } from '../i18n';
 import { Button, Card, EmptyState, Field, Input, Select, Spinner } from '../components/ui';
 
 const PROVIDER_TYPES: ProviderType[] = [
@@ -37,6 +38,7 @@ const EMPTY: ProviderForm = {
 };
 
 export function ProvidersPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const providersQuery = useQuery({ queryKey: ['providers'], queryFn: api.listProviders });
   const [form, setForm] = useState<ProviderForm>(EMPTY);
@@ -64,7 +66,7 @@ export function ProvidersPage() {
       setError(null);
       invalidate();
     },
-    onError: (e: unknown) => setError(e instanceof Error ? e.message : 'Failed to add provider'),
+    onError: (e: unknown) => setError(e instanceof Error ? e.message : t('providers.addError')),
   });
 
   const remove = useMutation({
@@ -81,35 +83,33 @@ export function ProvidersPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-50">Providers</h1>
-        <p className="text-sm text-slate-400">
-          Add cloud AI providers. Credentials are encrypted at rest and never returned.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-50">{t('providers.title')}</h1>
+        <p className="text-sm text-slate-400">{t('providers.subtitle')}</p>
       </header>
 
       <Card>
-        <h2 className="mb-4 text-lg font-medium text-slate-100">Add a provider</h2>
+        <h2 className="mb-4 text-lg font-medium text-slate-100">{t('providers.addProvider')}</h2>
         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Type">
+          <Field label={t('providers.type')}>
             <Select
               value={form.type}
               onChange={(e) => setForm({ ...form, type: e.target.value as ProviderType })}
             >
-              {PROVIDER_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
+              {PROVIDER_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
                 </option>
               ))}
             </Select>
           </Field>
-          <Field label="Name">
+          <Field label={t('providers.name')}>
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
             />
           </Field>
-          <Field label="Default model (optional)">
+          <Field label={t('providers.defaultModel')}>
             <Input
               value={form.defaultModel}
               onChange={(e) => setForm({ ...form, defaultModel: e.target.value })}
@@ -117,19 +117,19 @@ export function ProvidersPage() {
           </Field>
           {isBedrock ? (
             <>
-              <Field label="AWS region">
+              <Field label={t('providers.region')}>
                 <Input
                   value={form.region}
                   onChange={(e) => setForm({ ...form, region: e.target.value })}
                 />
               </Field>
-              <Field label="Access key id">
+              <Field label={t('providers.accessKeyId')}>
                 <Input
                   value={form.accessKeyId}
                   onChange={(e) => setForm({ ...form, accessKeyId: e.target.value })}
                 />
               </Field>
-              <Field label="Secret access key">
+              <Field label={t('providers.secretAccessKey')}>
                 <Input
                   type="password"
                   value={form.secretAccessKey}
@@ -139,14 +139,14 @@ export function ProvidersPage() {
             </>
           ) : (
             <>
-              <Field label="Base URL (optional)">
+              <Field label={t('providers.baseUrl')}>
                 <Input
                   value={form.baseUrl}
                   onChange={(e) => setForm({ ...form, baseUrl: e.target.value })}
                   placeholder="https://api.openai.com"
                 />
               </Field>
-              <Field label="API key">
+              <Field label={t('providers.apiKey')}>
                 <Input
                   type="password"
                   value={form.apiKey}
@@ -157,7 +157,7 @@ export function ProvidersPage() {
           )}
           <div className="flex items-end">
             <Button type="submit" disabled={create.isPending}>
-              {create.isPending ? 'Adding…' : 'Add provider'}
+              {create.isPending ? t('providers.addingButton') : t('providers.addButton')}
             </Button>
           </div>
         </form>
@@ -165,9 +165,9 @@ export function ProvidersPage() {
       </Card>
 
       {providersQuery.isLoading ? (
-        <Spinner label="Loading providers…" />
+        <Spinner label={t('providers.loading')} />
       ) : (providersQuery.data ?? []).length === 0 ? (
-        <EmptyState title="No providers yet" hint="The local Ollama cluster works without one." />
+        <EmptyState title={t('providers.noProviders')} hint={t('providers.noProvidersHint')} />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {(providersQuery.data ?? []).map((p) => (
@@ -182,11 +182,11 @@ export function ProvidersPage() {
                 {p.baseUrl ? <div>{p.baseUrl}</div> : null}
                 {p.region ? <div>region: {p.region}</div> : null}
                 {p.defaultModel ? <div>model: {p.defaultModel}</div> : null}
-                <div>{p.hasCredentials ? '🔒 credentials stored' : '⚠ no credentials'}</div>
+                <div>{p.hasCredentials ? t('providers.credStored') : t('providers.noCreds')}</div>
               </div>
               <div className="mt-4 flex justify-end">
                 <Button variant="danger" onClick={() => remove.mutate(p.id)}>
-                  Delete
+                  {t('providers.delete')}
                 </Button>
               </div>
             </Card>
