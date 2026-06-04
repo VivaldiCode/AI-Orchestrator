@@ -1,0 +1,68 @@
+# AI Orchestrator — full stack.
+# Usage:
+#   cp .env.example .env   # set ORCHESTRATOR_MASTER_KEY and JWT_SECRET
+#   docker compose up -d --build
+#
+# Dashboard:    http://localhost:8080
+# Ollama mirror: http://localhost:11435  (point your clients here)
+#
+# Your Macs running Ollama stay OUTSIDE this stack; register them in the dashboard.
+
+services:
+  postgres:
+    image: timescale/timescaledb:2.16.1-pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-orchestrator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orchestrator}
+      POSTGRES_DB: ${POSTGRES_DB:-orchestrator}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-orchestrator} -d ${POSTGRES_DB:-orchestrator}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    environment:
+      NODE_ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: 11435
+      TRUST_PROXY: 'true'
+      DATABASE_URL: postgres://${POSTGRES_USER:-orchestrator}:${POSTGRES_PASSWORD:-orchestrator}@postgres:5432/${POSTGRES_DB:-orchestrator}
+      ORCHESTRATOR_MASTER_KEY: ${ORCHESTRATOR_MASTER_KEY:?set ORCHESTRATOR_MASTER_KEY in .env (openssl rand -base64 32)}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (openssl rand -base64 32)}
+      DASHBOARD_ORIGIN: ${DASHBOARD_ORIGIN:-http://localhost:8080}
+      DEFAULT_STRATEGY: ${DEFAULT_STRATEGY:-least-connections}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '11435:11435'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:11435/healthz || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    depends_on:
+      - api
+    ports:
+      - '8080:80'
+    restart: unless-stopped
+
+volumes:
+  pgdata:

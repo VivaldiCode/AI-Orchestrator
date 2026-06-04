@@ -1,0 +1,28 @@
+# Test override: adds two fake Ollama nodes so end-to-end flows have something
+# healthy to register. Use together with the base compose file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build
+#
+# Then register nodes in the dashboard with host `mock-ollama` / `mock-ollama-2`
+# and port 11434.
+
+services:
+  mock-ollama:
+    image: node:24-alpine
+    command: node /mock.mjs
+    environment:
+      PORT: '11434'
+      MODELS: 'llama3.2,qwen2.5'
+    volumes:
+      - ./docker/mock-ollama.mjs:/mock.mjs:ro
+    restart: unless-stopped
+
+  mock-ollama-2:
+    image: node:24-alpine
+    command: node /mock.mjs
+    environment:
+      PORT: '11434'
+      MODELS: 'llama3.2'
+    volumes:
+      - ./docker/mock-ollama.mjs:/mock.mjs:ro
+    restart: unless-stopped
