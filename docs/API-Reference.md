@@ -1,0 +1,61 @@
+# API Reference
+
+The orchestrator exposes three surfaces: the **Ollama mirror** (`/api/*`), the
+**OpenAI-compatible** layer (`/v1/*`), and the **management API** (`/admin/*`).
+
+## Ollama mirror (`/api/*`)
+
+Every Ollama endpoint is proxied. Inference is load-balanced; `tags`/`ps` are aggregated;
+model management targets a single node (choose with `?node=<id>`).
+
+| Method    | Path                                    | Routing                      |
+| --------- | --------------------------------------- | ---------------------------- |
+| POST      | `/api/generate`                         | load-balanced (streaming)    |
+| POST      | `/api/chat`                             | load-balanced (streaming)    |
+| POST      | `/api/embed`, `/api/embeddings`         | load-balanced                |
+| POST      | `/api/show`                             | a node that has the model    |
+| GET       | `/api/tags`                             | union across nodes           |
+| GET       | `/api/ps`                               | union across nodes           |
+| GET       | `/api/version`                          | orchestrator (open, no auth) |
+| POST      | `/api/pull`, `/api/push`, `/api/create` | single node (`?node=`)       |
+| POST      | `/api/copy`, DELETE `/api/delete`       | single node (`?node=`)       |
+| HEAD/POST | `/api/blobs/:digest`                    | single node (`?node=`)       |
+
+## OpenAI-compatible (`/v1/*`)
+
+| Method | Path                   |
+| ------ | ---------------------- |
+| GET    | `/v1/models`           |
+| POST   | `/v1/chat/completions` |
+| POST   | `/v1/completions`      |
+| POST   | `/v1/embeddings`       |
+
+Routing: model aliases resolve through the model registry; unmapped models go to the local
+Ollama cluster.
+
+## Authentication
+
+- **Inference** (`/api/*`, `/v1/*`): open until the first API key is created, then a
+  `Authorization: Bearer <key>` is required.
+- **Management** (`/admin/*`): a dashboard JWT access token.
+
+## Management API (`/admin/*`)
+
+| Method           | Path                       | Purpose                              |
+| ---------------- | -------------------------- | ------------------------------------ |
+| GET              | `/admin/auth/setup-status` | whether first-run setup is needed    |
+| POST             | `/admin/auth/setup`        | create the first admin               |
+| POST             | `/admin/auth/login`        | obtain tokens                        |
+| POST             | `/admin/auth/refresh`      | refresh tokens                       |
+| GET              | `/admin/auth/me`           | current user                         |
+| GET/POST         | `/admin/nodes`             | list / create nodes                  |
+| GET/PATCH/DELETE | `/admin/nodes/:id`         | read / update / delete               |
+| POST             | `/admin/nodes/:id/test`    | live connectivity test               |
+| GET/POST         | `/admin/providers`         | list / create providers              |
+| DELETE           | `/admin/providers/:id`     | delete a provider                    |
+| GET/POST/DELETE  | `/admin/model-routes`      | model registry                       |
+| GET/PUT          | `/admin/settings`          | orchestrator settings                |
+| GET              | `/admin/analytics`         | metrics summary + series             |
+| GET/POST/DELETE  | `/admin/api-keys`          | inference API keys                   |
+| GET              | `/healthz`                 | liveness probe                       |
+| WS               | `/ws`                      | realtime events (optional `?token=`) |

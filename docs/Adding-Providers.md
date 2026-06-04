@@ -1,0 +1,44 @@
+# Adding Providers
+
+Beyond your local Ollama cluster, the orchestrator can route to cloud providers through its
+OpenAI-compatible `/v1` surface. Credentials are **encrypted at rest** (AES-256-GCM) and never
+returned by the API.
+
+## Supported providers
+
+| Type                | Transport          | Streaming        | Notes                           |
+| ------------------- | ------------------ | ---------------- | ------------------------------- |
+| `ollama`            | local nodes        | ✅               | the default; no provider needed |
+| `openai`            | OpenAI `/v1`       | ✅               | proxied with your key           |
+| `xai`               | xAI `/v1`          | ✅               | OpenAI-compatible               |
+| `mistral`           | Mistral `/v1`      | ✅               | OpenAI-compatible               |
+| `openai-compatible` | custom `baseUrl`   | ✅               | any compatible endpoint         |
+| `anthropic`         | Messages API (SDK) | ⏳ non-streaming | translated to OpenAI shape      |
+| `bedrock`           | Converse API (SDK) | ⏳ non-streaming | translated to OpenAI shape      |
+
+> The fully end-to-end-exercised path is the local Ollama cluster. Cloud adapters ship with
+> audited SDKs and clear extension points; streaming for Anthropic/Bedrock is on the roadmap.
+
+## 1. Add the provider
+
+Dashboard → **Providers** → choose a type, give it a name, and paste the key (or, for Bedrock,
+the region + access keys).
+
+## 2. Map a model alias (model registry)
+
+A model alias maps a public model name (what clients request) to a provider + target model.
+
+```bash
+curl -X POST http://localhost:11435/admin/model-routes \
+  -H "authorization: Bearer <admin-jwt>" \
+  -H 'content-type: application/json' \
+  -d '{
+    "alias": "claude",
+    "providerType": "anthropic",
+    "providerId": "<provider-id>",
+    "targetModel": "claude-sonnet-4-6"
+  }'
+```
+
+Now `{"model":"claude"}` on `/v1/chat/completions` is routed to Anthropic. Models without a
+route default to the local Ollama cluster.

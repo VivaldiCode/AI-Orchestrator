@@ -1,0 +1,41 @@
+# AI Orchestrator Wiki 🎻
+
+Welcome! **AI Orchestrator** is a self-hosted, open-source gateway that mirrors the
+[Ollama](https://ollama.com) API and load-balances inference across all your Macs — and,
+optionally, across cloud AI providers (Anthropic, OpenAI, xAI, Amazon Bedrock).
+
+> Like Vivaldi conducting an orchestra: one baton, many instruments, perfectly in time.
+
+## Start here
+
+- [Getting Started](Getting-Started.md) — run the stack and add your first node
+- [Installation (Docker)](Installation-Docker.md) — production deployment
+- [Configuration](Configuration.md) — environment variables
+- [Architecture](Architecture.md) — how the pieces fit together
+
+## Guides
+
+- [Adding Nodes](Adding-Nodes.md)
+- [Load-Balancing Strategies](Load-Balancing-Strategies.md)
+- [Adding Providers](Adding-Providers.md)
+- [Dashboard Guide](Dashboard-Guide.md)
+- [Analytics](Analytics.md)
+
+## Reference
+
+- [API Reference](API-Reference.md)
+- [Security](Security.md)
+- [Development](Development.md)
+- [Testing](Testing.md)
+- [Roadmap](Roadmap.md)
+- [FAQ](FAQ.md)
+
+## Publishing this wiki
+
+These Markdown files mirror the GitHub Wiki. To publish them:
+
+```bash
+git clone https://github.com/VivaldiCode/ollama-orquestrator.wiki.git
+cp docs/*.md ollama-orquestrator.wiki/
+cd ollama-orquestrator.wiki && git add . && git commit -m "docs: sync wiki" && git push
+```
