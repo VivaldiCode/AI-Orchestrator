@@ -16,6 +16,29 @@
       content="Conduct your LLM fleet — one baton, many instruments."
     />
     <meta property="og:type" content="website" />
+    <style>
+      .lang-switch {
+        display: inline-flex;
+        gap: 4px;
+        margin-left: 14px;
+      }
+      .lang-switch button {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        border-radius: 8px;
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .lang-switch button.active {
+        background: var(--indigo);
+        color: #fff;
+        border-color: var(--indigo);
+      }
+    </style>
+    <script src="i18n.js" defer></script>
   </head>
   <body>
     <header class="nav">
@@ -24,17 +47,30 @@
         <span>AI Orchestrator</span>
       </a>
       <nav class="nav-links">
-        <a href="#features">Features</a>
-        <a href="#how">How it works</a>
-        <a href="https://github.com/VivaldiCode/ollama-orquestrator" rel="noopener">GitHub</a>
+        <a href="#features" data-i18n="nav.features">Features</a>
+        <a href="#how" data-i18n="nav.how">How it works</a>
+        <a
+          href="https://github.com/VivaldiCode/ollama-orquestrator"
+          rel="noopener"
+          data-i18n="nav.github"
+          >GitHub</a
+        >
+        <div class="lang-switch" id="lang-switch" role="group" aria-label="Language">
+          <button type="button" data-lang="en">EN</button>
+          <button type="button" data-lang="pt">PT</button>
+        </div>
       </nav>
     </header>
 
     <main id="top">
       <section class="hero">
-        <p class="eyebrow">100% open source · MIT</p>
-        <h1>Conduct your <span class="accent">LLM fleet</span>.</h1>
-        <p class="subtitle">
+        <p class="eyebrow" data-i18n="hero.eyebrow">100% open source · MIT</p>
+        <h1>
+          <span data-i18n="hero.titleLead">Conduct your</span>
+          <span class="accent" data-i18n="hero.titleAccent">LLM fleet</span
+          ><span data-i18n="hero.titleTail">.</span>
+        </h1>
+        <p class="subtitle" data-i18n="hero.subtitle">
           A self-hosted gateway that mirrors the Ollama API and load-balances inference across all
           your Macs — and, optionally, across Anthropic, OpenAI, xAI and Amazon Bedrock. Like
           Vivaldi conducting an orchestra: one baton, many instruments, perfectly in time. 🎻
@@ -44,10 +80,11 @@
             class="btn primary"
             href="https://github.com/VivaldiCode/ollama-orquestrator"
             rel="noopener"
+            data-i18n="hero.ctaGithub"
           >
             Get it on GitHub
           </a>
-          <a class="btn ghost" href="#quickstart">Quick start</a>
+          <a class="btn ghost" href="#quickstart" data-i18n="hero.ctaQuickstart">Quick start</a>
         </div>
         <pre class="snippet"><code># point any Ollama client at the orchestrator
 curl http://localhost:11435/api/chat -d '{
@@ -57,39 +94,42 @@ curl http://localhost:11435/api/chat -d '{
       </section>
 
       <section id="features" class="features">
-        <h2>Everything you need to run your own AI fleet</h2>
+        <h2 data-i18n="features.title">Everything you need to run your own AI fleet</h2>
         <div class="grid">
           <article class="card">
-            <h3>🔀 Drop-in Ollama mirror</h3>
-            <p>
+            <h3 data-i18n="f.mirror.title">🔀 Drop-in Ollama mirror</h3>
+            <p data-i18n="f.mirror.desc">
               Every Ollama endpoint, proxied with streaming. Change the base URL and you're done.
             </p>
           </article>
           <article class="card">
-            <h3>⚖️ Smart load balancing</h3>
-            <p>
+            <h3 data-i18n="f.lb.title">⚖️ Smart load balancing</h3>
+            <p data-i18n="f.lb.desc">
               Round-robin, least-connections, least-latency, weighted — plus model-aware routing and
               failover.
             </p>
           </article>
           <article class="card">
-            <h3>🧩 Multi-provider</h3>
-            <p>
-              An OpenAI-compatible <code>/v1</code> layer routes to cloud providers. Secrets
-              encrypted at rest.
+            <h3 data-i18n="f.multi.title">🧩 Multi-provider</h3>
+            <p data-i18n="f.multi.desc">
+              An OpenAI-compatible /v1 layer routes to cloud providers. Secrets encrypted at rest.
             </p>
           </article>
           <article class="card">
-            <h3>📊 Real-time dashboard</h3>
-            <p>See per-Mac load live, add nodes, manage providers and pick the routing strategy.</p>
+            <h3 data-i18n="f.dashboard.title">📊 Real-time dashboard</h3>
+            <p data-i18n="f.dashboard.desc">
+              See per-Mac load live, add nodes, manage providers and pick the routing strategy.
+            </p>
           </article>
           <article class="card">
-            <h3>📈 Analytics</h3>
-            <p>Throughput, latency p50/p95/p99, tokens and error rates, powered by TimescaleDB.</p>
+            <h3 data-i18n="f.analytics.title">📈 Analytics</h3>
+            <p data-i18n="f.analytics.desc">
+              Throughput, latency p50/p95/p99, tokens and error rates, powered by TimescaleDB.
+            </p>
           </article>
           <article class="card">
-            <h3>🔒 Security-first</h3>
-            <p>
+            <h3 data-i18n="f.security.title">🔒 Security-first</h3>
+            <p data-i18n="f.security.desc">
               Helmet, strict CORS, rate limiting, JWT auth, hashed API keys, audited dependencies.
             </p>
           </article>
@@ -97,22 +137,22 @@ curl http://localhost:11435/api/chat -d '{
       </section>
 
       <section id="how" class="how">
-        <h2>How it works</h2>
+        <h2 data-i18n="how.title">How it works</h2>
         <ol class="steps">
           <li>
             <span class="num">1</span>
             <div>
-              <h3>Run the stack</h3>
-              <p>
-                <code>docker compose up</code> brings up the orchestrator, dashboard and database.
+              <h3 data-i18n="how.s1.title">Run the stack</h3>
+              <p data-i18n="how.s1.desc">
+                docker compose up brings up the orchestrator, dashboard and database.
               </p>
             </div>
           </li>
           <li>
             <span class="num">2</span>
             <div>
-              <h3>Add your Macs</h3>
-              <p>
+              <h3 data-i18n="how.s2.title">Add your Macs</h3>
+              <p data-i18n="how.s2.desc">
                 Register each node (host + port) from the dashboard. Health checks start instantly.
               </p>
             </div>
@@ -120,15 +160,17 @@ curl http://localhost:11435/api/chat -d '{
           <li>
             <span class="num">3</span>
             <div>
-              <h3>Point your clients</h3>
-              <p>Send Ollama or OpenAI-style requests — the orchestra plays in balance.</p>
+              <h3 data-i18n="how.s3.title">Point your clients</h3>
+              <p data-i18n="how.s3.desc">
+                Send Ollama or OpenAI-style requests — the orchestra plays in balance.
+              </p>
             </div>
           </li>
         </ol>
       </section>
 
       <section id="quickstart" class="quickstart">
-        <h2>Quick start</h2>
+        <h2 data-i18n="quickstart.title">Quick start</h2>
         <pre class="snippet"><code>git clone https://github.com/VivaldiCode/ollama-orquestrator.git
 cd ollama-orquestrator
 cp .env.example .env          # then set ORCHESTRATOR_MASTER_KEY and JWT_SECRET
@@ -138,8 +180,8 @@ open http://localhost:8080    # create the first admin and add your Macs</code><
 
       <section class="opensource">
         <img src="logo.svg" width="56" height="56" alt="" />
-        <h2>Free and open source, forever</h2>
-        <p>
+        <h2 data-i18n="os.title">Free and open source, forever</h2>
+        <p data-i18n="os.desc">
           AI Orchestrator is MIT-licensed. Contributions are welcome — issues, ideas and pull
           requests all help the orchestra grow.
         </p>
@@ -147,6 +189,7 @@ open http://localhost:8080    # create the first admin and add your Macs</code><
           class="btn primary"
           href="https://github.com/VivaldiCode/ollama-orquestrator"
           rel="noopener"
+          data-i18n="os.cta"
         >
           Star on GitHub ★
         </a>
@@ -155,8 +198,14 @@ open http://localhost:8080    # create the first admin and add your Macs</code><
 
     <footer class="footer">
       <p>
-        Built by <strong>VivaldiCode</strong> · MIT License ·
-        <a href="https://github.com/VivaldiCode/ollama-orquestrator" rel="noopener">Source</a>
+        <span data-i18n="footer.builtBy">Built by</span> <strong>VivaldiCode</strong> ·
+        <span data-i18n="footer.license">MIT License</span> ·
+        <a
+          href="https://github.com/VivaldiCode/ollama-orquestrator"
+          rel="noopener"
+          data-i18n="footer.source"
+          >Source</a
+        >
       </p>
     </footer>
   </body>

@@ -1,10 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '../lib/auth';
+import { useI18n } from '../i18n';
 import { Logo } from '../components/Logo';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { Button, Card, Field, Input } from '../components/ui';
 
 export function AuthScreen({ mode }: { mode: 'login' | 'setup' }) {
   const { login, setup } = useAuth();
+  const { t } = useI18n();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +23,7 @@ export function AuthScreen({ mode }: { mode: 'login' | 'setup' }) {
       if (isSetup) await setup(username, password);
       else await login(username, password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : t('auth.error'));
     } finally {
       setBusy(false);
     }
@@ -29,16 +32,19 @@ export function AuthScreen({ mode }: { mode: 'login' | 'setup' }) {
   return (
     <div className="grid min-h-screen place-items-center p-6">
       <Card className="w-full max-w-sm">
+        <div className="mb-4 flex justify-end">
+          <LanguageSwitcher />
+        </div>
         <div className="mb-6 flex flex-col items-center text-center">
           <Logo size={56} />
-          <h1 className="mt-3 text-xl font-semibold text-slate-50">AI Orchestrator</h1>
+          <h1 className="mt-3 text-xl font-semibold text-slate-50">{t('app.name')}</h1>
           <p className="text-sm text-slate-400">
-            {isSetup ? 'Create the first admin account' : 'Sign in to the control panel'}
+            {isSetup ? t('auth.setupTitle') : t('auth.loginTitle')}
           </p>
         </div>
 
         <form onSubmit={submit} className="space-y-4">
-          <Field label="Username">
+          <Field label={t('auth.username')}>
             <Input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -47,7 +53,7 @@ export function AuthScreen({ mode }: { mode: 'login' | 'setup' }) {
               minLength={3}
             />
           </Field>
-          <Field label="Password">
+          <Field label={t('auth.password')}>
             <Input
               type="password"
               value={password}
@@ -57,12 +63,12 @@ export function AuthScreen({ mode }: { mode: 'login' | 'setup' }) {
               minLength={12}
             />
           </Field>
-          {isSetup ? <p className="text-xs text-slate-500">Use at least 12 characters.</p> : null}
+          {isSetup ? <p className="text-xs text-slate-500">{t('auth.passwordHint')}</p> : null}
           {error ? (
             <p className="rounded-lg bg-rose-950/50 px-3 py-2 text-sm text-rose-300">{error}</p>
           ) : null}
           <Button type="submit" disabled={busy} className="w-full">
-            {busy ? 'Please wait…' : isSetup ? 'Create account' : 'Sign in'}
+            {busy ? t('auth.pleaseWait') : isSetup ? t('auth.createAccount') : t('auth.signIn')}
           </Button>
         </form>
       </Card>

@@ -2,10 +2,11 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiKeyCreated } from '@ai-orchestrator/shared';
 import { api } from '../lib/api';
-import { formatRelativeTime } from '../lib/format';
+import { useI18n } from '../i18n';
 import { Button, Card, EmptyState, Field, Input, Spinner } from '../components/ui';
 
 export function ApiKeysPage() {
+  const { t, fmt } = useI18n();
   const qc = useQueryClient();
   const keysQuery = useQuery({ queryKey: ['api-keys'], queryFn: api.listApiKeys });
   const [name, setName] = useState('');
@@ -35,17 +36,13 @@ export function ApiKeysPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-50">API Keys</h1>
-        <p className="text-sm text-slate-400">
-          Issue keys for inference clients. Once any key exists, all inference calls require one.
-        </p>
+        <h1 className="text-2xl font-semibold text-slate-50">{t('apiKeys.title')}</h1>
+        <p className="text-sm text-slate-400">{t('apiKeys.subtitle')}</p>
       </header>
 
       {created ? (
         <Card className="border-baton-500/40 bg-baton-500/5">
-          <p className="text-sm font-medium text-baton-400">
-            Copy your new key now — it won't be shown again.
-          </p>
+          <p className="text-sm font-medium text-baton-400">{t('apiKeys.copyWarning')}</p>
           <code className="mt-2 block break-all rounded bg-slate-950 px-3 py-2 font-mono text-sm text-slate-100">
             {created.secret}
           </code>
@@ -53,7 +50,7 @@ export function ApiKeysPage() {
             onClick={() => setCreated(null)}
             className="mt-2 text-xs text-slate-400 hover:underline"
           >
-            Dismiss
+            {t('apiKeys.dismiss')}
           </button>
         </Card>
       ) : null}
@@ -61,34 +58,34 @@ export function ApiKeysPage() {
       <Card>
         <form onSubmit={submit} className="flex items-end gap-3">
           <div className="flex-1">
-            <Field label="Key name">
+            <Field label={t('apiKeys.keyName')}>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="laptop-cli"
+                placeholder={t('apiKeys.keyNamePlaceholder')}
                 required
               />
             </Field>
           </div>
           <Button type="submit" disabled={create.isPending}>
-            {create.isPending ? 'Creating…' : 'Create key'}
+            {create.isPending ? t('apiKeys.creatingButton') : t('apiKeys.createButton')}
           </Button>
         </form>
       </Card>
 
       {keysQuery.isLoading ? (
-        <Spinner label="Loading keys…" />
+        <Spinner label={t('apiKeys.loading')} />
       ) : (keysQuery.data ?? []).length === 0 ? (
-        <EmptyState title="No API keys" hint="Inference is open until you create the first key." />
+        <EmptyState title={t('apiKeys.noKeys')} hint={t('apiKeys.noKeysHint')} />
       ) : (
         <Card className="overflow-hidden p-0">
           <table className="w-full text-sm">
             <thead className="bg-slate-900/80 text-left text-xs uppercase text-slate-500">
               <tr>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Prefix</th>
-                <th className="px-4 py-3">Last used</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">{t('apiKeys.colName')}</th>
+                <th className="px-4 py-3">{t('apiKeys.colPrefix')}</th>
+                <th className="px-4 py-3">{t('apiKeys.colLastUsed')}</th>
+                <th className="px-4 py-3 text-right">{t('apiKeys.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -96,10 +93,12 @@ export function ApiKeysPage() {
                 <tr key={k.id}>
                   <td className="px-4 py-3 text-slate-100">{k.name}</td>
                   <td className="px-4 py-3 font-mono text-xs text-slate-400">{k.prefix}…</td>
-                  <td className="px-4 py-3 text-slate-500">{formatRelativeTime(k.lastUsedAt)}</td>
+                  <td className="px-4 py-3 text-slate-500">
+                    {k.lastUsedAt ? fmt.relativeTime(k.lastUsedAt) : t('common.never')}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <Button variant="danger" onClick={() => remove.mutate(k.id)}>
-                      Revoke
+                      {t('apiKeys.revoke')}
                     </Button>
                   </td>
                 </tr>

@@ -14,6 +14,8 @@
 
 _Like Vivaldi conducting an orchestra — one baton, many instruments, perfectly in time._
 
+**English** · [Português](README.pt.md)
+
 </div>
 
 ---
@@ -127,7 +129,7 @@ npm run dev             # api (tsx watch) + dashboard (vite) together
 apps/
   api/         Orchestrator backend (Fastify + TypeScript)
   dashboard/   Real-time control panel (React + Vite + Tailwind)
-  landing/     Static marketing landing page (zero-JS)
+  landing/     Static marketing landing page (EN/PT)
 packages/
   shared/      Zod contracts & types shared by api ⇄ dashboard
 docker/        Dockerfiles + nginx config
@@ -155,6 +157,19 @@ public issue — follow the process in [SECURITY.md](SECURITY.md).
 
 Full documentation lives in [`docs/`](docs/) (formatted as GitHub Wiki pages). Start at
 [`docs/Home.md`](docs/Home.md).
+
+## 🌐 Internationalization
+
+The **dashboard** ships in **English and Portuguese** with an in-app language switcher
+(auto-detected from the browser, remembered in `localStorage`), and the **landing page** is
+bilingual too. Adding a language is intentionally simple — no i18n framework, just dictionaries:
+
+- Dashboard: copy [`apps/dashboard/src/i18n/en.ts`](apps/dashboard/src/i18n/en.ts), translate the
+  values, and register the locale in `apps/dashboard/src/i18n/index.tsx`.
+- Landing: add a locale object in [`apps/landing/i18n.js`](apps/landing/i18n.js).
+
+This README and the wiki are written in English; translations are welcome as `README.<lang>.md`
+(see [README.pt.md](README.pt.md)) and under `docs/<lang>/`.
 
 ## 🤝 Contributing
 
