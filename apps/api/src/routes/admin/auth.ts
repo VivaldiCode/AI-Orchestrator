@@ -1,0 +1,88 @@
+import type { FastifyInstance } from 'fastify';
+import {
+  createApiKeySchema,
+  loginSchema,
+  refreshSchema,
+  setupSchema,
+  type TokenPair,
+} from '@ai-orchestrator/shared';
+import { config } from '../../config/index';
+import { unauthorized } from '../../lib/errors';
+import { parseWith, pathId } from './util';
+
+interface TokenUser {
+  id: string;
+  username: string;
+  role: string;
+}
+
+function issueTokens(app: FastifyInstance, user: TokenUser): TokenPair {
+  const base = { sub: user.id, username: user.username, role: user.role };
+  const accessToken = app.jwt.sign(
+    { ...base, type: 'access' },
+    { expiresIn: config.jwtAccessTtl * 1000 },
+  );
+  const refreshToken = app.jwt.sign(
+    { ...base, type: 'refresh' },
+    { expiresIn: config.jwtRefreshTtl * 1000 },
+  );
+  return { accessToken, refreshToken, tokenType: 'Bearer', expiresIn: config.jwtAccessTtl };
+}
+
+export function registerAuthRoutes(app: FastifyInstance): void {
+  app.get('/auth/setup-status', async (_req, reply) => {
+    return reply.send({ needsSetup: await app.auth.needsSetup() });
+  });
+
+  app.post('/auth/setup', async (req, reply) => {
+    const { username, password } = parseWith(setupSchema, req.body);
+    const user = await app.auth.createAdmin(username, password);
+    return reply.code(201).send({ user, tokens: issueTokens(app, user) });
+  });
+
+  app.post('/auth/login', async (req, reply) => {
+    const { username, password } = parseWith(loginSchema, req.body);
+    const row = await app.auth.login(username, password);
+    return reply.send(issueTokens(app, { id: row.id, username: row.username, role: row.role }));
+  });
+
+  app.post('/auth/refresh', async (req, reply) => {
+    const { refreshToken } = parseWith(refreshSchema, req.body);
+    let payload;
+    try {
+      payload = app.jwt.verify<{
+        sub: string;
+        username: string;
+        role: string;
+        type: 'access' | 'refresh';
+      }>(refreshToken);
+    } catch {
+      throw unauthorized('Invalid refresh token.');
+    }
+    if (payload.type !== 'refresh') throw unauthorized('Invalid token type.');
+    return reply.send(
+      issueTokens(app, { id: payload.sub, username: payload.username, role: payload.role }),
+    );
+  });
+
+  app.get('/auth/me', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const u = req.adminUser;
+    if (!u) throw unauthorized();
+    return reply.send({ id: u.sub, username: u.username, role: u.role });
+  });
+
+  // --- API keys ------------------------------------------------------------
+  app.get('/api-keys', { preHandler: app.requireAdmin }, async (_req, reply) => {
+    return reply.send(await app.auth.listApiKeys());
+  });
+
+  app.post('/api-keys', { preHandler: app.requireAdmin }, async (req, reply) => {
+    const { name, scopes } = parseWith(createApiKeySchema, req.body);
+    return reply.code(201).send(await app.auth.createApiKey(name, scopes));
+  });
+
+  app.delete('/api-keys/:id', { preHandler: app.requireAdmin }, async (req, reply) => {
+    await app.auth.revokeApiKey(pathId(req.params));
+    return reply.code(204).send();
+  });
+}
