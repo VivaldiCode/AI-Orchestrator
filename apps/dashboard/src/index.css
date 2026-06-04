@@ -1,0 +1,41 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-concert-50: #eef2ff;
+  --color-concert-400: #818cf8;
+  --color-concert-500: #6366f1;
+  --color-concert-600: #4f46e5;
+  --color-concert-700: #4338ca;
+  --color-baton-400: #fbbf24;
+  --color-baton-500: #f59e0b;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: #020617;
+  color: #e2e8f0;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+}
