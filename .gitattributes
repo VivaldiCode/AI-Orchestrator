@@ -1,0 +1,12 @@
+# Normalize line endings to LF across platforms
+* text=auto eol=lf
+
+# Lockfiles and generated files (collapsed in diffs / excluded from language stats)
+package-lock.json linguist-generated=true -diff
+*.svg linguist-detectable=false
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

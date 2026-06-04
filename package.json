@@ -1,0 +1,64 @@
+{
+  "name": "ai-orchestrator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted gateway that mirrors the Ollama API and load-balances inference across your Macs and cloud AI providers.",
+  "license": "MIT",
+  "author": "VivaldiCode <guilhermecamachop@gmail.com>",
+  "type": "module",
+  "homepage": "https://github.com/VivaldiCode/ollama-orquestrator",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VivaldiCode/ollama-orquestrator.git"
+  },
+  "keywords": [
+    "ollama",
+    "llm",
+    "load-balancer",
+    "ai-gateway",
+    "reverse-proxy",
+    "self-hosted",
+    "open-source"
+  ],
+  "engines": {
+    "node": ">=24",
+    "npm": ">=11"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/api",
+    "apps/dashboard"
+  ],
+  "scripts": {
+    "dev": "npm run dev:api & npm run dev:dashboard",
+    "dev:api": "npm run dev -w @ai-orchestrator/api",
+    "dev:dashboard": "npm run dev -w @ai-orchestrator/dashboard",
+    "build": "npm run build -w @ai-orchestrator/dashboard",
+    "start": "npm run start -w @ai-orchestrator/api",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "db:migrate": "npm run db:migrate -w @ai-orchestrator/api",
+    "audit": "npm audit --audit-level=high",
+    "audit:fix": "npm audit fix"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.60.0",
+    "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "4.1.8",
+    "eslint": "10.4.1",
+    "globals": "17.6.0",
+    "prettier": "3.8.3",
+    "tsx": "4.22.4",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.60.1",
+    "vitest": "4.1.8"
+  }
+}

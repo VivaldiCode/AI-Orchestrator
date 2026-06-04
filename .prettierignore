@@ -1,0 +1,11 @@
+node_modules
+**/._*
+dist
+build
+coverage
+playwright-report
+test-results
+.vite
+package-lock.json
+**/*.min.*
+assets/logo/*.svg
