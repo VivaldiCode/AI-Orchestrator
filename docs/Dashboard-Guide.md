@@ -23,3 +23,9 @@ updates node metrics and the request feed without polling.
 
 On first load you'll be asked to **create an admin account**. After that you log in with those
 credentials; tokens are stored in the browser and refreshed automatically.
+
+## Language
+
+Use the **EN / PT** switcher in the sidebar (and on the login screen) to change the interface
+language. Your choice is remembered in the browser; first-time visitors are auto-detected from
+their browser language.
