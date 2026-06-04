@@ -2,16 +2,12 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { STRATEGIES, type Settings, type Strategy } from '@ai-orchestrator/shared';
 import { api } from '../lib/api';
+import { useI18n } from '../i18n';
+import type { TranslationKey } from '../i18n/en';
 import { Button, Card, Field, Select, Spinner } from '../components/ui';
 
-const STRATEGY_HELP: Record<Strategy, string> = {
-  'round-robin': 'Rotate evenly across nodes.',
-  weighted: 'Favour higher-weight nodes, adjusted for live load.',
-  'least-connections': 'Send to the node with the fewest in-flight requests.',
-  'least-latency': 'Send to the fastest-responding node.',
-};
-
 export function SettingsPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const settingsQuery = useQuery({ queryKey: ['settings'], queryFn: api.getSettings });
   const [form, setForm] = useState<Settings | null>(null);
@@ -30,17 +26,17 @@ export function SettingsPage() {
     },
   });
 
-  if (settingsQuery.isLoading || !form) return <Spinner label="Loading settings…" />;
+  if (settingsQuery.isLoading || !form) return <Spinner label={t('settings.loading')} />;
 
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-50">Settings</h1>
-        <p className="text-sm text-slate-400">Tune how the orchestrator routes requests.</p>
+        <h1 className="text-2xl font-semibold text-slate-50">{t('settings.title')}</h1>
+        <p className="text-sm text-slate-400">{t('settings.subtitle')}</p>
       </header>
 
       <Card className="max-w-xl space-y-5">
-        <Field label="Load-balancing strategy">
+        <Field label={t('settings.strategy')}>
           <Select
             value={form.strategy}
             onChange={(e) => setForm({ ...form, strategy: e.target.value as Strategy })}
@@ -51,7 +47,9 @@ export function SettingsPage() {
               </option>
             ))}
           </Select>
-          <p className="mt-1 text-xs text-slate-500">{STRATEGY_HELP[form.strategy]}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {t(`strategy.${form.strategy}` as TranslationKey)}
+          </p>
         </Field>
 
         <label className="flex items-center gap-3 text-sm text-slate-200">
@@ -61,7 +59,7 @@ export function SettingsPage() {
             onChange={(e) => setForm({ ...form, modelAware: e.target.checked })}
             className="h-4 w-4 accent-concert-500"
           />
-          Model-aware routing (only send to nodes that have the model)
+          {t('settings.modelAware')}
         </label>
 
         <label className="flex items-center gap-3 text-sm text-slate-200">
@@ -71,10 +69,10 @@ export function SettingsPage() {
             onChange={(e) => setForm({ ...form, autoPull: e.target.checked })}
             className="h-4 w-4 accent-concert-500"
           />
-          Auto-pull missing models before routing
+          {t('settings.autoPull')}
         </label>
 
-        <Field label="Failover retries">
+        <Field label={t('settings.failoverRetries')}>
           <input
             type="number"
             min={0}
@@ -87,9 +85,9 @@ export function SettingsPage() {
 
         <div className="flex items-center gap-3">
           <Button onClick={() => save.mutate(form)} disabled={save.isPending}>
-            {save.isPending ? 'Saving…' : 'Save settings'}
+            {save.isPending ? t('settings.savingButton') : t('settings.saveButton')}
           </Button>
-          {saved ? <span className="text-sm text-emerald-400">Saved ✓</span> : null}
+          {saved ? <span className="text-sm text-emerald-400">{t('settings.saved')}</span> : null}
         </div>
       </Card>
     </div>

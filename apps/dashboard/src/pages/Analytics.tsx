@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import type { Bucket, BreakdownItem } from '@ai-orchestrator/shared';
 import { api } from '../lib/api';
-import { formatLatency, formatNumber, formatPercent } from '../lib/format';
+import { useI18n } from '../i18n';
 import { Card, EmptyState, Select, Spinner, StatCard } from '../components/ui';
 
 const RANGES: Record<string, { ms: number; bucket: Bucket }> = {
@@ -21,13 +21,14 @@ const RANGES: Record<string, { ms: number; bucket: Bucket }> = {
 };
 
 function BreakdownTable({ title, items }: { title: string; items: BreakdownItem[] }) {
+  const { t, fmt } = useI18n();
   return (
     <Card className="p-0">
       <div className="border-b border-slate-800 px-4 py-3 text-sm font-medium text-slate-200">
         {title}
       </div>
       {items.length === 0 ? (
-        <p className="px-4 py-3 text-sm text-slate-500">No data.</p>
+        <p className="px-4 py-3 text-sm text-slate-500">{t('analytics.noData')}</p>
       ) : (
         <table className="w-full text-sm">
           <tbody className="divide-y divide-slate-800">
@@ -35,10 +36,10 @@ function BreakdownTable({ title, items }: { title: string; items: BreakdownItem[
               <tr key={item.key}>
                 <td className="px-4 py-2 text-slate-300">{item.key}</td>
                 <td className="px-4 py-2 text-right text-slate-400">
-                  {formatNumber(item.requests)} req
+                  {t('analytics.reqUnit', { count: fmt.number(item.requests) })}
                 </td>
                 <td className="px-4 py-2 text-right text-slate-500">
-                  {formatLatency(item.avgLatencyMs)}
+                  {fmt.latency(item.avgLatencyMs)}
                 </td>
               </tr>
             ))}
@@ -50,6 +51,7 @@ function BreakdownTable({ title, items }: { title: string; items: BreakdownItem[
 }
 
 export function AnalyticsPage() {
+  const { t, fmt, lang } = useI18n();
   const [range, setRange] = useState<keyof typeof RANGES>('24h');
 
   const query = useQuery({
@@ -66,12 +68,12 @@ export function AnalyticsPage() {
   const chartData = useMemo(
     () =>
       (query.data?.series ?? []).map((p) => ({
-        time: new Date(p.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        time: new Date(p.time).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' }),
         requests: p.requests,
         errors: p.errors,
         p95: p.p95 ?? 0,
       })),
-    [query.data],
+    [query.data, lang],
   );
 
   const summary = query.data;
@@ -80,33 +82,35 @@ export function AnalyticsPage() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-50">Analytics</h1>
-          <p className="text-sm text-slate-400">Throughput, latency and usage across the fleet.</p>
+          <h1 className="text-2xl font-semibold text-slate-50">{t('analytics.title')}</h1>
+          <p className="text-sm text-slate-400">{t('analytics.subtitle')}</p>
         </div>
-        <div className="w-32">
+        <div className="w-36">
           <Select value={range} onChange={(e) => setRange(e.target.value as keyof typeof RANGES)}>
-            <option value="1h">Last hour</option>
-            <option value="24h">Last 24h</option>
-            <option value="7d">Last 7 days</option>
+            <option value="1h">{t('analytics.lastHour')}</option>
+            <option value="24h">{t('analytics.last24h')}</option>
+            <option value="7d">{t('analytics.last7d')}</option>
           </Select>
         </div>
       </header>
 
       {query.isLoading ? (
-        <Spinner label="Crunching numbers…" />
+        <Spinner label={t('analytics.loading')} />
       ) : query.isError ? (
-        <EmptyState title="Could not load analytics" hint="Is the database reachable?" />
+        <EmptyState title={t('analytics.loadError')} hint={t('analytics.loadErrorHint')} />
       ) : summary ? (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Requests" value={formatNumber(summary.totalRequests)} />
-            <StatCard label="Error rate" value={formatPercent(summary.errorRate)} />
-            <StatCard label="Avg latency" value={formatLatency(summary.avgLatencyMs)} />
-            <StatCard label="p95 latency" value={formatLatency(summary.p95LatencyMs)} />
+            <StatCard label={t('analytics.requests')} value={fmt.number(summary.totalRequests)} />
+            <StatCard label={t('analytics.errorRate')} value={fmt.percent(summary.errorRate)} />
+            <StatCard label={t('analytics.avgLatency')} value={fmt.latency(summary.avgLatencyMs)} />
+            <StatCard label={t('analytics.p95')} value={fmt.latency(summary.p95LatencyMs)} />
           </div>
 
           <Card>
-            <h2 className="mb-4 text-sm font-medium text-slate-200">Requests over time</h2>
+            <h2 className="mb-4 text-sm font-medium text-slate-200">
+              {t('analytics.requestsOverTime')}
+            </h2>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
@@ -140,9 +144,9 @@ export function AnalyticsPage() {
           </Card>
 
           <div className="grid gap-4 lg:grid-cols-3">
-            <BreakdownTable title="By node" items={summary.byNode} />
-            <BreakdownTable title="By model" items={summary.byModel} />
-            <BreakdownTable title="By provider" items={summary.byProvider} />
+            <BreakdownTable title={t('analytics.byNode')} items={summary.byNode} />
+            <BreakdownTable title={t('analytics.byModel')} items={summary.byModel} />
+            <BreakdownTable title={t('analytics.byProvider')} items={summary.byProvider} />
           </div>
         </>
       ) : null}

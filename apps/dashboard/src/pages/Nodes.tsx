@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { CreateNodeInput } from '@ai-orchestrator/shared';
 import { api } from '../lib/api';
+import { useI18n } from '../i18n';
+import type { TranslationKey } from '../i18n/en';
 import { useRealtimeStore } from '../lib/store';
 import { formatLatency, statusDot } from '../lib/format';
 import { Button, Card, cn, EmptyState, Field, Input, Spinner } from '../components/ui';
@@ -18,6 +20,7 @@ const EMPTY: CreateNodeInput = {
 };
 
 export function NodesPage() {
+  const { t, fmt } = useI18n();
   const qc = useQueryClient();
   const nodesQuery = useQuery({ queryKey: ['nodes'], queryFn: api.listNodes });
   const runtime = useRealtimeStore((s) => s.runtime);
@@ -34,7 +37,7 @@ export function NodesPage() {
       setError(null);
       invalidate();
     },
-    onError: (e: unknown) => setError(e instanceof Error ? e.message : 'Failed to add node'),
+    onError: (e: unknown) => setError(e instanceof Error ? e.message : t('nodes.addError')),
   });
 
   const remove = useMutation({
@@ -54,8 +57,11 @@ export function NodesPage() {
       setTestResult((prev) => ({
         ...prev,
         [id]: res.ok
-          ? `OK · ${formatLatency(res.latencyMs)} · ${res.models?.length ?? 0} models`
-          : `Error: ${res.error}`,
+          ? t('nodes.testOk', {
+              latency: formatLatency(res.latencyMs),
+              count: res.models?.length ?? 0,
+            })
+          : t('nodes.testError', { error: res.error ?? '' }),
       })),
   });
 
@@ -69,21 +75,21 @@ export function NodesPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-2xl font-semibold text-slate-50">Nodes</h1>
-        <p className="text-sm text-slate-400">Register the Macs running Ollama.</p>
+        <h1 className="text-2xl font-semibold text-slate-50">{t('nodes.title')}</h1>
+        <p className="text-sm text-slate-400">{t('nodes.subtitle')}</p>
       </header>
 
       <Card>
-        <h2 className="mb-4 text-lg font-medium text-slate-100">Add a node</h2>
+        <h2 className="mb-4 text-lg font-medium text-slate-100">{t('nodes.addNode')}</h2>
         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Name">
+          <Field label={t('nodes.name')}>
             <Input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
             />
           </Field>
-          <Field label="Host / IP">
+          <Field label={t('nodes.host')}>
             <Input
               value={form.host}
               onChange={(e) => setForm({ ...form, host: e.target.value })}
@@ -91,14 +97,14 @@ export function NodesPage() {
               required
             />
           </Field>
-          <Field label="Port">
+          <Field label={t('nodes.port')}>
             <Input
               type="number"
               value={form.port}
               onChange={(e) => setForm({ ...form, port: Number(e.target.value) })}
             />
           </Field>
-          <Field label="Weight">
+          <Field label={t('nodes.weight')}>
             <Input
               type="number"
               min={1}
@@ -106,7 +112,7 @@ export function NodesPage() {
               onChange={(e) => setForm({ ...form, weight: Number(e.target.value) })}
             />
           </Field>
-          <Field label="Max concurrency">
+          <Field label={t('nodes.maxConcurrency')}>
             <Input
               type="number"
               min={1}
@@ -114,7 +120,7 @@ export function NodesPage() {
               onChange={(e) => setForm({ ...form, maxConcurrency: Number(e.target.value) })}
             />
           </Field>
-          <Field label="Tags (comma-separated)">
+          <Field label={t('nodes.tags')}>
             <Input
               value={form.tags.join(', ')}
               onChange={(e) =>
@@ -122,7 +128,7 @@ export function NodesPage() {
                   ...form,
                   tags: e.target.value
                     .split(',')
-                    .map((t) => t.trim())
+                    .map((tag) => tag.trim())
                     .filter(Boolean),
                 })
               }
@@ -130,7 +136,7 @@ export function NodesPage() {
           </Field>
           <div className="flex items-end">
             <Button type="submit" disabled={create.isPending}>
-              {create.isPending ? 'Adding…' : 'Add node'}
+              {create.isPending ? t('nodes.addingButton') : t('nodes.addButton')}
             </Button>
           </div>
         </form>
@@ -138,20 +144,20 @@ export function NodesPage() {
       </Card>
 
       {nodesQuery.isLoading ? (
-        <Spinner label="Loading nodes…" />
+        <Spinner label={t('nodes.loading')} />
       ) : nodes.length === 0 ? (
-        <EmptyState title="No nodes registered" hint="Add one above to start load-balancing." />
+        <EmptyState title={t('nodes.noNodes')} hint={t('nodes.noNodesHint')} />
       ) : (
         <Card className="overflow-hidden p-0">
           <table className="w-full text-sm">
             <thead className="bg-slate-900/80 text-left text-xs uppercase text-slate-500">
               <tr>
-                <th className="px-4 py-3">Node</th>
-                <th className="px-4 py-3">Endpoint</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">In-flight</th>
-                <th className="px-4 py-3">Latency</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">{t('nodes.colNode')}</th>
+                <th className="px-4 py-3">{t('nodes.colEndpoint')}</th>
+                <th className="px-4 py-3">{t('nodes.colStatus')}</th>
+                <th className="px-4 py-3">{t('nodes.colInFlight')}</th>
+                <th className="px-4 py-3">{t('nodes.colLatency')}</th>
+                <th className="px-4 py-3 text-right">{t('nodes.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
@@ -159,7 +165,9 @@ export function NodesPage() {
                 <tr key={n.id}>
                   <td className="px-4 py-3">
                     <div className="font-medium text-slate-100">{n.name}</div>
-                    <div className="text-xs text-slate-500">weight {n.weight}</div>
+                    <div className="text-xs text-slate-500">
+                      {t('nodes.weightLabel', { weight: n.weight })}
+                    </div>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-slate-400">
                     {n.protocol}://{n.host}:{n.port}
@@ -167,27 +175,27 @@ export function NodesPage() {
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-2">
                       <span className={cn('h-2 w-2 rounded-full', statusDot(n.runtime.status))} />
-                      {n.runtime.status}
+                      {t(`status.${n.runtime.status}` as TranslationKey)}
                     </span>
                     {testResult[n.id] ? (
                       <div className="mt-1 text-xs text-slate-500">{testResult[n.id]}</div>
                     ) : null}
                   </td>
                   <td className="px-4 py-3">{n.runtime.inFlight}</td>
-                  <td className="px-4 py-3">{formatLatency(n.runtime.latencyMs)}</td>
+                  <td className="px-4 py-3">{fmt.latency(n.runtime.latencyMs)}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" onClick={() => test.mutate(n.id)}>
-                        Test
+                        {t('nodes.test')}
                       </Button>
                       <Button
                         variant="ghost"
                         onClick={() => toggle.mutate({ id: n.id, enabled: !n.enabled })}
                       >
-                        {n.enabled ? 'Disable' : 'Enable'}
+                        {n.enabled ? t('nodes.disable') : t('nodes.enable')}
                       </Button>
                       <Button variant="danger" onClick={() => remove.mutate(n.id)}>
-                        Delete
+                        {t('nodes.delete')}
                       </Button>
                     </div>
                   </td>

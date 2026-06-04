@@ -30,6 +30,13 @@ optionally, across cloud AI providers (Anthropic, OpenAI, xAI, Amazon Bedrock).
 - [Roadmap](Roadmap.md)
 - [FAQ](FAQ.md)
 
+## Languages & translations
+
+The dashboard and the landing page ship in **English and Portuguese**, with an in-app language
+switcher. These docs are written in English. To contribute a translation, add a dashboard
+dictionary under `apps/dashboard/src/i18n/`, a landing locale in `apps/landing/i18n.js`, and wiki
+pages under a `docs/<lang>/` folder.
+
 ## Publishing this wiki
 
 These Markdown files mirror the GitHub Wiki. To publish them:
