@@ -1,0 +1,36 @@
+{
+  "name": "@ai-orchestrator/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI Orchestrator backend — mirrors the Ollama API and load-balances across nodes and cloud providers.",
+  "license": "MIT",
+  "main": "src/server.ts",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "db:migrate": "tsx src/db/migrate.ts"
+  },
+  "dependencies": {
+    "@ai-orchestrator/shared": "*",
+    "@anthropic-ai/sdk": "0.100.1",
+    "@aws-sdk/client-bedrock-runtime": "3.1062.0",
+    "@fastify/cors": "11.2.0",
+    "@fastify/helmet": "13.0.2",
+    "@fastify/jwt": "10.1.0",
+    "@fastify/rate-limit": "10.3.0",
+    "@fastify/websocket": "11.2.0",
+    "drizzle-orm": "0.45.2",
+    "fastify": "5.8.5",
+    "openai": "6.42.0",
+    "pino": "10.3.1",
+    "postgres": "3.4.9",
+    "tsx": "4.22.4",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "pino-pretty": "13.1.3"
+  }
+}
