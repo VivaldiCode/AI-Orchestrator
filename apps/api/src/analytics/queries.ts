@@ -14,7 +14,7 @@ const BUCKET_INTERVAL: Record<AnalyticsQuery['bucket'], string> = {
 };
 
 interface SeriesRow {
-  bucket: Date;
+  bucket: string | Date;
   requests: number;
   errors: number;
   p50: number | null;
@@ -63,9 +63,13 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
   const from = query.from ? new Date(query.from) : new Date(to.getTime() - DAY_MS);
   const interval = BUCKET_INTERVAL[query.bucket] ?? '5 minutes';
 
-  // Shared, parameterised filter fragment (safe from injection).
+  // Shared, parameterised filter fragment (safe from injection). Dates are
+  // passed as ISO strings + cast, because the `postgres` driver mis-serializes
+  // Date objects when they live inside a nested fragment.
+  const fromIso = from.toISOString();
+  const toIso = to.toISOString();
   const where = sql`
-    time >= ${from} AND time < ${to}
+    time >= ${fromIso}::timestamptz AND time < ${toIso}::timestamptz
     ${query.nodeId ? sql`AND node_id = ${query.nodeId}` : sql``}
     ${query.model ? sql`AND model = ${query.model}` : sql``}
     ${query.provider ? sql`AND provider = ${query.provider}` : sql``}
@@ -134,7 +138,8 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
   const totalErrors = totals?.total_errors ?? 0;
 
   const series: TimeseriesPoint[] = seriesRows.map((r) => ({
-    time: r.bucket.toISOString(),
+    // time_bucket() may come back as a string (not a Date) from the driver.
+    time: new Date(r.bucket).toISOString(),
     requests: r.requests,
     errors: r.errors,
     p50: r.p50,
