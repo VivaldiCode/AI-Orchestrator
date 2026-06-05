@@ -1,6 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreateProviderInput, ProviderType } from '@ai-orchestrator/shared';
+import type {
+  CreateProviderInput,
+  Provider,
+  ProviderType,
+  UpdateProviderInput,
+} from '@ai-orchestrator/shared';
 import { api } from '../lib/api';
 import { useI18n } from '../i18n';
 import { Button, Card, EmptyState, Field, Input, Select, Spinner } from '../components/ui';
@@ -67,11 +72,6 @@ export function ProvidersPage() {
       invalidate();
     },
     onError: (e: unknown) => setError(e instanceof Error ? e.message : t('providers.addError')),
-  });
-
-  const remove = useMutation({
-    mutationFn: (id: string) => api.deleteProvider(id),
-    onSuccess: invalidate,
   });
 
   const isBedrock = form.type === 'bedrock';
@@ -171,28 +171,188 @@ export function ProvidersPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {(providersQuery.data ?? []).map((p) => (
-            <Card key={p.id}>
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-slate-100">{p.name}</span>
-                <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-400">
-                  {p.type}
-                </span>
-              </div>
-              <div className="mt-2 space-y-1 text-xs text-slate-500">
-                {p.baseUrl ? <div>{p.baseUrl}</div> : null}
-                {p.region ? <div>region: {p.region}</div> : null}
-                {p.defaultModel ? <div>model: {p.defaultModel}</div> : null}
-                <div>{p.hasCredentials ? t('providers.credStored') : t('providers.noCreds')}</div>
-              </div>
-              <div className="mt-4 flex justify-end">
-                <Button variant="danger" onClick={() => remove.mutate(p.id)}>
-                  {t('providers.delete')}
-                </Button>
-              </div>
-            </Card>
+            <ProviderCard key={p.id} provider={p} />
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+interface EditForm {
+  name: string;
+  baseUrl: string;
+  region: string;
+  defaultModel: string;
+  apiKey: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+}
+
+function ProviderCard({ provider: p }: { provider: Provider }) {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['providers'] });
+  const isBedrock = p.type === 'bedrock';
+
+  const [editing, setEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [edit, setEdit] = useState<EditForm>({
+    name: p.name,
+    baseUrl: p.baseUrl ?? '',
+    region: p.region ?? '',
+    defaultModel: p.defaultModel ?? '',
+    apiKey: '',
+    accessKeyId: '',
+    secretAccessKey: '',
+  });
+
+  const save = useMutation({
+    mutationFn: (input: UpdateProviderInput) => api.updateProvider(p.id, input),
+    onSuccess: () => {
+      setEditing(false);
+      setError(null);
+      invalidate();
+    },
+    onError: (e: unknown) => setError(e instanceof Error ? e.message : t('providers.editError')),
+  });
+
+  const toggle = useMutation({
+    mutationFn: () => api.updateProvider(p.id, { enabled: !p.enabled }),
+    onSuccess: invalidate,
+  });
+
+  const remove = useMutation({
+    mutationFn: () => api.deleteProvider(p.id),
+    onSuccess: invalidate,
+  });
+
+  const submitEdit = (e: FormEvent) => {
+    e.preventDefault();
+    const input: UpdateProviderInput = { name: edit.name, defaultModel: edit.defaultModel };
+    if (isBedrock) {
+      if (edit.region) input.region = edit.region;
+      if (edit.accessKeyId) input.accessKeyId = edit.accessKeyId;
+      if (edit.secretAccessKey) input.secretAccessKey = edit.secretAccessKey;
+    } else {
+      if (edit.baseUrl) input.baseUrl = edit.baseUrl;
+      if (edit.apiKey) input.apiKey = edit.apiKey;
+    }
+    save.mutate(input);
+  };
+
+  const confirmDelete = () => {
+    if (window.confirm(t('providers.confirmDelete'))) remove.mutate();
+  };
+
+  if (editing) {
+    return (
+      <Card>
+        <form onSubmit={submitEdit} className="space-y-3">
+          <Field label={t('providers.name')}>
+            <Input
+              value={edit.name}
+              onChange={(e) => setEdit({ ...edit, name: e.target.value })}
+              required
+            />
+          </Field>
+          <Field label={t('providers.defaultModel')}>
+            <Input
+              value={edit.defaultModel}
+              onChange={(e) => setEdit({ ...edit, defaultModel: e.target.value })}
+            />
+          </Field>
+          {isBedrock ? (
+            <>
+              <Field label={t('providers.region')}>
+                <Input
+                  value={edit.region}
+                  onChange={(e) => setEdit({ ...edit, region: e.target.value })}
+                />
+              </Field>
+              <Field label={t('providers.accessKeyId')}>
+                <Input
+                  value={edit.accessKeyId}
+                  placeholder={t('providers.apiKeyKeep')}
+                  onChange={(e) => setEdit({ ...edit, accessKeyId: e.target.value })}
+                />
+              </Field>
+              <Field label={t('providers.secretAccessKey')}>
+                <Input
+                  type="password"
+                  value={edit.secretAccessKey}
+                  placeholder={t('providers.apiKeyKeep')}
+                  onChange={(e) => setEdit({ ...edit, secretAccessKey: e.target.value })}
+                />
+              </Field>
+            </>
+          ) : (
+            <>
+              <Field label={t('providers.baseUrl')}>
+                <Input
+                  value={edit.baseUrl}
+                  placeholder="https://api.openai.com"
+                  onChange={(e) => setEdit({ ...edit, baseUrl: e.target.value })}
+                />
+              </Field>
+              <Field label={t('providers.apiKey')}>
+                <Input
+                  type="password"
+                  value={edit.apiKey}
+                  placeholder={t('providers.apiKeyKeep')}
+                  onChange={(e) => setEdit({ ...edit, apiKey: e.target.value })}
+                />
+              </Field>
+            </>
+          )}
+          {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+              {t('providers.cancel')}
+            </Button>
+            <Button type="submit" disabled={save.isPending}>
+              {save.isPending ? t('providers.saving') : t('providers.save')}
+            </Button>
+          </div>
+        </form>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className={p.enabled ? undefined : 'opacity-60'}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-medium text-slate-100">{p.name}</span>
+        <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-400">{p.type}</span>
+      </div>
+      <div className="mt-2 flex items-center gap-2 text-xs">
+        <span
+          className={
+            p.enabled
+              ? 'inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-emerald-400'
+              : 'inline-flex items-center gap-1 rounded-full bg-slate-700/40 px-2 py-0.5 text-slate-400'
+          }
+        >
+          ● {p.enabled ? t('providers.enabled') : t('providers.disabled')}
+        </span>
+      </div>
+      <div className="mt-2 space-y-1 text-xs text-slate-500">
+        {p.baseUrl ? <div>{p.baseUrl}</div> : null}
+        {p.region ? <div>region: {p.region}</div> : null}
+        {p.defaultModel ? <div>model: {p.defaultModel}</div> : null}
+        <div>{p.hasCredentials ? t('providers.credStored') : t('providers.noCreds')}</div>
+      </div>
+      <div className="mt-4 flex flex-wrap justify-end gap-2">
+        <Button variant="ghost" onClick={() => toggle.mutate()} disabled={toggle.isPending}>
+          {p.enabled ? t('providers.disable') : t('providers.enable')}
+        </Button>
+        <Button variant="ghost" onClick={() => setEditing(true)}>
+          {t('providers.edit')}
+        </Button>
+        <Button variant="danger" onClick={confirmDelete} disabled={remove.isPending}>
+          {t('providers.delete')}
+        </Button>
+      </div>
+    </Card>
   );
 }

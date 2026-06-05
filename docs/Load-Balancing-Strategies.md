@@ -44,6 +44,14 @@ If the chosen node refuses the connection or returns a 5xx **before any response
 sent**, the dispatcher transparently retries another node, up to `failoverRetries` times. Once
 streaming has begun, the response is committed to that node.
 
+## Cloud overflow (spillover)
+
+A node's **max concurrency** also acts as its capacity gate for overflow: when _every_ candidate
+node is at or above its max concurrency (or none are healthy), and **Cloud overflow** is enabled,
+the request is sent to a configured cloud provider instead of queueing on busy nodes. With
+overflow off, behaviour is unchanged (requests still queue on the nodes). See
+[Adding Providers → Cloud overflow](Adding-Providers.md).
+
 ## Health & status
 
 Each node is pinged every `HEALTHCHECK_INTERVAL_MS` (`GET /api/version` + `/api/tags`):

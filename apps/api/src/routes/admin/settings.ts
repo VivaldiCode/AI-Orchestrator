@@ -31,6 +31,8 @@ export function registerSettingsRoutes(app: FastifyInstance): void {
           triageEnabled: next.triageEnabled,
           triageModel: next.triageModel,
           maxToolCalls: next.maxToolCalls,
+          cloudOverflow: next.cloudOverflow,
+          cloudOverflowProviderId: next.cloudOverflowProviderId,
           updatedAt: new Date(),
         })
         .where(eq(settingsTable.id, 1));

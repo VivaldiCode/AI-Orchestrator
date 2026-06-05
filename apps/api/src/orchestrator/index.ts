@@ -1,6 +1,7 @@
 import type { Settings } from '@ai-orchestrator/shared';
 import { config } from '../config/index';
 import type { DB } from '../db/client';
+import type { ProviderManager } from '../providers/manager';
 import { settings as settingsTable } from '../db/schema';
 import { nowIso } from '../lib/ids';
 import { logger } from '../lib/logger';
@@ -18,6 +19,8 @@ export class Orchestrator {
   readonly dispatcher: Dispatcher;
   private readonly health: HealthChecker;
   private settings: Settings;
+  /** Set after construction (server.ts) so the dispatcher can spill to cloud. */
+  private providerManager: ProviderManager | null = null;
 
   constructor(private readonly db: DB) {
     this.registry = new NodeRegistry(db);
@@ -32,8 +35,16 @@ export class Orchestrator {
       triageEnabled: false,
       triageModel: '',
       maxToolCalls: 5,
+      cloudOverflow: false,
+      cloudOverflowProviderId: '',
     };
-    this.dispatcher = new Dispatcher(this.registry, this.hub, this.recorder, () => this.settings);
+    this.dispatcher = new Dispatcher(
+      this.registry,
+      this.hub,
+      this.recorder,
+      () => this.settings,
+      () => this.providerManager,
+    );
     this.health = new HealthChecker(
       this.registry,
       this.hub,
@@ -53,6 +64,11 @@ export class Orchestrator {
 
   setSettings(s: Settings): void {
     this.settings = s;
+  }
+
+  /** Provide the provider manager so the dispatcher can overflow to the cloud. */
+  setProviderManager(pm: ProviderManager): void {
+    this.providerManager = pm;
   }
 
   /** Load persisted state and begin health checks. */
@@ -86,6 +102,8 @@ export class Orchestrator {
           triageEnabled: row.triageEnabled,
           triageModel: row.triageModel,
           maxToolCalls: row.maxToolCalls,
+          cloudOverflow: row.cloudOverflow,
+          cloudOverflowProviderId: row.cloudOverflowProviderId,
         };
       }
     } catch (err) {

@@ -142,6 +142,17 @@ export const pt: Dict = {
   'providers.noCreds': '⚠ sem credenciais',
   'providers.loading': 'Carregando provedores…',
   'providers.delete': 'Excluir',
+  'providers.edit': 'Editar',
+  'providers.save': 'Guardar',
+  'providers.saving': 'Guardando…',
+  'providers.cancel': 'Cancelar',
+  'providers.enabled': 'Ativo',
+  'providers.disabled': 'Inativo',
+  'providers.enable': 'Ativar',
+  'providers.disable': 'Desativar',
+  'providers.editError': 'Falha ao atualizar o provedor',
+  'providers.apiKeyKeep': 'Deixe em branco para manter a chave atual',
+  'providers.confirmDelete': 'Remover este provedor? Esta ação não pode ser desfeita.',
 
   // analytics
   'analytics.title': 'Análises',
@@ -318,6 +329,12 @@ export const pt: Dict = {
     'Triagem (opt-in): aplica uma Skill + anuncia ferramentas MCP antes de rotear',
   'settings.triageModel': 'Modelo da triagem (opcional, sobrepõe o modelo pedido)',
   'settings.maxToolCalls': 'Máx. de chamadas de ferramenta',
+  'settings.cloudOverflow':
+    'Overflow para a nuvem: quando todos os nós estão ocupados (em curso ≥ concorrência máx.), encaminha as requisições para um provedor de nuvem',
+  'settings.cloudOverflowProvider': 'Provedor de overflow',
+  'settings.cloudOverflowAuto': 'Automático (1º provedor elegível)',
+  'settings.cloudOverflowHint':
+    'Apenas provedores compatíveis com OpenAI, com chave de API e um modelo padrão, são elegíveis. O modelo padrão é usado nas requisições encaminhadas.',
   'settings.saveButton': 'Salvar configurações',
   'settings.savingButton': 'Salvando…',
   'settings.saved': 'Salvo ✓',

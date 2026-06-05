@@ -10,8 +10,14 @@ export function SettingsPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
   const settingsQuery = useQuery({ queryKey: ['settings'], queryFn: api.getSettings });
+  const providersQuery = useQuery({ queryKey: ['providers'], queryFn: api.listProviders });
   const [form, setForm] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const OPENAI_FAMILY = ['openai', 'xai', 'openai-compatible', 'mistral', 'google'];
+  const overflowEligible = (providersQuery.data ?? []).filter(
+    (p) => p.enabled && OPENAI_FAMILY.includes(p.type) && p.hasCredentials && p.defaultModel,
+  );
 
   useEffect(() => {
     if (settingsQuery.data) setForm(settingsQuery.data);
@@ -122,6 +128,36 @@ export function SettingsPage() {
                   className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-concert-500"
                 />
               </Field>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="border-t border-slate-800 pt-5">
+          <label className="flex items-start gap-3 text-sm text-slate-200">
+            <input
+              type="checkbox"
+              checked={form.cloudOverflow}
+              onChange={(e) => setForm({ ...form, cloudOverflow: e.target.checked })}
+              className="mt-0.5 h-4 w-4 accent-concert-500"
+            />
+            {t('settings.cloudOverflow')}
+          </label>
+          {form.cloudOverflow ? (
+            <div className="mt-4 space-y-2">
+              <Field label={t('settings.cloudOverflowProvider')}>
+                <Select
+                  value={form.cloudOverflowProviderId}
+                  onChange={(e) => setForm({ ...form, cloudOverflowProviderId: e.target.value })}
+                >
+                  <option value="">{t('settings.cloudOverflowAuto')}</option>
+                  {overflowEligible.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.type})
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <p className="text-xs text-slate-500">{t('settings.cloudOverflowHint')}</p>
             </div>
           ) : null}
         </div>

@@ -13,6 +13,8 @@ const BASE: Settings = {
   triageEnabled: false,
   triageModel: '',
   maxToolCalls: 5,
+  cloudOverflow: false,
+  cloudOverflowProviderId: '',
 };
 
 interface SkillStub {

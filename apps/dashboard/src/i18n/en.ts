@@ -140,6 +140,17 @@ export const en = {
   'providers.noCreds': '⚠ no credentials',
   'providers.loading': 'Loading providers…',
   'providers.delete': 'Delete',
+  'providers.edit': 'Edit',
+  'providers.save': 'Save',
+  'providers.saving': 'Saving…',
+  'providers.cancel': 'Cancel',
+  'providers.enabled': 'Enabled',
+  'providers.disabled': 'Disabled',
+  'providers.enable': 'Enable',
+  'providers.disable': 'Disable',
+  'providers.editError': 'Failed to update provider',
+  'providers.apiKeyKeep': 'Leave blank to keep the current key',
+  'providers.confirmDelete': 'Remove this provider? This cannot be undone.',
 
   // analytics
   'analytics.title': 'Analytics',
@@ -315,6 +326,12 @@ export const en = {
   'settings.triageEnabled': 'Triage (opt-in): apply a Skill + advertise MCP tools before routing',
   'settings.triageModel': 'Triage model (optional, overrides the requested model)',
   'settings.maxToolCalls': 'Max tool calls',
+  'settings.cloudOverflow':
+    'Cloud overflow: when every node is busy (in-flight ≥ max concurrency), spill requests to a cloud provider',
+  'settings.cloudOverflowProvider': 'Overflow provider',
+  'settings.cloudOverflowAuto': 'Auto (first eligible provider)',
+  'settings.cloudOverflowHint':
+    'Only OpenAI-compatible providers with an API key and a default model are eligible. The default model is used for spilled requests.',
   'settings.saveButton': 'Save settings',
   'settings.savingButton': 'Saving…',
   'settings.saved': 'Saved ✓',

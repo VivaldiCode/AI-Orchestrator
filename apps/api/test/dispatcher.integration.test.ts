@@ -80,6 +80,8 @@ describe('Dispatcher (integration with mock Ollama)', () => {
     triageEnabled: false,
     triageModel: '',
     maxToolCalls: 5,
+    cloudOverflow: false,
+    cloudOverflowProviderId: '',
   };
   const recorder = { record: async () => {} } as unknown as AnalyticsRecorder;
 
