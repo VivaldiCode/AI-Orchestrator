@@ -1,23 +1,44 @@
-# Native Agents (.deb / .exe / .app) — Plan
+# Native Agents (.deb / .exe / .app)
 
-> **Status: planned.** The [node agent](Node-Agent.md) already exists today as a dependency-free
-> script (`apps/agent/agent.mjs`) you run with Node. This page describes packaging it as **native,
-> double-clickable installers** per OS so non-technical operators can add a Mac/PC/Linux box without
-> touching a terminal. Design contract; not shipped yet.
+> **Status: implemented.** The [node agent](Node-Agent.md) ships as a self-contained native binary
+> per OS — **no Node install required**. It's the same dependency-free agent
+> (`apps/agent/agent.cjs`), baked into the Node runtime via **SEA** (Single Executable Application)
+> and packaged as a Debian `.deb`, a macOS `.app`/`.pkg`, and a Windows `.zip` (exe + startup task).
+> Cross-OS binaries are built by CI; the macOS path is verified locally.
 
 ## Why
 
-Adding a node currently means: install Node, copy the script, run it, open a port. A native agent
-collapses that to **download → install → enter the orchestrator URL**. Same telemetry, friendlier
-on-ramp.
+Adding a node otherwise means: install Node, copy the script, run it, keep it running. A native
+agent collapses that to **download → install → set port/token**. Same telemetry, friendlier on-ramp.
+
+## Build & install
+
+Build the binary for your current OS (fetches `postject` once via npx; nothing is added to the
+project's dependencies), then package it:
+
+```bash
+cd apps/agent
+node build.mjs                 # → build/ai-orchestrator-agent-<os>-<arch>
+bash packaging/deb.sh          # Linux  → build/ai-orchestrator-agent_<v>_<arch>.deb
+bash packaging/macos-app.sh    # macOS  → build/AI Orchestrator Agent.app (+ .pkg)
+pwsh packaging/windows.ps1     # Windows → build/ai-orchestrator-agent-<v>-win-<arch>.zip
+```
+
+Each package installs the binary as a background service that starts on boot — **systemd** (Linux),
+**launchd** (macOS), a **Scheduled Task** (Windows) — and reads its config (`port`, `host`, `token`)
+from `agent.config.json` next to the binary (or `$AGENT_CONFIG`, or env vars). Then register the
+node in the dashboard and set its **Agent port**.
+
+Releases attach prebuilt, checksummed artifacts for all three OSes (see the
+`release-agents` workflow), so most operators just download and install.
 
 ## Targets
 
-| OS      | Artifact          | Mechanism                                                   |
-| ------- | ----------------- | ----------------------------------------------------------- |
-| Windows | `.exe` installer  | Node **SEA** (Single Executable App) + service via `sc.exe` |
-| macOS   | `.app` (+ `.pkg`) | SEA inside an `.app` bundle; `launchd` LaunchAgent          |
-| Linux   | `.deb`            | SEA binary + **systemd** unit (Debian/Ubuntu family)        |
+| OS      | Artifact          | Mechanism                                                                 |
+| ------- | ----------------- | ------------------------------------------------------------------------- |
+| Windows | `.exe` (zip)      | Node **SEA** exe + a **Scheduled Task** (works without a service wrapper) |
+| macOS   | `.app` (+ `.pkg`) | SEA inside an `.app` bundle; `launchd` LaunchAgent                        |
+| Linux   | `.deb`            | SEA binary + **systemd** unit (Debian/Ubuntu family)                      |
 
 > Linux is **Debian-based (`.deb`) only** for the first release, per project scope. RPM/others can
 > follow if there's demand.
@@ -25,8 +46,10 @@ on-ramp.
 ## Build approach — Node SEA
 
 Node 24 ships [Single Executable Applications](https://nodejs.org/api/single-executable.html): bake
-`agent.mjs` into the Node runtime to get one self-contained binary — **no system Node required**,
-consistent with our zero-runtime-dependency stance ([Security](Security.md)).
+`agent.cjs` (CommonJS — SEA mains must be CJS) into the Node runtime to get one self-contained
+binary — **no system Node required**, consistent with our zero-runtime-dependency stance
+([Security](Security.md)). `apps/agent/build.mjs` automates blob creation, injection (via the
+official `postject`, fetched ephemerally) and macOS signing.
 
 ```
 node --experimental-sea-config sea-config.json   # blob
@@ -35,8 +58,8 @@ node --experimental-sea-config sea-config.json   # blob
 
 Per-OS wrapping:
 
-- **Windows:** wrap the binary in an installer (e.g. Inno Setup/MSIX), register a Windows Service,
-  sign with an Authenticode cert.
+- **Windows:** ship the exe + a Scheduled Task (`install.ps1`) that runs it at startup as SYSTEM;
+  an Inno Setup/MSIX installer + Authenticode signing are wired in CI when a cert is provided.
 - **macOS:** place the binary in `Agent.app/Contents/MacOS`, ship a `launchd` plist, **codesign +
   notarize** (required by Gatekeeper).
 - **Linux:** `.deb` with the binary in `/usr/lib/ai-orchestrator-agent/`, a `systemd` service, and
@@ -44,13 +67,15 @@ Per-OS wrapping:
 
 ## Configuration
 
-First launch (or installer prompt) collects:
+The agent is **passive** — the orchestrator polls it — so it only needs:
 
-- **Orchestrator URL** (where to be reached from / health-check origin).
-- **Agent port** (default `4127`) and optional **`NODE_AGENT_TOKEN`** (shared secret; the
-  orchestrator already supports authenticating to the agent — see [Node Agent](Node-Agent.md)).
+- **Port** (default `4127`) and **host** to bind.
+- An optional **token**; when set, `/stats` requires `Authorization: Bearer <token>`. Put the same
+  value in the orchestrator's `NODE_AGENT_TOKEN` (see [Node Agent](Node-Agent.md)).
 
-Stored in an OS-appropriate config dir; the service reads it on start.
+Resolved (in order) from env vars, `$AGENT_CONFIG`, or an `agent.config.json` next to the binary —
+the packages install a default one you can edit. Then register the node and set its **Agent port**
+in the dashboard.
 
 ## Security
 

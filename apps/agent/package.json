@@ -6,10 +6,11 @@
   "description": "Dependency-free system-metrics agent for AI Orchestrator nodes (macOS/Windows/Linux).",
   "license": "MIT",
   "bin": {
-    "ai-orchestrator-agent": "agent.mjs"
+    "ai-orchestrator-agent": "agent.cjs"
   },
   "scripts": {
-    "start": "node agent.mjs"
+    "start": "node agent.cjs",
+    "build": "node build.mjs"
   },
   "engines": {
     "node": ">=18"

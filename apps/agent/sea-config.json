@@ -1,0 +1,5 @@
+{
+  "main": "agent.cjs",
+  "output": "build/agent.blob",
+  "disableExperimentalSEAWarning": true
+}
