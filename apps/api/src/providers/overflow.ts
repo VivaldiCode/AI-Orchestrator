@@ -290,6 +290,7 @@ export async function runOverflow(
     provider: provider.type,
     model: reportModel,
     endpoint: opts.endpoint,
+    clientIp: opts.clientIp ?? null,
     at: nowIso(),
   });
 
@@ -311,6 +312,7 @@ export async function runOverflow(
       latencyMs,
       promptTokens,
       completionTokens,
+      clientIp: opts.clientIp ?? null,
       at: nowIso(),
     });
     await recorder.record({

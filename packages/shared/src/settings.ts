@@ -43,6 +43,12 @@ export const settingsSchema = z.object({
    * provider that has both an API key and a default model configured.
    */
   cloudOverflowProviderId: z.string().max(100).default(''),
+  /**
+   * Privacy mode: force ALL inference to stay on the local cluster — never use
+   * cloud providers or cloud overflow. Equivalent to marking every request
+   * local-only. Per-request opt-in is also available (header/body flag).
+   */
+  privacyMode: z.boolean().default(false),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 

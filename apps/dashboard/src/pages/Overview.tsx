@@ -64,7 +64,13 @@ function NodeLiveCard({ node }: { node: NodeWithRuntime }) {
 }
 
 export function OverviewPage() {
-  const { t, fmt } = useI18n();
+  const { t, fmt, lang } = useI18n();
+  const time = (iso: string) =>
+    new Date(iso).toLocaleTimeString(lang, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
   const nodesQuery = useQuery({
     queryKey: ['nodes'],
     queryFn: api.listNodes,
@@ -117,32 +123,62 @@ export function OverviewPage() {
           {events.length === 0 ? (
             <p className="p-5 text-sm text-slate-500">{t('overview.noRequests')}</p>
           ) : (
-            <ul className="max-h-80 divide-y divide-slate-800 overflow-auto text-sm">
-              {events.slice(0, 40).map((e, i) => (
-                <li
-                  key={`${e.id}-${e.phase}-${i}`}
-                  className="flex items-center justify-between px-4 py-2"
-                >
-                  <span className="flex items-center gap-2 truncate">
+            <ul className="max-h-96 divide-y divide-slate-800 overflow-auto text-sm">
+              {events.slice(0, 50).map((e) => {
+                const tokens =
+                  e.promptTokens != null || e.completionTokens != null
+                    ? `↑${fmt.number(e.promptTokens ?? 0)} ↓${fmt.number(e.completionTokens ?? 0)}`
+                    : null;
+                return (
+                  <li
+                    key={e.id}
+                    className="grid grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-2"
+                  >
                     <span
-                      className={cn(
-                        'h-1.5 w-1.5 rounded-full',
-                        e.phase === 'start'
-                          ? 'bg-concert-400'
-                          : (e.status ?? 0) >= 400
-                            ? 'bg-rose-400'
-                            : 'bg-emerald-400',
-                      )}
-                    />
-                    <span className="font-mono text-xs text-slate-400">{e.endpoint}</span>
-                    <span className="text-slate-300">{e.model || '—'}</span>
-                    <span className="text-xs text-slate-600">{e.provider}</span>
-                  </span>
-                  <span className="text-slate-500">
-                    {e.phase === 'end' ? fmt.latency(e.latencyMs) : '…'}
-                  </span>
-                </li>
-              ))}
+                      className="font-mono text-[11px] tabular-nums text-slate-500"
+                      title={t('overview.colTime')}
+                    >
+                      {time(e.startedAt)}
+                    </span>
+                    <span className="flex items-center gap-2 truncate">
+                      <span
+                        className={cn(
+                          'h-1.5 w-1.5 shrink-0 rounded-full',
+                          e.phase === 'start'
+                            ? 'animate-pulse bg-concert-400'
+                            : (e.status ?? 0) >= 400
+                              ? 'bg-rose-400'
+                              : 'bg-emerald-400',
+                        )}
+                      />
+                      <span className="font-mono text-xs text-slate-400">{e.endpoint}</span>
+                      <span className="truncate text-slate-300">{e.model || '—'}</span>
+                      <span className="text-xs text-slate-600">{e.provider}</span>
+                      {e.clientIp ? (
+                        <span
+                          className="font-mono text-[11px] text-slate-600"
+                          title={t('overview.colIp')}
+                        >
+                          {e.clientIp}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="flex items-center gap-3 whitespace-nowrap text-xs">
+                      {tokens ? (
+                        <span
+                          className="tabular-nums text-slate-500"
+                          title={t('overview.colTokens')}
+                        >
+                          {tokens}
+                        </span>
+                      ) : null}
+                      <span className="text-slate-500">
+                        {e.phase === 'end' ? fmt.latency(e.latencyMs) : '…'}
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </Card>

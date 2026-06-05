@@ -38,6 +38,32 @@ export function clientKeyId(req: FastifyRequest): string | null {
   return req.clientKeyId ?? null;
 }
 
+/** Originating client IP (proxy-aware via Fastify's trustProxy). */
+export function clientIpOf(req: FastifyRequest): string | null {
+  return req.ip ?? null;
+}
+
+/**
+ * Detect a per-request "keep this local" (privacy) opt-in and strip it from the
+ * body so it is never forwarded upstream. Accepts a header
+ * (`x-ai-orchestrator-local-only` / `x-local-only`) or a body flag
+ * (`local_only` or `privacy` = true).
+ */
+export function consumeLocalOnly(req: FastifyRequest): boolean {
+  const h = req.headers['x-ai-orchestrator-local-only'] ?? req.headers['x-local-only'];
+  const viaHeader = typeof h === 'string' && (h === '1' || h.toLowerCase() === 'true');
+
+  let viaBody = false;
+  const o = parseBodyJson(req);
+  if (o && (o.local_only === true || o.privacy === true)) {
+    viaBody = true;
+    delete o.local_only;
+    delete o.privacy;
+    (req as unknown as { body: Buffer }).body = Buffer.from(JSON.stringify(o));
+  }
+  return viaHeader || viaBody;
+}
+
 /** Read a string query parameter. */
 export function queryParam(req: FastifyRequest, key: string): string | null {
   const q = req.query as Record<string, unknown> | undefined;

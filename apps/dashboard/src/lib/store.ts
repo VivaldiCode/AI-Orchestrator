@@ -8,9 +8,14 @@ export interface LiveEvent {
   provider: string;
   model: string;
   endpoint: string;
+  clientIp?: string | null;
   status?: number;
   latencyMs?: number;
-  at: string;
+  promptTokens?: number | null;
+  completionTokens?: number | null;
+  /** When the request started (or, if the start was missed, when it ended). */
+  startedAt: string;
+  endedAt?: string;
 }
 
 interface RealtimeState {
@@ -45,30 +50,61 @@ export const useRealtimeStore = create<RealtimeState>((set) => ({
           };
         }
         case 'request:start': {
-          const e: LiveEvent = {
+          const entry: LiveEvent = {
             id: event.id,
             phase: 'start',
             nodeId: event.nodeId,
             provider: event.provider,
             model: event.model,
             endpoint: event.endpoint,
-            at: event.at,
+            clientIp: event.clientIp ?? null,
+            startedAt: event.at,
           };
-          return { events: [e, ...state.events].slice(0, MAX_EVENTS) };
+          // Update in place if we somehow already have this id; else prepend.
+          const exists = state.events.some((e) => e.id === event.id);
+          const events = exists
+            ? state.events.map((e) => (e.id === event.id ? { ...e, ...entry } : e))
+            : [entry, ...state.events].slice(0, MAX_EVENTS);
+          return { events };
         }
         case 'request:end': {
-          const e: LiveEvent = {
+          let found = false;
+          const events = state.events.map((e) => {
+            if (e.id !== event.id) return e;
+            found = true;
+            return {
+              ...e,
+              phase: 'end' as const,
+              nodeId: event.nodeId,
+              provider: event.provider,
+              model: event.model,
+              endpoint: event.endpoint,
+              clientIp: e.clientIp ?? event.clientIp ?? null,
+              status: event.status,
+              latencyMs: event.latencyMs,
+              promptTokens: event.promptTokens,
+              completionTokens: event.completionTokens,
+              endedAt: event.at,
+            };
+          });
+          if (found) return { events };
+          // End without a matching start (e.g. tab opened mid-flight): synthesize.
+          const entry: LiveEvent = {
             id: event.id,
             phase: 'end',
             nodeId: event.nodeId,
             provider: event.provider,
             model: event.model,
             endpoint: event.endpoint,
+            clientIp: event.clientIp ?? null,
             status: event.status,
             latencyMs: event.latencyMs,
-            at: event.at,
+            promptTokens: event.promptTokens,
+            completionTokens: event.completionTokens,
+            startedAt: event.at,
+            endedAt: event.at,
           };
-          return { events: [e, ...state.events].slice(0, MAX_EVENTS) };
+          return { events: [entry, ...state.events].slice(0, MAX_EVENTS) };
         }
         default:
           return {};

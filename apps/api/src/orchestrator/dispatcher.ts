@@ -31,6 +31,10 @@ export interface DispatchOptions {
   clientKeyId: string | null;
   /** Estimated prompt tokens, for context-window-aware routing (0/undefined = unknown). */
   estimatedTokens?: number;
+  /** Originating client IP (for the live-requests view). */
+  clientIp?: string | null;
+  /** Per-request privacy opt-in: never spill to a cloud provider. */
+  localOnly?: boolean;
 }
 
 const CONTEXT_MARGIN = 1.15; // headroom over the prompt estimate for the response
@@ -144,7 +148,10 @@ export class Dispatcher {
     // Cloud overflow: when no candidate node has spare capacity (all saturated,
     // or none healthy at all), spill to a configured cloud provider instead of
     // queueing on busy nodes. Disabled / no usable provider → unchanged below.
+    // Privacy: a per-request local-only flag or global privacy mode disables it.
+    const localOnly = opts.localOnly === true || settings.privacyMode;
     if (
+      !localOnly &&
       overflowEnabled(settings, opts.endpoint) &&
       !pool.some((n) => n.runtime.inFlight < n.maxConcurrency)
     ) {
@@ -402,6 +409,7 @@ export class Dispatcher {
       latencyMs: latency,
       promptTokens,
       completionTokens,
+      clientIp: opts.clientIp ?? null,
       at: nowIso(),
     });
     await this.recorder.record({
@@ -427,6 +435,7 @@ export class Dispatcher {
       provider: 'ollama',
       model: opts.model ?? '',
       endpoint: opts.endpoint,
+      clientIp: opts.clientIp ?? null,
       at: nowIso(),
     });
   }

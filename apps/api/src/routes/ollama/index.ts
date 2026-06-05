@@ -1,7 +1,14 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { APP_NAME, APP_VERSION } from '../../version';
 import { runTriageAgent, triageChat } from '../../orchestrator/triage';
-import { clientKeyId, parseModel, queryParam, requestTokens } from '../shared';
+import {
+  clientIpOf,
+  clientKeyId,
+  consumeLocalOnly,
+  parseModel,
+  queryParam,
+  requestTokens,
+} from '../shared';
 
 /**
  * Faithful mirror of the Ollama REST API. Inference endpoints are
@@ -13,6 +20,8 @@ export function registerOllamaRoutes(app: FastifyInstance): void {
   const pre = { preHandler: app.requireApiKey };
 
   const inference = (endpoint: string) => async (req: FastifyRequest, reply: FastifyReply) => {
+    // Strip the privacy flag from the body first (so it is never forwarded).
+    const localOnly = consumeLocalOnly(req);
     // Phase 2: autonomous tool-call loop (non-streaming chat with eligible tools).
     if (endpoint === '/api/chat' && (await runTriageAgent(app, req, reply))) return;
     await triageChat(app, req); // phase 1: enrich chat with a Skill + advertise MCP tools
@@ -20,7 +29,9 @@ export function registerOllamaRoutes(app: FastifyInstance): void {
       endpoint,
       model: parseModel(req),
       clientKeyId: clientKeyId(req),
+      clientIp: clientIpOf(req),
       estimatedTokens: requestTokens(req),
+      localOnly,
     });
   };
 
@@ -29,6 +40,7 @@ export function registerOllamaRoutes(app: FastifyInstance): void {
       endpoint,
       model: parseModel(req),
       clientKeyId: clientKeyId(req),
+      clientIp: clientIpOf(req),
       estimatedTokens: requestTokens(req),
     });
 

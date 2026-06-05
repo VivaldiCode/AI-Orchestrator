@@ -8,7 +8,11 @@ timestamp, node, provider, model, endpoint, status, latency, and token counts.
 - **Totals** — requests, error rate, average and p95 latency
 - **Time series** — requests and errors per bucket (`time_bucket`)
 - **Percentiles** — p50 / p95 / p99 latency (`percentile_cont`)
-- **Breakdowns** — by node, model, and provider
+- **Breakdowns / allocation** — share of requests **by node, model, and provider** (with a
+  percentage bar so you can see how load is distributed). Node rows show the node name;
+  provider-served requests (cloud / overflow) appear under the provider with no node.
+- **Live** — the Analytics page auto-refreshes every 5s; the Overview **Live requests** feed
+  shows each call in real time with its timestamp, client IP, and token counts.
 
 ## Querying
 

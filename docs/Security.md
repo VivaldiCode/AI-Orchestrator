@@ -21,6 +21,20 @@ are never logged (pino redaction) nor returned by the API (only `hasCredentials`
 - Every request body and query is validated with **Zod**.
 - Outbound auth headers from clients are stripped before proxying to nodes.
 
+## Privacy / local-only
+
+When you don't want certain prompts to ever leave your hardware, you can force a request to stay
+on the **local Ollama cluster** — no cloud providers, no cloud overflow:
+
+- **Per request** — send the header `x-ai-orchestrator-local-only: 1` (or `x-local-only: true`),
+  or add `"local_only": true` (alias `"privacy": true`) to the JSON body. The flag is stripped
+  before the request is forwarded, so the upstream node never sees it.
+- **Globally** — enable **Settings → Privacy mode** to treat every request as local-only.
+
+Effect: cloud overflow is disabled for that request, and a model that resolves to a cloud
+provider on `/v1` is refused with `403` (rather than silently sending your data to the cloud). If
+no local node is available, the request fails closed (`503`) instead of falling back to the cloud.
+
 ## Supply chain
 
 - Audited, permissively licensed dependencies; `node:crypto`/`fetch` preferred over new deps.

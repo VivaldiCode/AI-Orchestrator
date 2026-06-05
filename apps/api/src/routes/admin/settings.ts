@@ -33,6 +33,7 @@ export function registerSettingsRoutes(app: FastifyInstance): void {
           maxToolCalls: next.maxToolCalls,
           cloudOverflow: next.cloudOverflow,
           cloudOverflowProviderId: next.cloudOverflowProviderId,
+          privacyMode: next.privacyMode,
           updatedAt: new Date(),
         })
         .where(eq(settingsTable.id, 1));

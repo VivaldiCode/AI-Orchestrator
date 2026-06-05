@@ -20,8 +20,17 @@ const RANGES: Record<string, { ms: number; bucket: Bucket }> = {
   '7d': { ms: 7 * 24 * 60 * 60 * 1000, bucket: '1h' },
 };
 
-function BreakdownTable({ title, items }: { title: string; items: BreakdownItem[] }) {
+function Breakdown({
+  title,
+  items,
+  labelFor,
+}: {
+  title: string;
+  items: BreakdownItem[];
+  labelFor?: (key: string) => string;
+}) {
   const { t, fmt } = useI18n();
+  const total = items.reduce((a, i) => a + i.requests, 0) || 1;
   return (
     <Card className="p-0">
       <div className="border-b border-slate-800 px-4 py-3 text-sm font-medium text-slate-200">
@@ -30,21 +39,31 @@ function BreakdownTable({ title, items }: { title: string; items: BreakdownItem[
       {items.length === 0 ? (
         <p className="px-4 py-3 text-sm text-slate-500">{t('analytics.noData')}</p>
       ) : (
-        <table className="w-full text-sm">
-          <tbody className="divide-y divide-slate-800">
-            {items.map((item) => (
-              <tr key={item.key}>
-                <td className="px-4 py-2 text-slate-300">{item.key}</td>
-                <td className="px-4 py-2 text-right text-slate-400">
-                  {t('analytics.reqUnit', { count: fmt.number(item.requests) })}
-                </td>
-                <td className="px-4 py-2 text-right text-slate-500">
-                  {fmt.latency(item.avgLatencyMs)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <ul className="divide-y divide-slate-800">
+          {items.map((item) => {
+            const share = item.requests / total;
+            return (
+              <li key={item.key} className="px-4 py-2.5">
+                <div className="flex items-center justify-between gap-2 text-sm">
+                  <span className="truncate text-slate-300">
+                    {labelFor ? labelFor(item.key) : item.key}
+                  </span>
+                  <span className="shrink-0 tabular-nums text-slate-400">{fmt.percent(share)}</span>
+                </div>
+                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded bg-slate-800">
+                  <div
+                    className="h-full rounded bg-concert-500"
+                    style={{ width: `${Math.round(share * 100)}%` }}
+                  />
+                </div>
+                <div className="mt-1 flex justify-between text-[11px] text-slate-500">
+                  <span>{t('analytics.reqUnit', { count: fmt.number(item.requests) })}</span>
+                  <span>{fmt.latency(item.avgLatencyMs)}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </Card>
   );
@@ -62,8 +81,16 @@ export function AnalyticsPage() {
       const from = new Date(to.getTime() - ms);
       return api.analytics({ from: from.toISOString(), to: to.toISOString(), bucket });
     },
-    refetchInterval: 30_000,
+    refetchInterval: 5_000,
   });
+
+  // Map node ids → names for the per-node allocation breakdown.
+  const nodesQuery = useQuery({ queryKey: ['nodes'], queryFn: api.listNodes });
+  const nodeName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const n of nodesQuery.data ?? []) m.set(n.id, n.name);
+    return (key: string) => m.get(key) ?? (key === 'unknown' ? t('analytics.unknownNode') : key);
+  }, [nodesQuery.data, t]);
 
   const chartData = useMemo(
     () =>
@@ -144,9 +171,9 @@ export function AnalyticsPage() {
           </Card>
 
           <div className="grid gap-4 lg:grid-cols-3">
-            <BreakdownTable title={t('analytics.byNode')} items={summary.byNode} />
-            <BreakdownTable title={t('analytics.byModel')} items={summary.byModel} />
-            <BreakdownTable title={t('analytics.byProvider')} items={summary.byProvider} />
+            <Breakdown title={t('analytics.byNode')} items={summary.byNode} labelFor={nodeName} />
+            <Breakdown title={t('analytics.byModel')} items={summary.byModel} />
+            <Breakdown title={t('analytics.byProvider')} items={summary.byProvider} />
           </div>
         </>
       ) : null}

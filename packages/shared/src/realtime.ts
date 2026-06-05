@@ -29,6 +29,8 @@ export const realtimeEventSchema = z.discriminatedUnion('type', [
     provider: z.string(),
     model: z.string(),
     endpoint: z.string(),
+    /** Client IP that issued the request (proxy-aware), if known. */
+    clientIp: z.string().nullish(),
     at: z.string(),
   }),
   z.object({
@@ -42,6 +44,8 @@ export const realtimeEventSchema = z.discriminatedUnion('type', [
     latencyMs: z.number(),
     promptTokens: z.number().nullable(),
     completionTokens: z.number().nullable(),
+    /** Client IP that issued the request (proxy-aware), if known. */
+    clientIp: z.string().nullish(),
     at: z.string(),
   }),
 ]);
