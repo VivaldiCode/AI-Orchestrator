@@ -20,6 +20,8 @@ export const users = pgTable('users', {
   username: text('username').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   role: text('role').notNull().default('admin'),
+  /** Optional explicit permission override; null = derive from role. */
+  permissions: jsonb('permissions').$type<string[]>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -44,6 +46,7 @@ export const nodes = pgTable('nodes', {
   maxConcurrency: integer('max_concurrency').notNull().default(4),
   tags: jsonb('tags').notNull().$type<string[]>().default([]),
   agentPort: integer('agent_port'),
+  enabledModels: jsonb('enabled_models').$type<string[]>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -75,6 +78,7 @@ export const settings = pgTable('settings', {
   id: smallint('id').primaryKey().default(1),
   strategy: text('strategy').notNull().default('least-connections'),
   modelAware: boolean('model_aware').notNull().default(true),
+  contextAware: boolean('context_aware').notNull().default(true),
   autoPull: boolean('auto_pull').notNull().default(false),
   failoverRetries: integer('failover_retries').notNull().default(2),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

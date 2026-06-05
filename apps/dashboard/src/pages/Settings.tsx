@@ -65,6 +65,16 @@ export function SettingsPage() {
         <label className="flex items-center gap-3 text-sm text-slate-200">
           <input
             type="checkbox"
+            checked={form.contextAware}
+            onChange={(e) => setForm({ ...form, contextAware: e.target.checked })}
+            className="h-4 w-4 accent-concert-500"
+          />
+          {t('settings.contextAware')}
+        </label>
+
+        <label className="flex items-center gap-3 text-sm text-slate-200">
+          <input
+            type="checkbox"
             checked={form.autoPull}
             onChange={(e) => setForm({ ...form, autoPull: e.target.checked })}
             className="h-4 w-4 accent-concert-500"

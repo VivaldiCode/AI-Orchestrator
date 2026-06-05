@@ -20,6 +20,7 @@ export function registerSettingsRoutes(app: FastifyInstance): void {
       .set({
         strategy: next.strategy,
         modelAware: next.modelAware,
+        contextAware: next.contextAware,
         autoPull: next.autoPull,
         failoverRetries: next.failoverRetries,
         updatedAt: new Date(),

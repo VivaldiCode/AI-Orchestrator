@@ -56,6 +56,7 @@ function fakeRow(id: string, port: number): NodeRow {
     maxConcurrency: 4,
     tags: [],
     agentPort: null,
+    enabledModels: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   } as NodeRow;
@@ -73,6 +74,7 @@ describe('Dispatcher (integration with mock Ollama)', () => {
   const settings: Settings = {
     strategy: 'round-robin',
     modelAware: true,
+    contextAware: true,
     autoPull: false,
     failoverRetries: 2,
   };

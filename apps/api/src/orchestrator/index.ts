@@ -26,6 +26,7 @@ export class Orchestrator {
     this.settings = {
       strategy: config.defaultStrategy,
       modelAware: true,
+      contextAware: true,
       autoPull: false,
       failoverRetries: config.failoverRetries,
     };
@@ -76,6 +77,7 @@ export class Orchestrator {
         this.settings = {
           strategy: row.strategy as Settings['strategy'],
           modelAware: row.modelAware,
+          contextAware: row.contextAware,
           autoPull: row.autoPull,
           failoverRetries: row.failoverRetries,
         };
