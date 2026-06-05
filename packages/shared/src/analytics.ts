@@ -19,13 +19,25 @@ export const timeseriesPointSchema = z.object({
   time: z.string(),
   requests: z.number(),
   errors: z.number(),
+  avgLatency: z.number().nullable(),
+  minLatency: z.number().nullable(),
+  maxLatency: z.number().nullable(),
   p50: z.number().nullable(),
   p95: z.number().nullable(),
   p99: z.number().nullable(),
   promptTokens: z.number(),
   completionTokens: z.number(),
+  totalTokens: z.number(),
 });
 export type TimeseriesPoint = z.infer<typeof timeseriesPointSchema>;
+
+/**
+ * One time bucket with a per-node request count (`time` plus dynamic node keys),
+ * for the stacked "requests by machine" chart. Node keys are node ids (the value
+ * `cloud` groups provider/overflow requests that have no node).
+ */
+export const nodeSeriesPointSchema = z.object({ time: z.string() }).catchall(z.number());
+export type NodeSeriesPoint = z.infer<typeof nodeSeriesPointSchema>;
 
 export const breakdownItemSchema = z.object({
   key: z.string(),
@@ -40,13 +52,26 @@ export const analyticsSummarySchema = z.object({
   totalRequests: z.number(),
   totalErrors: z.number(),
   errorRate: z.number(),
+  /** Average requests per minute across the window. */
+  requestsPerMinute: z.number(),
   avgLatencyMs: z.number().nullable(),
+  minLatencyMs: z.number().nullable(),
+  maxLatencyMs: z.number().nullable(),
+  p50LatencyMs: z.number().nullable(),
   p95LatencyMs: z.number().nullable(),
+  p99LatencyMs: z.number().nullable(),
   promptTokens: z.number(),
   completionTokens: z.number(),
+  totalTokens: z.number(),
+  avgTokensPerRequest: z.number(),
   byNode: z.array(breakdownItemSchema),
   byModel: z.array(breakdownItemSchema),
   byProvider: z.array(breakdownItemSchema),
+  byEndpoint: z.array(breakdownItemSchema),
   series: z.array(timeseriesPointSchema),
+  /** Per-bucket request counts split by node (for the stacked machine chart). */
+  nodeSeries: z.array(nodeSeriesPointSchema),
+  /** The node keys present in `nodeSeries` (node ids, or `cloud`). */
+  nodeKeys: z.array(z.string()),
 });
 export type AnalyticsSummary = z.infer<typeof analyticsSummarySchema>;
