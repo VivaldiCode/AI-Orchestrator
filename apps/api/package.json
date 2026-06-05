@@ -26,6 +26,7 @@
     "@fastify/websocket": "11.2.0",
     "drizzle-orm": "0.45.2",
     "fastify": "5.8.5",
+    "jose": "6.2.3",
     "openai": "6.42.0",
     "pino": "10.3.1",
     "postgres": "3.4.9",

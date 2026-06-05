@@ -39,6 +39,8 @@ export class AuthService {
   async login(username: string, password: string): Promise<UserRow> {
     const [row] = await this.db.select().from(users).where(eq(users.username, username)).limit(1);
     if (!row) throw unauthorized('Invalid credentials.');
+    // SSO-only accounts have no local password — they must sign in via their provider.
+    if (!row.passwordHash) throw unauthorized('This account uses single sign-on.');
     const ok = await verifyPassword(password, row.passwordHash);
     if (!ok) throw unauthorized('Invalid credentials.');
     return row;

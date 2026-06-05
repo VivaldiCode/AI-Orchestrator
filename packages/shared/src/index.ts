@@ -5,5 +5,6 @@ export * from './nodes';
 export * from './providers';
 export * from './settings';
 export * from './auth';
+export * from './oauth';
 export * from './analytics';
 export * from './realtime';

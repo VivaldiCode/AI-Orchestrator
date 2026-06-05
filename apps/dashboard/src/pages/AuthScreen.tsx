@@ -1,4 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import type { PublicOAuthProvider } from '@ai-orchestrator/shared';
+import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../i18n';
 import { Logo } from '../components/Logo';
@@ -12,8 +14,24 @@ export function AuthScreen({ mode }: { mode: 'login' | 'setup' }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [providers, setProviders] = useState<PublicOAuthProvider[]>([]);
 
   const isSetup = mode === 'setup';
+
+  useEffect(() => {
+    let on = true;
+    api
+      .listPublicOAuthProviders()
+      .then((p) => {
+        if (on) setProviders(p);
+      })
+      .catch(() => {
+        /* SSO is optional; ignore when unavailable */
+      });
+    return () => {
+      on = false;
+    };
+  }, []);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -71,6 +89,30 @@ export function AuthScreen({ mode }: { mode: 'login' | 'setup' }) {
             {busy ? t('auth.pleaseWait') : isSetup ? t('auth.createAccount') : t('auth.signIn')}
           </Button>
         </form>
+
+        {providers.length > 0 ? (
+          <div className="mt-6">
+            <div className="mb-3 flex items-center gap-3 text-xs text-slate-500">
+              <span className="h-px flex-1 bg-slate-800" />
+              {t('auth.orContinueWith')}
+              <span className="h-px flex-1 bg-slate-800" />
+            </div>
+            <div className="space-y-2">
+              {providers.map((p) => (
+                <Button
+                  key={p.id}
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    window.location.href = api.oauthStartUrl(p.id);
+                  }}
+                >
+                  {t('auth.continueWith', { provider: p.displayName })}
+                </Button>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </Card>
     </div>
   );

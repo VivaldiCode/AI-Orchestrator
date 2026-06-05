@@ -28,26 +28,27 @@ function toDto(n: ManagedNode): NodeWithRuntime {
 
 export function registerNodeRoutes(app: FastifyInstance): void {
   const reg = app.orchestrator.registry;
-  const admin = { preHandler: app.requireAdmin };
+  const read = { preHandler: app.requirePermission('nodes:read') };
+  const write = { preHandler: app.requirePermission('nodes:write') };
 
-  app.get('/nodes', admin, async (_req, reply) => {
+  app.get('/nodes', read, async (_req, reply) => {
     return reply.send(reg.list().map(toDto));
   });
 
-  app.post('/nodes', admin, async (req, reply) => {
+  app.post('/nodes', write, async (req, reply) => {
     const input = parseWith(createNodeSchema, req.body);
     const [row] = await db.insert(nodes).values(input).returning();
     const managed = reg.upsert(row);
     return reply.code(201).send(toDto(managed));
   });
 
-  app.get('/nodes/:id', admin, async (req, reply) => {
+  app.get('/nodes/:id', read, async (req, reply) => {
     const node = reg.get(pathId(req.params));
     if (!node) throw notFound('Node not found.');
     return reply.send(toDto(node));
   });
 
-  app.patch('/nodes/:id', admin, async (req, reply) => {
+  app.patch('/nodes/:id', write, async (req, reply) => {
     const id = pathId(req.params);
     const patch = parseWith(updateNodeSchema, req.body);
     const [row] = await db
@@ -60,7 +61,7 @@ export function registerNodeRoutes(app: FastifyInstance): void {
     return reply.send(toDto(managed));
   });
 
-  app.delete('/nodes/:id', admin, async (req, reply) => {
+  app.delete('/nodes/:id', write, async (req, reply) => {
     const id = pathId(req.params);
     const rows = await db.delete(nodes).where(eq(nodes.id, id)).returning({ id: nodes.id });
     if (rows.length === 0) throw notFound('Node not found.');
@@ -69,7 +70,7 @@ export function registerNodeRoutes(app: FastifyInstance): void {
   });
 
   /** Live connectivity test against a node's Ollama API. */
-  app.post('/nodes/:id/test', admin, async (req, reply) => {
+  app.post('/nodes/:id/test', write, async (req, reply) => {
     const node = reg.get(pathId(req.params));
     if (!node) throw notFound('Node not found.');
     const base = nodeBaseUrl(node);

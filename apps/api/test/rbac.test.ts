@@ -49,7 +49,9 @@ describe('RBAC permission model', () => {
     });
 
     it('rejects short passwords', () => {
-      expect(createUserSchema.safeParse({ username: 'bob', password: 'short' }).success).toBe(false);
+      expect(createUserSchema.safeParse({ username: 'bob', password: 'short' }).success).toBe(
+        false,
+      );
     });
 
     it('accepts an empty partial update', () => {

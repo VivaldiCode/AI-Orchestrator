@@ -45,6 +45,7 @@ export const pt: Dict = {
   'nav.analytics': 'Análises',
   'nav.apiKeys': 'Chaves de API',
   'nav.users': 'Usuários',
+  'nav.auth': 'Autenticação',
   'nav.settings': 'Configurações',
 
   // auth
@@ -57,6 +58,8 @@ export const pt: Dict = {
   'auth.signIn': 'Entrar',
   'auth.pleaseWait': 'Aguarde…',
   'auth.error': 'Algo deu errado',
+  'auth.orContinueWith': 'ou continue com',
+  'auth.continueWith': 'Continuar com {provider}',
 
   // overview
   'overview.title': 'Visão geral',
@@ -202,6 +205,42 @@ export const pt: Dict = {
   'users.you': 'você',
   'users.permCount': '{count} permissões',
   'users.delete': 'Excluir',
+
+  // authentication / SSO
+  'sso.title': 'Autenticação (SSO)',
+  'sso.subtitle': 'Permita login com Google, Microsoft, Okta ou qualquer provedor OIDC.',
+  'sso.addProvider': 'Adicionar provedor',
+  'sso.type': 'Tipo',
+  'sso.type.google': 'Google',
+  'sso.type.microsoft': 'Microsoft',
+  'sso.type.okta': 'Okta',
+  'sso.type.oidc': 'OIDC genérico',
+  'sso.displayName': 'Nome de exibição',
+  'sso.issuer': 'URL do issuer',
+  'sso.clientId': 'Client ID',
+  'sso.clientSecret': 'Client secret',
+  'sso.scopes': 'Scopes (separados por vírgula)',
+  'sso.allowedDomains': 'Domínios de e-mail permitidos (separados por vírgula, opcional)',
+  'sso.defaultRole': 'Papel padrão para novos usuários',
+  'sso.addButton': 'Adicionar provedor',
+  'sso.addingButton': 'Adicionando…',
+  'sso.addError': 'Falha ao adicionar provedor',
+  'sso.updateError': 'Falha ao atualizar provedor',
+  'sso.deleteError': 'Falha ao excluir provedor',
+  'sso.redirectHint':
+    'Após salvar, cadastre a URL de callback por provedor (mostrada abaixo) no console do provedor. Ela precisa casar com PUBLIC_BASE_URL.',
+  'sso.loading': 'Carregando provedores…',
+  'sso.noProviders': 'Nenhum provedor SSO',
+  'sso.noProvidersHint': 'Adicione um acima para habilitar o login único.',
+  'sso.colProvider': 'Provedor',
+  'sso.colCallback': 'URL de callback',
+  'sso.colStatus': 'Status',
+  'sso.colActions': 'Ações',
+  'sso.enabledLabel': 'habilitado',
+  'sso.disabledLabel': 'desabilitado',
+  'sso.enable': 'Habilitar',
+  'sso.disable': 'Desabilitar',
+  'sso.delete': 'Excluir',
 
   // settings
   'settings.title': 'Configurações',

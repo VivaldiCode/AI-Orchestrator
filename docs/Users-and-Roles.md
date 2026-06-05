@@ -5,11 +5,11 @@ is created during [first-run setup](Getting-Started.md) and is always an **admin
 
 ## Roles
 
-| Role     | Can do                                                                              |
-| -------- | ---------------------------------------------------------------------------------- |
-| `admin`  | Everything, including managing users.                                               |
-| `editor` | Read + write on nodes, providers, settings and API keys. **Cannot** manage users.  |
-| `viewer` | Read-only across the panel.                                                         |
+| Role     | Can do                                                                            |
+| -------- | --------------------------------------------------------------------------------- |
+| `admin`  | Everything, including managing users.                                             |
+| `editor` | Read + write on nodes, providers, settings and API keys. **Cannot** manage users. |
+| `viewer` | Read-only across the panel.                                                       |
 
 > **Note:** today, new users default to **admin** (full access) — this matches the current
 > "everyone is a full operator" stage. The full permission model below is already in place so you
@@ -54,18 +54,19 @@ Two safety rails are enforced by the API:
 
 All endpoints are under `/admin` and require an admin token (gated on `users:*`):
 
-| Method   | Path                | Body                                  |
-| -------- | ------------------- | ------------------------------------- |
-| `GET`    | `/admin/users`      | —                                     |
-| `POST`   | `/admin/users`      | `{ username, password, role?, permissions? }` |
-| `PATCH`  | `/admin/users/:id`  | `{ role?, permissions?, password? }`  |
-| `DELETE` | `/admin/users/:id`  | —                                     |
+| Method   | Path               | Body                                          |
+| -------- | ------------------ | --------------------------------------------- |
+| `GET`    | `/admin/users`     | —                                             |
+| `POST`   | `/admin/users`     | `{ username, password, role?, permissions? }` |
+| `PATCH`  | `/admin/users/:id` | `{ role?, permissions?, password? }`          |
+| `DELETE` | `/admin/users/:id` | —                                             |
 
 Passwords are hashed with **scrypt** (`node:crypto`); plaintext is never stored. See
 [Security](Security.md).
 
-## Coming next
+## Single sign-on
 
-SSO via OAuth/OIDC (Google, Microsoft, Okta) is planned — see
-[Authentication & OAuth/SSO](Authentication-OAuth.md). Roles and permissions described here will
-map directly onto SSO logins.
+SSO via OAuth/OIDC (Google, Microsoft, Okta, generic OIDC) is **available** — see
+[Authentication & OAuth/SSO](Authentication-OAuth.md). The roles and permissions described here map
+directly onto SSO logins: each provider has a **default role** granted on first login, and admins
+can change any user's role afterwards on the Users page.
