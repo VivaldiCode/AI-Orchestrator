@@ -219,7 +219,11 @@ export class Dispatcher {
   ): void {
     reply.hijack();
     const res: ServerResponse = reply.raw;
-    res.writeHead(upstream.status, buildResponseHeaders(upstream.headers));
+    const outHeaders = buildResponseHeaders(upstream.headers);
+    // Expose which node served the request (handy for clients and the smoke test).
+    outHeaders['x-orchestrator-node'] = node.id;
+    outHeaders['x-orchestrator-node-name'] = node.name;
+    res.writeHead(upstream.status, outHeaders);
 
     if (!upstream.body) {
       res.end();

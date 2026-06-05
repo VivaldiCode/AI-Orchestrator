@@ -6,6 +6,7 @@ import { useRealtimeConnection } from '../lib/realtime';
 import { useRealtimeStore } from '../lib/store';
 import { Logo } from './Logo';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { ThemeToggle } from './ThemeToggle';
 import { cn } from './ui';
 
 const NAV: { to: string; key: TranslationKey; end: boolean }[] = [
@@ -15,6 +16,7 @@ const NAV: { to: string; key: TranslationKey; end: boolean }[] = [
   { to: '/analytics', key: 'nav.analytics', end: false },
   { to: '/api-keys', key: 'nav.apiKeys', end: false },
   { to: '/settings', key: 'nav.settings', end: false },
+  { to: '/help', key: 'nav.docs', end: false },
 ];
 
 export function Layout() {
@@ -44,7 +46,7 @@ export function Layout() {
                 cn(
                   'rounded-lg px-3 py-2 text-sm transition-colors',
                   isActive
-                    ? 'bg-concert-600/20 text-concert-100'
+                    ? 'bg-concert-600 text-white'
                     : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100',
                 )
               }
@@ -55,7 +57,10 @@ export function Layout() {
         </nav>
 
         <div className="mt-auto space-y-3 pt-4 text-xs text-slate-500">
-          <LanguageSwitcher />
+          <div className="flex items-center justify-between gap-2">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
           <div className="flex items-center gap-2" data-testid="realtime-status">
             <span
               className={cn('h-2 w-2 rounded-full', connected ? 'bg-emerald-400' : 'bg-slate-600')}
