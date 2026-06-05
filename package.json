@@ -57,7 +57,7 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.60.0",
-    "@types/node": "^24.0.0",
+    "@types/node": "^25.9.1",
     "@vitest/coverage-v8": "4.1.8",
     "eslint": "10.4.1",
     "globals": "17.6.0",
