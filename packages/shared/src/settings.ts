@@ -27,6 +27,12 @@ export const settingsSchema = z.object({
   autoPull: z.boolean().default(false),
   /** How many other nodes to try when the chosen one fails. */
   failoverRetries: z.number().int().min(0).max(10).default(2),
+  /** Opt-in triage step: select a Skill + attach MCP tools before routing. */
+  triageEnabled: z.boolean().default(false),
+  /** Model used by triage for intent/skill selection (empty = keep requested). */
+  triageModel: z.string().max(200).default(''),
+  /** Safety cap on MCP tool calls per request (phase-2 autonomous loop). */
+  maxToolCalls: z.number().int().min(0).max(50).default(5),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 

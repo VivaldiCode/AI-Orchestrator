@@ -4,7 +4,7 @@ import { STRATEGIES, type Settings, type Strategy } from '@ai-orchestrator/share
 import { api } from '../lib/api';
 import { useI18n } from '../i18n';
 import type { TranslationKey } from '../i18n/en';
-import { Button, Card, Field, Select, Spinner } from '../components/ui';
+import { Button, Card, Field, Input, Select, Spinner } from '../components/ui';
 
 export function SettingsPage() {
   const { t } = useI18n();
@@ -92,6 +92,39 @@ export function SettingsPage() {
             className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-concert-500"
           />
         </Field>
+
+        <div className="border-t border-slate-800 pt-5">
+          <label className="flex items-center gap-3 text-sm text-slate-200">
+            <input
+              type="checkbox"
+              checked={form.triageEnabled}
+              onChange={(e) => setForm({ ...form, triageEnabled: e.target.checked })}
+              className="h-4 w-4 accent-concert-500"
+            />
+            {t('settings.triageEnabled')}
+          </label>
+          {form.triageEnabled ? (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Field label={t('settings.triageModel')}>
+                <Input
+                  value={form.triageModel}
+                  onChange={(e) => setForm({ ...form, triageModel: e.target.value })}
+                  placeholder="llama3.2"
+                />
+              </Field>
+              <Field label={t('settings.maxToolCalls')}>
+                <input
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={form.maxToolCalls}
+                  onChange={(e) => setForm({ ...form, maxToolCalls: Number(e.target.value) })}
+                  className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-concert-500"
+                />
+              </Field>
+            </div>
+          ) : null}
+        </div>
 
         <div className="flex items-center gap-3">
           <Button onClick={() => save.mutate(form)} disabled={save.isPending}>

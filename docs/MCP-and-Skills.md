@@ -1,8 +1,32 @@
-# MCP Servers & Skills (Triage Node) — Plan
+# MCP Servers & Skills (Triage Node)
 
-> **Status: planned.** This describes how AI Orchestrator will optionally enrich requests with
+> **Status: phase 1 shipped.** AI Orchestrator can optionally enrich requests with
 > [Model Context Protocol](https://modelcontextprotocol.io) (MCP) tools and reusable **Skills**,
-> via an **opt-in triage step**. It is a design contract; nothing here ships yet.
+> via an **opt-in triage step**. Phase 1 (below) is built and verified; the autonomous
+> tool-call loop is phase 2.
+
+## What's shipped (phase 1)
+
+- **MCP server registry** (dashboard → **MCP Servers**): add HTTP/stdio servers (auth token
+  encrypted at rest), **discover** their tools, and **allow-list** which tools triage may use.
+  Built on the official [`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk).
+- **Skills registry** (dashboard → **Skills**): a system prompt + preferred model + tool preset.
+- **Triage** (opt-in, **Settings → Triage**): when on, a chat request that names a `skill` gets that
+  skill's system prompt prepended and its model applied, and allow-listed MCP tools are advertised
+  to the model. Disabled (default) or non-chat requests pass through untouched; clients can bypass
+  per-request with the `x-triage: off` header.
+
+**Phase 2 (planned):** the autonomous loop — execute the model's tool calls against the MCP server
+and feed results back over multiple turns (bounded by **Max tool calls**), plus automatic skill
+selection by intent. Today phase 1 _advertises_ tools and applies skills.
+
+## Quick use
+
+1. **MCP Servers** → add a server (e.g. an HTTP MCP at `http://host:3000/mcp`) → **Discover** →
+   tick the tools you want under **Tools**.
+2. **Skills** → add a skill (system prompt, optional model, optional tool preset).
+3. **Settings** → enable **Triage**.
+4. Call `/api/chat` (or `/v1/chat/completions`) with a `"skill": "<name>"` field to apply it.
 
 ## The idea
 
