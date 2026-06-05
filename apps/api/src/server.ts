@@ -27,6 +27,8 @@ export async function buildServer(): Promise<FastifyInstance> {
 
   app.decorate('orchestrator', new Orchestrator(db));
   app.decorate('providers', new ProviderManager(db));
+  // Let the dispatcher reach providers for cloud overflow when nodes saturate.
+  app.orchestrator.setProviderManager(app.providers);
   app.decorate('auth', new AuthService(db));
   app.decorate('oauth', new OAuthService(db));
   app.decorate('mcp', new McpService(db));

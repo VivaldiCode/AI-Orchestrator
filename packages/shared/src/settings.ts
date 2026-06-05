@@ -33,6 +33,16 @@ export const settingsSchema = z.object({
   triageModel: z.string().max(200).default(''),
   /** Safety cap on MCP tool calls per request (phase-2 autonomous loop). */
   maxToolCalls: z.number().int().min(0).max(50).default(5),
+  /**
+   * Spill inference to a cloud provider when every candidate node is saturated
+   * (in-flight ≥ maxConcurrency) or none are healthy. Off by default (cloud costs).
+   */
+  cloudOverflow: z.boolean().default(false),
+  /**
+   * Which provider to overflow to. Empty = the first enabled OpenAI-compatible
+   * provider that has both an API key and a default model configured.
+   */
+  cloudOverflowProviderId: z.string().max(100).default(''),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 

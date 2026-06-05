@@ -120,6 +120,8 @@ export const settings = pgTable('settings', {
   triageEnabled: boolean('triage_enabled').notNull().default(false),
   triageModel: text('triage_model').notNull().default(''),
   maxToolCalls: integer('max_tool_calls').notNull().default(5),
+  cloudOverflow: boolean('cloud_overflow').notNull().default(false),
+  cloudOverflowProviderId: text('cloud_overflow_provider_id').notNull().default(''),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
