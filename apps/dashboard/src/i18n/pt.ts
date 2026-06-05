@@ -9,6 +9,22 @@ export const pt: Dict = {
   'common.loading': 'Carregando…',
   'common.never': 'nunca',
   'common.language': 'Idioma',
+  'common.theme': 'Tema',
+
+  // docs
+  'nav.docs': 'Docs',
+  'docs.title': 'Documentação',
+  'docs.subtitle': 'Como usar o orquestrador.',
+  'docs.links': 'Referência',
+  'docs.apiRef': 'Referência da API (Swagger UI)',
+  'docs.openApi': 'Especificação OpenAPI (JSON)',
+  'docs.wiki': 'Guia completo (wiki do GitHub)',
+  'docs.quickUsage': 'Uso rápido',
+  'docs.pointClients': 'Aponte qualquer cliente Ollama para o orquestrador:',
+  'docs.openaiCompat': 'Clientes compatíveis com OpenAI também funcionam:',
+  'docs.smoke': 'Teste seus nós',
+  'docs.smokeDesc':
+    'Depois de cadastrar seus Macs, rode o smoke test para verificar o balanceamento:',
 
   // node status
   'status.up': 'ativo',

@@ -14,9 +14,7 @@ export function LanguageSwitcher() {
           title={l.label}
           className={cn(
             'rounded px-2 py-1 text-xs font-medium transition-colors',
-            lang === l.code
-              ? 'bg-concert-600/30 text-concert-100'
-              : 'text-slate-500 hover:text-slate-200',
+            lang === l.code ? 'bg-concert-600 text-white' : 'text-slate-500 hover:text-slate-200',
           )}
         >
           {l.code.toUpperCase()}

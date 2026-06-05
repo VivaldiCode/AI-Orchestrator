@@ -10,6 +10,7 @@ import { ProvidersPage } from './pages/Providers';
 import { AnalyticsPage } from './pages/Analytics';
 import { ApiKeysPage } from './pages/ApiKeys';
 import { SettingsPage } from './pages/Settings';
+import { DocsPage } from './pages/Docs';
 
 export function App() {
   const { status } = useAuth();
@@ -34,6 +35,7 @@ export function App() {
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="api-keys" element={<ApiKeysPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="help" element={<DocsPage />} />
         <Route path="*" element={<OverviewPage />} />
       </Route>
     </Routes>

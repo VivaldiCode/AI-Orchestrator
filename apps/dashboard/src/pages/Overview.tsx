@@ -26,7 +26,7 @@ function NodeLiveCard({ node }: { node: NodeWithRuntime }) {
       </div>
       <div className="mt-4 grid grid-cols-3 gap-2 text-center">
         <div>
-          <div className="text-lg font-semibold text-concert-300">{runtime.inFlight}</div>
+          <div className="text-lg font-semibold text-concert-500">{runtime.inFlight}</div>
           <div className="text-[10px] uppercase text-slate-500">{t('overview.cardInFlight')}</div>
         </div>
         <div>
