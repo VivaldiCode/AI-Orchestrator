@@ -1,9 +1,26 @@
-# Authentication & OAuth/SSO — Plan
+# Authentication & OAuth/SSO
 
-> **Status: planned.** Today the dashboard uses local username + password (scrypt) with JWT
-> access/refresh tokens. This page describes the design for adding **OAuth 2.0 / OIDC single
-> sign-on** (Google, Microsoft Entra ID, Okta, and any compliant provider). It is the contract we
-> will build against; nothing here ships yet.
+> **Status: implemented.** The dashboard supports **OAuth 2.0 / OIDC single sign-on** (Google,
+> Microsoft Entra ID, Okta, and any compliant provider) alongside local username + password.
+> `id_token` verification uses the audited [`jose`](https://github.com/panva/jose) library; the
+> handshake (discovery, PKCE, code exchange, sealed state) uses only `node:crypto` + `fetch`.
+
+## Configuration
+
+1. Set **`PUBLIC_BASE_URL`** to the URL users hit in their browser (e.g. `https://ai.acme.com`).
+   It's used to build the redirect URI and must match what you register at the provider.
+2. In the dashboard, go to **Authentication** (admin only) → **Add a provider**:
+   - **Type** — Google, Microsoft, Okta, or Generic OIDC (the issuer drives everything).
+   - **Issuer URL** — e.g. `https://accounts.google.com`, `https://login.microsoftonline.com/<tenant>/v2.0`, or your Okta org URL. The `…/.well-known/openid-configuration` is discovered automatically.
+   - **Client ID / Client secret** — from the provider's app registration (secret is encrypted at rest with AES-256-GCM, never returned).
+   - **Allowed email domains** _(optional)_ — restrict sign-in to e.g. `acme.com` (requires a verified email).
+   - **Default role** — role granted to users on first SSO login (defaults to **viewer**; see [Users & Roles](Users-and-Roles.md)).
+3. After saving, copy the per-provider **callback URL** shown in the table
+   (`${PUBLIC_BASE_URL}/admin/auth/oauth/<id>/callback`) and register it as an authorized redirect
+   URI in the provider console.
+4. A **"Continue with …"** button now appears on the login screen.
+
+> **Break-glass:** keep at least one **local admin** so a misconfigured IdP can never lock you out.
 
 ## Goals
 
@@ -82,25 +99,36 @@ Configured on a new **Settings → Authentication** dashboard panel (admin only)
 2. Optional: map IdP **groups/claims → roles** (e.g. Okta group `ai-admins` → `admin`).
 3. Admins can override any user's role on the [Users](Users-and-Roles.md) page as today.
 
-## Security checklist
+## Security checklist (what we enforce)
 
-- Verify `id_token` signature against the IdP **JWKS** (cache keys, honour rotation).
-- Validate `iss`, `aud`, `exp`, `nonce`; enforce `allowed_domains` on `email`/`hd`.
-- PKCE (S256) + signed, short-lived `state`; reject reused codes.
-- Refresh-token rotation; revoke on sign-out.
-- Always keep a **local break-glass admin** so a misconfigured IdP can't lock you out.
+- ✅ Verify `id_token` signature against the IdP **JWKS** with a strict asymmetric-algorithm
+  allowlist (`RS256`/`PS256`/`ES256`) — blocks algorithm-confusion. JWKS is cached and rotated by
+  `jose`.
+- ✅ Validate `iss`, `aud`, `exp` and the `nonce` we issued; enforce `allowed_domains` (with a
+  verified email) when configured.
+- ✅ **PKCE** (S256) + a `state` and `nonce` sealed in an **encrypted, HttpOnly, SameSite=Lax,
+  single-use** cookie (AES-256-GCM); `state` is cross-checked on callback.
+- ✅ Tokens are delivered to the SPA via a **single-use, 60-second handoff code** — they never ride
+  in a URL the browser would log.
+- ✅ Client secrets encrypted at rest (AES-256-GCM); never returned by the API.
+- ✅ A **local break-glass admin** always remains usable (local password login still works).
 
-## Rollout
+Verified end-to-end against a mock OIDC IdP (`docker/mock-oidc.mjs`) and unit-tested in
+`apps/api/test/oidc.test.ts` (accepts valid; rejects tampered / wrong-aud / wrong-iss / expired /
+nonce-mismatch).
 
-1. Generic **OIDC** provider (covers Google & Okta out of the box via discovery).
-2. **Microsoft Entra ID** specifics (tenant-aware issuer).
-3. Dashboard config UI + **group→role** mapping.
-4. Account linking by verified email.
+## Status & next steps
 
-## Candidate dependencies (to be audited)
+Shipped: generic **OIDC** + **Google/Microsoft/Okta** (all via discovery), admin config UI,
+domain allowlist, default-role provisioning.
 
-The flow is implementable with **no new runtime dependency** (discovery + JWKS + JWT verify via
-`fetch` and `node:crypto`). If a helper is ever warranted, `openid-client` (MIT) is the reference
-OIDC library and would be vetted per our [dependency policy](Security.md) before adoption.
+Next: IdP **group/claim → role** mapping, and opt-in **account linking** by verified email
+(today, first SSO login always creates a dedicated account — no auto-link, to avoid takeover).
+
+## Dependency note
+
+`id_token` verification uses **`jose`** (panva, MIT, **zero runtime dependencies**, Web Crypto) —
+chosen as the audited, hardened choice for the crypto-critical path. Everything else is
+`node:crypto` + `fetch`, consistent with our [dependency policy](Security.md).
 
 See also: [Users & Roles](Users-and-Roles.md) · [Security](Security.md) · [Roadmap](Roadmap.md).

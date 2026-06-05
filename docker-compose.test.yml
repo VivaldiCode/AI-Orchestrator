@@ -26,3 +26,17 @@ services:
     volumes:
       - ./docker/mock-ollama.mjs:/mock.mjs:ro
     restart: unless-stopped
+
+  # Fake OIDC identity provider for end-to-end SSO testing. Reachable by the API
+  # over the compose network as `mock-oidc`, and from the host on port 9000.
+  mock-oidc:
+    image: node:24-alpine
+    command: node /mock-oidc.mjs
+    environment:
+      PORT: '9000'
+      ISSUER: 'http://mock-oidc:9000'
+    ports:
+      - '9000:9000'
+    volumes:
+      - ./docker/mock-oidc.mjs:/mock-oidc.mjs:ro
+    restart: unless-stopped

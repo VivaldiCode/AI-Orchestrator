@@ -10,7 +10,7 @@ Sometimes you just want raw load-balancing: "I know the model, spread the calls.
 want the gateway to be smart: "look at this request, decide if it needs a tool (web search, a
 database, a file system) or a packaged skill, and only then route it."
 
-The **triage node** is that optional brain. It sits *in front of* routing and is **fully opt-in**:
+The **triage node** is that optional brain. It sits _in front of_ routing and is **fully opt-in**:
 
 - **Off (default):** requests flow straight to the [load balancer](Load-Balancing-Strategies.md).
   Zero overhead — ideal when you're only doing heavy load and already know the model.
@@ -43,7 +43,7 @@ Transport support order: **stdio** (local servers) → **streamable HTTP/SSE** (
 
 ## Skills
 
-A **Skill** is a reusable, versioned bundle that packages *how* to do a class of task:
+A **Skill** is a reusable, versioned bundle that packages _how_ to do a class of task:
 
 ```
 skill(

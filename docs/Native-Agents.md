@@ -13,11 +13,11 @@ on-ramp.
 
 ## Targets
 
-| OS      | Artifact         | Mechanism                                                        |
-| ------- | ---------------- | --------------------------------------------------------------- |
-| Windows | `.exe` installer | Node **SEA** (Single Executable App) + service via `sc.exe`     |
-| macOS   | `.app` (+ `.pkg`)| SEA inside an `.app` bundle; `launchd` LaunchAgent              |
-| Linux   | `.deb`           | SEA binary + **systemd** unit (Debian/Ubuntu family)            |
+| OS      | Artifact          | Mechanism                                                   |
+| ------- | ----------------- | ----------------------------------------------------------- |
+| Windows | `.exe` installer  | Node **SEA** (Single Executable App) + service via `sc.exe` |
+| macOS   | `.app` (+ `.pkg`) | SEA inside an `.app` bundle; `launchd` LaunchAgent          |
+| Linux   | `.deb`            | SEA binary + **systemd** unit (Debian/Ubuntu family)        |
 
 > Linux is **Debian-based (`.deb`) only** for the first release, per project scope. RPM/others can
 > follow if there's demand.
