@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node 24 (`nvm use`)
+- Node 26 (`nvm use`)
 - Docker (for PostgreSQL/TimescaleDB)
 
 ## Setup

@@ -107,7 +107,7 @@ curl http://localhost:11435/api/chat -d '{
 ## 🧑‍💻 Local development
 
 ```bash
-nvm use                 # Node 24
+nvm use                 # Node 26
 npm install             # installs all workspaces
 npm run db:migrate      # apply database migrations (needs a Postgres/Timescale instance)
 npm run dev             # api (tsx watch) + dashboard (vite) together
