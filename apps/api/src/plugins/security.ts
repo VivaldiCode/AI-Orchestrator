@@ -9,8 +9,14 @@ export async function registerSecurity(app: FastifyInstance): Promise<void> {
   await app.register(helmet, {
     // The API serves JSON and streams, never HTML, so a locked-down CSP is safe.
     contentSecurityPolicy: {
+      // Permissive enough to render the self-hosted Swagger UI at /docs while
+      // keeping the other Helmet protections. The API otherwise serves only JSON.
       directives: {
-        defaultSrc: ["'none'"],
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:'],
+        connectSrc: ["'self'"],
         frameAncestors: ["'none'"],
       },
     },

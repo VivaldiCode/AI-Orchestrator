@@ -44,6 +44,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "smoke": "node scripts/smoke-test.mjs",
     "db:migrate": "npm run db:migrate -w @ai-orchestrator/api",
     "audit": "npm audit --audit-level=high",
     "audit:fix": "npm audit fix"

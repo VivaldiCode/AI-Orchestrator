@@ -121,6 +121,7 @@ npm run dev             # api (tsx watch) + dashboard (vite) together
 | `npm test`                        | Unit + integration tests (Vitest)           |
 | `npm run test:coverage`           | Tests with coverage report                  |
 | `npm run test:e2e`                | End-to-end tests (Playwright)               |
+| `npm run smoke`                   | Smoke-test load balancing across your nodes |
 | `npm run audit`                   | Fail on high/critical dependency advisories |
 
 ## 📁 Project structure

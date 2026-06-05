@@ -13,6 +13,8 @@ export default defineConfig({
     proxy: {
       '/admin': { target: API_TARGET, changeOrigin: true },
       '/healthz': { target: API_TARGET, changeOrigin: true },
+      '/docs': { target: API_TARGET, changeOrigin: true },
+      '/openapi.json': { target: API_TARGET, changeOrigin: true },
       '/ws': { target: API_TARGET.replace(/^http/, 'ws'), ws: true },
     },
   },

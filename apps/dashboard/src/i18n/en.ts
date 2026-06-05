@@ -8,6 +8,21 @@ export const en = {
   'common.loading': 'Loading…',
   'common.never': 'never',
   'common.language': 'Language',
+  'common.theme': 'Theme',
+
+  // docs
+  'nav.docs': 'Docs',
+  'docs.title': 'Documentation',
+  'docs.subtitle': 'How to use the orchestrator.',
+  'docs.links': 'Reference',
+  'docs.apiRef': 'API reference (Swagger UI)',
+  'docs.openApi': 'OpenAPI spec (JSON)',
+  'docs.wiki': 'Full guide (GitHub wiki)',
+  'docs.quickUsage': 'Quick usage',
+  'docs.pointClients': 'Point any Ollama client at the orchestrator:',
+  'docs.openaiCompat': 'OpenAI-compatible clients work too:',
+  'docs.smoke': 'Test your nodes',
+  'docs.smokeDesc': 'After registering your Macs, run the smoke test to verify load balancing:',
 
   // node status
   'status.up': 'up',
