@@ -9,6 +9,7 @@ import { Orchestrator } from './orchestrator/index';
 import { ProviderManager } from './providers/manager';
 import { registerAuth } from './plugins/auth';
 import { registerSecurity } from './plugins/security';
+import { registerDocs } from './plugins/docs';
 import { registerRealtime } from './realtime/route';
 import { registerAdminRoutes } from './routes/admin/index';
 import { registerProxyRoutes } from './routes/proxy';
@@ -49,6 +50,7 @@ export async function buildServer(): Promise<FastifyInstance> {
 
   await registerSecurity(app);
   await registerAuth(app);
+  await registerDocs(app);
   await registerRealtime(app);
   await registerAdminRoutes(app);
   await registerProxyRoutes(app);

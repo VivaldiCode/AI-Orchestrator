@@ -3,6 +3,9 @@
 The orchestrator exposes three surfaces: the **Ollama mirror** (`/api/*`), the
 **OpenAI-compatible** layer (`/v1/*`), and the **management API** (`/admin/*`).
 
+> **Interactive docs:** Swagger UI is served at **`/docs`** and the raw spec at
+> **`/openapi.json`** — both reachable from the dashboard's **Docs** page.
+
 ## Ollama mirror (`/api/*`)
 
 Every Ollama endpoint is proxied. Inference is load-balanced; `tags`/`ps` are aggregated;
