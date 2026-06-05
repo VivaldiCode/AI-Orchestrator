@@ -2,6 +2,7 @@ import type {
   AnalyticsQuery,
   AnalyticsSummary,
   BreakdownItem,
+  NodeSeriesPoint,
   TimeseriesPoint,
 } from '@ai-orchestrator/shared';
 import { sql } from '../db/client';
@@ -17,20 +18,29 @@ interface SeriesRow {
   bucket: string | Date;
   requests: number;
   errors: number;
+  avg_latency: number | null;
+  min_latency: number | null;
+  max_latency: number | null;
   p50: number | null;
   p95: number | null;
   p99: number | null;
   prompt_tokens: number;
   completion_tokens: number;
+  total_tokens: number;
 }
 
 interface TotalsRow {
   total_requests: number;
   total_errors: number;
   avg_latency: number | null;
+  min_latency: number | null;
+  max_latency: number | null;
+  p50_latency: number | null;
   p95_latency: number | null;
+  p99_latency: number | null;
   prompt_tokens: number;
   completion_tokens: number;
+  total_tokens: number;
 }
 
 interface BreakdownRow {
@@ -39,6 +49,12 @@ interface BreakdownRow {
   errors: number;
   avg_latency_ms: number | null;
   total_tokens: number;
+}
+
+interface NodeSeriesRow {
+  bucket: string | Date;
+  node: string;
+  requests: number;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -51,6 +67,35 @@ function mapBreakdown(rows: BreakdownRow[]): BreakdownItem[] {
     avgLatencyMs: r.avg_latency_ms,
     totalTokens: r.total_tokens,
   }));
+}
+
+/**
+ * Pivot per-(bucket,node) rows into stacked-chart points: one row per time
+ * bucket with a numeric column per node (missing nodes filled with 0 so the
+ * stacked areas don't gap). Pure + exported for unit testing.
+ */
+export function pivotNodeSeries(rows: NodeSeriesRow[]): {
+  points: NodeSeriesPoint[];
+  keys: string[];
+} {
+  const keys = new Set<string>();
+  const byTime = new Map<string, Record<string, number>>();
+  for (const r of rows) {
+    const time = new Date(r.bucket).toISOString();
+    keys.add(r.node);
+    const row = byTime.get(time) ?? {};
+    row[r.node] = (row[r.node] ?? 0) + r.requests;
+    byTime.set(time, row);
+  }
+  const keyList = [...keys].sort();
+  const points: NodeSeriesPoint[] = [...byTime.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([time, counts]) => {
+      const point: Record<string, number | string> = { time };
+      for (const k of keyList) point[k] = counts[k] ?? 0;
+      return point as NodeSeriesPoint;
+    });
+  return { points, keys: keyList };
 }
 
 /**
@@ -80,11 +125,15 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
       time_bucket(${interval}::interval, time) AS bucket,
       count(*)::int AS requests,
       count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS errors,
+      avg(latency_ms)::float AS avg_latency,
+      min(latency_ms)::float AS min_latency,
+      max(latency_ms)::float AS max_latency,
       percentile_cont(0.5) WITHIN GROUP (ORDER BY latency_ms)::float AS p50,
       percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms)::float AS p95,
       percentile_cont(0.99) WITHIN GROUP (ORDER BY latency_ms)::float AS p99,
       coalesce(sum(prompt_tokens), 0)::int AS prompt_tokens,
-      coalesce(sum(completion_tokens), 0)::int AS completion_tokens
+      coalesce(sum(completion_tokens), 0)::int AS completion_tokens,
+      coalesce(sum(total_tokens), 0)::int AS total_tokens
     FROM request_events
     WHERE ${where}
     GROUP BY bucket
@@ -96,70 +145,110 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
       count(*)::int AS total_requests,
       count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS total_errors,
       avg(latency_ms)::float AS avg_latency,
+      min(latency_ms)::float AS min_latency,
+      max(latency_ms)::float AS max_latency,
+      percentile_cont(0.5) WITHIN GROUP (ORDER BY latency_ms)::float AS p50_latency,
       percentile_cont(0.95) WITHIN GROUP (ORDER BY latency_ms)::float AS p95_latency,
+      percentile_cont(0.99) WITHIN GROUP (ORDER BY latency_ms)::float AS p99_latency,
       coalesce(sum(prompt_tokens), 0)::int AS prompt_tokens,
-      coalesce(sum(completion_tokens), 0)::int AS completion_tokens
+      coalesce(sum(completion_tokens), 0)::int AS completion_tokens,
+      coalesce(sum(total_tokens), 0)::int AS total_tokens
     FROM request_events
     WHERE ${where}
   `;
 
-  const [byNodeRows, byModelRows, byProviderRows] = await Promise.all([
-    sql<BreakdownRow[]>`
-      SELECT coalesce(node_id::text, 'unknown') AS key,
-        count(*)::int AS requests,
-        count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS errors,
-        avg(latency_ms)::float AS avg_latency_ms,
-        coalesce(sum(total_tokens), 0)::int AS total_tokens
-      FROM request_events WHERE ${where}
-      GROUP BY node_id ORDER BY requests DESC LIMIT 50
-    `,
-    sql<BreakdownRow[]>`
-      SELECT coalesce(nullif(model, ''), 'unknown') AS key,
-        count(*)::int AS requests,
-        count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS errors,
-        avg(latency_ms)::float AS avg_latency_ms,
-        coalesce(sum(total_tokens), 0)::int AS total_tokens
-      FROM request_events WHERE ${where}
-      GROUP BY model ORDER BY requests DESC LIMIT 50
-    `,
-    sql<BreakdownRow[]>`
-      SELECT provider AS key,
-        count(*)::int AS requests,
-        count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS errors,
-        avg(latency_ms)::float AS avg_latency_ms,
-        coalesce(sum(total_tokens), 0)::int AS total_tokens
-      FROM request_events WHERE ${where}
-      GROUP BY provider ORDER BY requests DESC LIMIT 50
-    `,
-  ]);
+  const [byNodeRows, byModelRows, byProviderRows, byEndpointRows, nodeSeriesRows] =
+    await Promise.all([
+      sql<BreakdownRow[]>`
+        SELECT coalesce(node_id::text, 'cloud') AS key,
+          count(*)::int AS requests,
+          count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS errors,
+          avg(latency_ms)::float AS avg_latency_ms,
+          coalesce(sum(total_tokens), 0)::int AS total_tokens
+        FROM request_events WHERE ${where}
+        GROUP BY key ORDER BY requests DESC LIMIT 50
+      `,
+      sql<BreakdownRow[]>`
+        SELECT coalesce(nullif(model, ''), 'unknown') AS key,
+          count(*)::int AS requests,
+          count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS errors,
+          avg(latency_ms)::float AS avg_latency_ms,
+          coalesce(sum(total_tokens), 0)::int AS total_tokens
+        FROM request_events WHERE ${where}
+        GROUP BY key ORDER BY requests DESC LIMIT 50
+      `,
+      sql<BreakdownRow[]>`
+        SELECT provider AS key,
+          count(*)::int AS requests,
+          count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS errors,
+          avg(latency_ms)::float AS avg_latency_ms,
+          coalesce(sum(total_tokens), 0)::int AS total_tokens
+        FROM request_events WHERE ${where}
+        GROUP BY key ORDER BY requests DESC LIMIT 50
+      `,
+      sql<BreakdownRow[]>`
+        SELECT coalesce(nullif(endpoint, ''), 'unknown') AS key,
+          count(*)::int AS requests,
+          count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS errors,
+          avg(latency_ms)::float AS avg_latency_ms,
+          coalesce(sum(total_tokens), 0)::int AS total_tokens
+        FROM request_events WHERE ${where}
+        GROUP BY key ORDER BY requests DESC LIMIT 50
+      `,
+      sql<NodeSeriesRow[]>`
+        SELECT time_bucket(${interval}::interval, time) AS bucket,
+          coalesce(node_id::text, 'cloud') AS node,
+          count(*)::int AS requests
+        FROM request_events WHERE ${where}
+        GROUP BY bucket, node ORDER BY bucket
+      `,
+    ]);
 
   const totals = totalsRows[0];
   const totalRequests = totals?.total_requests ?? 0;
   const totalErrors = totals?.total_errors ?? 0;
+  const totalTokens = totals?.total_tokens ?? 0;
+  const windowMinutes = Math.max(1, (to.getTime() - from.getTime()) / 60000);
 
   const series: TimeseriesPoint[] = seriesRows.map((r) => ({
     // time_bucket() may come back as a string (not a Date) from the driver.
     time: new Date(r.bucket).toISOString(),
     requests: r.requests,
     errors: r.errors,
+    avgLatency: r.avg_latency,
+    minLatency: r.min_latency,
+    maxLatency: r.max_latency,
     p50: r.p50,
     p95: r.p95,
     p99: r.p99,
     promptTokens: r.prompt_tokens,
     completionTokens: r.completion_tokens,
+    totalTokens: r.total_tokens,
   }));
+
+  const { points: nodeSeries, keys: nodeKeys } = pivotNodeSeries(nodeSeriesRows);
 
   return {
     totalRequests,
     totalErrors,
     errorRate: totalRequests > 0 ? totalErrors / totalRequests : 0,
+    requestsPerMinute: totalRequests / windowMinutes,
     avgLatencyMs: totals?.avg_latency ?? null,
+    minLatencyMs: totals?.min_latency ?? null,
+    maxLatencyMs: totals?.max_latency ?? null,
+    p50LatencyMs: totals?.p50_latency ?? null,
     p95LatencyMs: totals?.p95_latency ?? null,
+    p99LatencyMs: totals?.p99_latency ?? null,
     promptTokens: totals?.prompt_tokens ?? 0,
     completionTokens: totals?.completion_tokens ?? 0,
+    totalTokens,
+    avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0,
     byNode: mapBreakdown(byNodeRows),
     byModel: mapBreakdown(byModelRows),
     byProvider: mapBreakdown(byProviderRows),
+    byEndpoint: mapBreakdown(byEndpointRows),
     series,
+    nodeSeries,
+    nodeKeys,
   };
 }
