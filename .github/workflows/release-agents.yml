@@ -1,0 +1,96 @@
+name: Release agents
+
+# Builds the native node agent (.deb / .pkg+.app / .exe-zip) for every OS via
+# Node SEA and attaches them to the GitHub Release. Triggered by version tags;
+# also runnable manually (produces downloadable artifacts without a release).
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write # upload release assets
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+          - os: macos-latest
+            target: macos
+          - os: windows-latest
+            target: windows
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: apps/agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Resolve version
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV";
+          else echo "VERSION=0.0.0-dev" >> "$GITHUB_ENV"; fi
+
+      - name: Build single-file binary (Node SEA)
+        run: node build.mjs
+
+      - name: Package .deb (Linux)
+        if: matrix.target == 'linux'
+        run: bash packaging/deb.sh
+
+      - name: Package .app + .pkg (macOS)
+        if: matrix.target == 'macos'
+        run: bash packaging/macos-app.sh
+        env:
+          # Set these repo secrets to sign for distribution (otherwise ad-hoc).
+          CODESIGN_ID: ${{ secrets.MACOS_CODESIGN_ID }}
+
+      - name: Package .zip (Windows)
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: pwsh packaging/windows.ps1
+
+      - name: Checksums (Linux/macOS)
+        if: matrix.target != 'windows'
+        shell: bash
+        run: |
+          cd build
+          for f in *.deb *.pkg *.zip; do [ -f "$f" ] && shasum -a 256 "$f" > "$f.sha256" || true; done
+
+      - name: Checksums (Windows)
+        if: matrix.target == 'windows'
+        shell: pwsh
+        run: |
+          Get-ChildItem build -Filter *.zip | ForEach-Object {
+            (Get-FileHash $_.FullName -Algorithm SHA256).Hash + "  " + $_.Name | Out-File "$($_.FullName).sha256" -Encoding ascii
+          }
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-${{ matrix.target }}
+          path: |
+            apps/agent/build/*.deb
+            apps/agent/build/*.pkg
+            apps/agent/build/*.zip
+            apps/agent/build/*.sha256
+          if-no-files-found: error
+
+      - name: Attach to release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            apps/agent/build/*.deb
+            apps/agent/build/*.pkg
+            apps/agent/build/*.zip
+            apps/agent/build/*.sha256
