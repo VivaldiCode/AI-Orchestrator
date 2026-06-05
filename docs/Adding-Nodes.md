@@ -17,14 +17,15 @@ Verify from another machine: `curl http://<mac-ip>:11434/api/version`.
 
 Dashboard → **Nodes** → **Add a node**:
 
-| Field           | Meaning                                             |
-| --------------- | --------------------------------------------------- |
-| Name            | A label, e.g. `studio`                              |
-| Host / IP       | e.g. `192.168.0.21`                                 |
-| Port            | usually `11434`                                     |
-| Weight          | relative capacity (used by the `weighted` strategy) |
-| Max concurrency | soft cap hint                                       |
-| Tags            | free-form labels                                    |
+| Field           | Meaning                                                    |
+| --------------- | ---------------------------------------------------------- |
+| Name            | A label, e.g. `studio`                                     |
+| Host / IP       | e.g. `192.168.0.21`                                        |
+| Port            | usually `11434`                                            |
+| Weight          | relative capacity (used by the `weighted` strategy)        |
+| Max concurrency | soft cap hint                                              |
+| Tags            | free-form labels                                           |
+| Agent port      | optional — [node agent](Node-Agent.md) port for CPU/memory |
 
 Use **Test** to check connectivity. The node is health-checked automatically and starts
 receiving traffic once it reports **up**.
