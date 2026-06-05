@@ -43,6 +43,7 @@ export const nodes = pgTable('nodes', {
   enabled: boolean('enabled').notNull().default(true),
   maxConcurrency: integer('max_concurrency').notNull().default(4),
   tags: jsonb('tags').notNull().$type<string[]>().default([]),
+  agentPort: integer('agent_port'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

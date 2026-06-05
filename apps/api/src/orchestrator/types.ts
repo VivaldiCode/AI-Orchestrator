@@ -1,4 +1,4 @@
-import type { NodeProtocol, NodeRuntime, NodeStatus } from '@ai-orchestrator/shared';
+import type { NodeProtocol, NodeRuntime, NodeStatus, SystemStats } from '@ai-orchestrator/shared';
 
 /** Mutable, in-memory runtime state tracked per node. */
 export interface RuntimeState {
@@ -12,6 +12,7 @@ export interface RuntimeState {
   version: string | null;
   lastCheckedAt: string | null;
   consecutiveFailures: number;
+  system: SystemStats | null;
 }
 
 /** A persisted node merged with its live runtime state. */
@@ -25,6 +26,7 @@ export interface ManagedNode {
   enabled: boolean;
   maxConcurrency: number;
   tags: string[];
+  agentPort: number | null;
   createdAt: string;
   updatedAt: string;
   runtime: RuntimeState;
@@ -41,6 +43,7 @@ export function freshRuntime(): RuntimeState {
     version: null,
     lastCheckedAt: null,
     consecutiveFailures: 0,
+    system: null,
   };
 }
 
@@ -59,5 +62,6 @@ export function toNodeRuntime(n: ManagedNode): NodeRuntime {
     models: n.runtime.models,
     version: n.runtime.version,
     lastCheckedAt: n.runtime.lastCheckedAt,
+    system: n.runtime.system,
   };
 }

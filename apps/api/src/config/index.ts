@@ -43,6 +43,7 @@ const envSchema = z.object({
   HEALTHCHECK_INTERVAL_MS: z.coerce.number().int().min(1000).default(10000),
   HEALTHCHECK_TIMEOUT_MS: z.coerce.number().int().min(500).default(3000),
   NODE_FAILOVER_RETRIES: z.coerce.number().int().min(0).max(10).default(2),
+  NODE_AGENT_TOKEN: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -97,6 +98,7 @@ export const config = {
   healthcheckIntervalMs: env.HEALTHCHECK_INTERVAL_MS,
   healthcheckTimeoutMs: env.HEALTHCHECK_TIMEOUT_MS,
   failoverRetries: env.NODE_FAILOVER_RETRIES,
+  nodeAgentToken: env.NODE_AGENT_TOKEN ?? '',
 } as const;
 
 export type Config = typeof config;

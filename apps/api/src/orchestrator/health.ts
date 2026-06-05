@@ -1,3 +1,4 @@
+import { config } from '../config/index';
 import { nowIso } from '../lib/ids';
 import { logger } from '../lib/logger';
 import type { RealtimeHub } from '../realtime/hub';
@@ -9,6 +10,17 @@ interface OllamaTags {
 }
 interface OllamaVersion {
   version?: string;
+}
+
+interface AgentStats {
+  cpu?: number;
+  cores?: number;
+  memUsed?: number;
+  memTotal?: number;
+  load1?: number | null;
+  platform?: string;
+  arch?: string;
+  uptimeSeconds?: number;
 }
 
 /** Periodically pings each enabled node and updates its runtime state. */
@@ -75,13 +87,42 @@ export class HealthChecker {
         this.hub.broadcast({ type: 'node:status', id: node.id, status: 'down', at: nowIso() });
       }
     }
+
+    await this.checkAgent(node);
   }
 
-  private async fetchJson<T>(url: string): Promise<T> {
+  /** Best-effort poll of the optional node agent for host CPU/memory. */
+  private async checkAgent(node: ManagedNode): Promise<void> {
+    if (!node.agentPort) {
+      node.runtime.system = null;
+      return;
+    }
+    const url = `http://${node.host}:${node.agentPort}/stats`;
+    const headers = config.nodeAgentToken
+      ? { authorization: `Bearer ${config.nodeAgentToken}` }
+      : undefined;
+    try {
+      const s = await this.fetchJson<AgentStats>(url, headers);
+      node.runtime.system = {
+        cpu: typeof s.cpu === 'number' ? s.cpu : null,
+        cores: typeof s.cores === 'number' ? s.cores : null,
+        memUsed: typeof s.memUsed === 'number' ? s.memUsed : null,
+        memTotal: typeof s.memTotal === 'number' ? s.memTotal : null,
+        load1: typeof s.load1 === 'number' ? s.load1 : null,
+        platform: s.platform ?? null,
+        arch: s.arch ?? null,
+        uptimeSeconds: typeof s.uptimeSeconds === 'number' ? s.uptimeSeconds : null,
+      };
+    } catch {
+      // agent optional / unreachable — keep the previous value
+    }
+  }
+
+  private async fetchJson<T>(url: string, headers?: Record<string, string>): Promise<T> {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);
     try {
-      const res = await fetch(url, { signal: ctrl.signal });
+      const res = await fetch(url, { signal: ctrl.signal, headers });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return (await res.json()) as T;
     } finally {
