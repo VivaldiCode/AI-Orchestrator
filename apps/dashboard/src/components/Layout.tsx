@@ -17,6 +17,7 @@ const NAV: { to: string; key: TranslationKey; end: boolean; perm?: Permission }[
   { to: '/analytics', key: 'nav.analytics', end: false, perm: 'analytics:read' },
   { to: '/api-keys', key: 'nav.apiKeys', end: false, perm: 'apikeys:read' },
   { to: '/users', key: 'nav.users', end: false, perm: 'users:read' },
+  { to: '/authentication', key: 'nav.auth', end: false, perm: 'users:write' },
   { to: '/settings', key: 'nav.settings', end: false, perm: 'settings:read' },
   { to: '/help', key: 'nav.docs', end: false },
 ];

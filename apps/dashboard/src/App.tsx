@@ -11,6 +11,7 @@ import { AnalyticsPage } from './pages/Analytics';
 import { ApiKeysPage } from './pages/ApiKeys';
 import { SettingsPage } from './pages/Settings';
 import { UsersPage } from './pages/Users';
+import { AuthenticationPage } from './pages/Authentication';
 import { DocsPage } from './pages/Docs';
 
 export function App() {
@@ -36,6 +37,7 @@ export function App() {
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="api-keys" element={<ApiKeysPage />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="authentication" element={<AuthenticationPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="help" element={<DocsPage />} />
         <Route path="*" element={<OverviewPage />} />

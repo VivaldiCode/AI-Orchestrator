@@ -43,6 +43,7 @@ export const en = {
   'nav.analytics': 'Analytics',
   'nav.apiKeys': 'API Keys',
   'nav.users': 'Users',
+  'nav.auth': 'Authentication',
   'nav.settings': 'Settings',
 
   // auth
@@ -55,6 +56,8 @@ export const en = {
   'auth.signIn': 'Sign in',
   'auth.pleaseWait': 'Please wait…',
   'auth.error': 'Something went wrong',
+  'auth.orContinueWith': 'or continue with',
+  'auth.continueWith': 'Continue with {provider}',
 
   // overview
   'overview.title': 'Overview',
@@ -200,6 +203,42 @@ export const en = {
   'users.you': 'you',
   'users.permCount': '{count} permissions',
   'users.delete': 'Delete',
+
+  // authentication / SSO
+  'sso.title': 'Authentication (SSO)',
+  'sso.subtitle': 'Let people sign in with Google, Microsoft, Okta or any OIDC provider.',
+  'sso.addProvider': 'Add a provider',
+  'sso.type': 'Type',
+  'sso.type.google': 'Google',
+  'sso.type.microsoft': 'Microsoft',
+  'sso.type.okta': 'Okta',
+  'sso.type.oidc': 'Generic OIDC',
+  'sso.displayName': 'Display name',
+  'sso.issuer': 'Issuer URL',
+  'sso.clientId': 'Client ID',
+  'sso.clientSecret': 'Client secret',
+  'sso.scopes': 'Scopes (comma-separated)',
+  'sso.allowedDomains': 'Allowed email domains (comma-separated, optional)',
+  'sso.defaultRole': 'Default role for new users',
+  'sso.addButton': 'Add provider',
+  'sso.addingButton': 'Adding…',
+  'sso.addError': 'Failed to add provider',
+  'sso.updateError': 'Failed to update provider',
+  'sso.deleteError': 'Failed to delete provider',
+  'sso.redirectHint':
+    'After saving, register the per-provider callback URL (shown below) in the provider console. It must match PUBLIC_BASE_URL.',
+  'sso.loading': 'Loading providers…',
+  'sso.noProviders': 'No SSO providers',
+  'sso.noProvidersHint': 'Add one above to enable single sign-on.',
+  'sso.colProvider': 'Provider',
+  'sso.colCallback': 'Callback URL',
+  'sso.colStatus': 'Status',
+  'sso.colActions': 'Actions',
+  'sso.enabledLabel': 'enabled',
+  'sso.disabledLabel': 'disabled',
+  'sso.enable': 'Enable',
+  'sso.disable': 'Disable',
+  'sso.delete': 'Delete',
 
   // settings
   'settings.title': 'Settings',

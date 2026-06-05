@@ -5,13 +5,17 @@ import type {
   ApiKeyCreated,
   CreateApiKeyInput,
   CreateNodeInput,
+  CreateOAuthProviderInput,
   CreateProviderInput,
   CreateUserInput,
   NodeWithRuntime,
+  OAuthProvider,
   Provider,
+  PublicOAuthProvider,
   Settings,
   TokenPair,
   UpdateNodeInput,
+  UpdateOAuthProviderInput,
   UpdateSettingsInput,
   UpdateUserInput,
   User,
@@ -179,4 +183,22 @@ export const api = {
   updateUser: (id: string, input: UpdateUserInput) =>
     request<User>(`/admin/users/${id}`, { method: 'PATCH', body: input }),
   deleteUser: (id: string) => request<void>(`/admin/users/${id}`, { method: 'DELETE' }),
+
+  // oauth / sso
+  listPublicOAuthProviders: () =>
+    request<PublicOAuthProvider[]>('/admin/auth/oauth/providers', { auth: false }),
+  oauthStartUrl: (id: string) => `/admin/auth/oauth/${id}/start`,
+  oauthExchange: (code: string) =>
+    request<TokenPair>('/admin/auth/oauth/exchange', {
+      method: 'POST',
+      body: { code },
+      auth: false,
+    }),
+  listOAuthProviders: () => request<OAuthProvider[]>('/admin/auth/oauth'),
+  createOAuthProvider: (input: CreateOAuthProviderInput) =>
+    request<OAuthProvider>('/admin/auth/oauth', { method: 'POST', body: input }),
+  updateOAuthProvider: (id: string, input: UpdateOAuthProviderInput) =>
+    request<OAuthProvider>(`/admin/auth/oauth/${id}`, { method: 'PATCH', body: input }),
+  deleteOAuthProvider: (id: string) =>
+    request<void>(`/admin/auth/oauth/${id}`, { method: 'DELETE' }),
 };
