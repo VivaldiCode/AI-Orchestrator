@@ -1,0 +1,20 @@
+[Unit]
+Description=AI Orchestrator node agent (system-metrics bridge)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=AGENT_CONFIG=/etc/ai-orchestrator-agent/agent.config.json
+ExecStart=/usr/lib/ai-orchestrator-agent/agent
+Restart=on-failure
+RestartSec=3
+# Hardening: the agent only reads system metrics and serves them over HTTP.
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
