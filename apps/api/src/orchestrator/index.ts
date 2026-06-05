@@ -29,6 +29,9 @@ export class Orchestrator {
       contextAware: true,
       autoPull: false,
       failoverRetries: config.failoverRetries,
+      triageEnabled: false,
+      triageModel: '',
+      maxToolCalls: 5,
     };
     this.dispatcher = new Dispatcher(this.registry, this.hub, this.recorder, () => this.settings);
     this.health = new HealthChecker(
@@ -80,6 +83,9 @@ export class Orchestrator {
           contextAware: row.contextAware,
           autoPull: row.autoPull,
           failoverRetries: row.failoverRetries,
+          triageEnabled: row.triageEnabled,
+          triageModel: row.triageModel,
+          maxToolCalls: row.maxToolCalls,
         };
       }
     } catch (err) {

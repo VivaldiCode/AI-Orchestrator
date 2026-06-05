@@ -28,6 +28,9 @@ export function registerSettingsRoutes(app: FastifyInstance): void {
           contextAware: next.contextAware,
           autoPull: next.autoPull,
           failoverRetries: next.failoverRetries,
+          triageEnabled: next.triageEnabled,
+          triageModel: next.triageModel,
+          maxToolCalls: next.maxToolCalls,
           updatedAt: new Date(),
         })
         .where(eq(settingsTable.id, 1));
