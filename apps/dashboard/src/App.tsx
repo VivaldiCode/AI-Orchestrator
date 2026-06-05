@@ -12,6 +12,8 @@ import { ApiKeysPage } from './pages/ApiKeys';
 import { SettingsPage } from './pages/Settings';
 import { UsersPage } from './pages/Users';
 import { AuthenticationPage } from './pages/Authentication';
+import { McpPage } from './pages/Mcp';
+import { SkillsPage } from './pages/Skills';
 import { DocsPage } from './pages/Docs';
 
 export function App() {
@@ -34,6 +36,8 @@ export function App() {
         <Route index element={<OverviewPage />} />
         <Route path="nodes" element={<NodesPage />} />
         <Route path="providers" element={<ProvidersPage />} />
+        <Route path="mcp" element={<McpPage />} />
+        <Route path="skills" element={<SkillsPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="api-keys" element={<ApiKeysPage />} />
         <Route path="users" element={<UsersPage />} />

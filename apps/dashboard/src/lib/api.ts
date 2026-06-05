@@ -4,19 +4,26 @@ import type {
   ApiKey,
   ApiKeyCreated,
   CreateApiKeyInput,
+  CreateMcpServerInput,
   CreateNodeInput,
   CreateOAuthProviderInput,
   CreateProviderInput,
+  CreateSkillInput,
   CreateUserInput,
+  McpServer,
   NodeWithRuntime,
   OAuthProvider,
   Provider,
   PublicOAuthProvider,
+  SetToolAllowInput,
   Settings,
+  Skill,
   TokenPair,
+  UpdateMcpServerInput,
   UpdateNodeInput,
   UpdateOAuthProviderInput,
   UpdateSettingsInput,
+  UpdateSkillInput,
   UpdateUserInput,
   User,
 } from '@ai-orchestrator/shared';
@@ -201,4 +208,24 @@ export const api = {
     request<OAuthProvider>(`/admin/auth/oauth/${id}`, { method: 'PATCH', body: input }),
   deleteOAuthProvider: (id: string) =>
     request<void>(`/admin/auth/oauth/${id}`, { method: 'DELETE' }),
+
+  // mcp servers
+  listMcpServers: () => request<McpServer[]>('/admin/mcp/servers'),
+  createMcpServer: (input: CreateMcpServerInput) =>
+    request<McpServer>('/admin/mcp/servers', { method: 'POST', body: input }),
+  updateMcpServer: (id: string, input: UpdateMcpServerInput) =>
+    request<McpServer>(`/admin/mcp/servers/${id}`, { method: 'PATCH', body: input }),
+  deleteMcpServer: (id: string) => request<void>(`/admin/mcp/servers/${id}`, { method: 'DELETE' }),
+  discoverMcpServer: (id: string) =>
+    request<McpServer>(`/admin/mcp/servers/${id}/discover`, { method: 'POST' }),
+  setMcpToolAllow: (id: string, input: SetToolAllowInput) =>
+    request<McpServer>(`/admin/mcp/servers/${id}/tools`, { method: 'PUT', body: input }),
+
+  // skills
+  listSkills: () => request<Skill[]>('/admin/skills'),
+  createSkill: (input: CreateSkillInput) =>
+    request<Skill>('/admin/skills', { method: 'POST', body: input }),
+  updateSkill: (id: string, input: UpdateSkillInput) =>
+    request<Skill>(`/admin/skills/${id}`, { method: 'PATCH', body: input }),
+  deleteSkill: (id: string) => request<void>(`/admin/skills/${id}`, { method: 'DELETE' }),
 };

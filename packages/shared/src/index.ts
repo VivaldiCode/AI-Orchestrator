@@ -6,5 +6,6 @@ export * from './providers';
 export * from './settings';
 export * from './auth';
 export * from './oauth';
+export * from './mcp';
 export * from './analytics';
 export * from './realtime';

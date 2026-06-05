@@ -10,10 +10,11 @@ AI Orchestrator is young. Contributions toward any of these are very welcome.
 - [x] **Users & role-based access** — admin / editor / viewer + permissions, enforced per-route ([Users & Roles](Users-and-Roles.md))
 - [x] **OAuth / OIDC SSO** — Google, Microsoft, Okta, generic OIDC ([guide](Authentication-OAuth.md))
 - [x] **Native agents** — `.deb` / `.app`+`.pkg` / `.exe` via Node SEA + per-OS CI ([guide](Native-Agents.md))
+- [x] **MCP servers & Skills (phase 1)** — registry, discovery, allowlist + opt-in triage ([guide](MCP-and-Skills.md))
 
-## Planned (designed — see RFCs)
+## Planned
 
-- [ ] **MCP servers & Skills** via an opt-in triage node ([RFC](MCP-and-Skills.md))
+- [ ] **MCP/Skills phase 2** — autonomous tool-call loop + automatic skill selection by intent ([guide](MCP-and-Skills.md))
 - [ ] Quick per-call model analysis (speed vs quality) feeding triage
 - [ ] Native agents: signed/notarized installers + auto-update; GPU metrics
 

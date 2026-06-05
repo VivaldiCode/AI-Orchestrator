@@ -117,6 +117,44 @@ export const settings = pgTable('settings', {
   contextAware: boolean('context_aware').notNull().default(true),
   autoPull: boolean('auto_pull').notNull().default(false),
   failoverRetries: integer('failover_retries').notNull().default(2),
+  triageEnabled: boolean('triage_enabled').notNull().default(false),
+  triageModel: text('triage_model').notNull().default(''),
+  maxToolCalls: integer('max_tool_calls').notNull().default(5),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Registered MCP servers (tool providers). Discovered tools cached in `tools`. */
+export const mcpServers = pgTable('mcp_servers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  transport: text('transport').notNull().default('http'),
+  url: text('url'),
+  command: text('command'),
+  args: jsonb('args').notNull().$type<string[]>().default([]),
+  // AES-256-GCM ciphertext of the HTTP bearer token. Never returned by the API.
+  authEncrypted: text('auth_encrypted'),
+  enabled: boolean('enabled').notNull().default(true),
+  tools: jsonb('tools')
+    .notNull()
+    .$type<
+      { name: string; description: string | null; allowed: boolean; inputSchema?: unknown }[]
+    >()
+    .default([]),
+  lastError: text('last_error'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Reusable task bundles: system prompt + preferred model + MCP tool preset. */
+export const skills = pgTable('skills', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  description: text('description').notNull().default(''),
+  systemPrompt: text('system_prompt').notNull().default(''),
+  modelHint: text('model_hint'),
+  toolPreset: jsonb('tool_preset').notNull().$type<string[]>().default([]),
+  enabled: boolean('enabled').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -154,5 +192,7 @@ export type UserRow = typeof users.$inferSelect;
 export type ApiKeyRow = typeof apiKeys.$inferSelect;
 export type OAuthProviderRow = typeof oauthProviders.$inferSelect;
 export type IdentityRow = typeof identities.$inferSelect;
+export type McpServerRow = typeof mcpServers.$inferSelect;
+export type SkillRow = typeof skills.$inferSelect;
 export type SettingsRow = typeof settings.$inferSelect;
 export type RequestEventRow = typeof requestEvents.$inferInsert;

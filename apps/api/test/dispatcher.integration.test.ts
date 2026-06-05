@@ -77,6 +77,9 @@ describe('Dispatcher (integration with mock Ollama)', () => {
     contextAware: true,
     autoPull: false,
     failoverRetries: 2,
+    triageEnabled: false,
+    triageModel: '',
+    maxToolCalls: 5,
   };
   const recorder = { record: async () => {} } as unknown as AnalyticsRecorder;
 

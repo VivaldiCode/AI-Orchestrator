@@ -4,6 +4,7 @@ import { nowIso, requestId } from '../../lib/ids';
 import { AnthropicAdapter } from '../../providers/anthropic';
 import { BedrockAdapter } from '../../providers/bedrock';
 import { proxyOpenAI } from '../../providers/openaiProxy';
+import { triageChat } from '../../orchestrator/triage';
 import { clientKeyId, parseBodyJson, parseModel, requestTokens, rewriteBodyModel } from '../shared';
 
 /**
@@ -46,9 +47,10 @@ async function handle(
     if (route && route.targetModel && route.targetModel !== requested) {
       rewriteBodyModel(req, route.targetModel);
     }
+    await triageChat(app, req); // opt-in: enrich chat with a Skill + MCP tools
     await app.orchestrator.dispatcher.proxyOllama(req, reply, {
       endpoint,
-      model: route?.targetModel ?? requested,
+      model: parseModel(req) ?? route?.targetModel ?? requested,
       clientKeyId: keyId,
       estimatedTokens: requestTokens(req),
     });

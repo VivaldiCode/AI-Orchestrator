@@ -20,6 +20,7 @@ optionally, across cloud AI providers (Anthropic, OpenAI, xAI, Amazon Bedrock).
 - [Native Agents (.deb / .app / .exe)](Native-Agents.md)
 - [Load-Balancing Strategies](Load-Balancing-Strategies.md)
 - [Adding Providers](Adding-Providers.md)
+- [MCP Servers & Skills](MCP-and-Skills.md)
 - [Dashboard Guide](Dashboard-Guide.md)
 - [Analytics](Analytics.md)
 - [Users & Roles (RBAC)](Users-and-Roles.md)
@@ -33,12 +34,6 @@ optionally, across cloud AI providers (Anthropic, OpenAI, xAI, Amazon Bedrock).
 - [Testing](Testing.md)
 - [Roadmap](Roadmap.md)
 - [FAQ](FAQ.md)
-
-## Plans (RFCs)
-
-Designs we're committed to and building toward — feedback and PRs welcome:
-
-- [MCP Servers & Skills (Triage Node)](MCP-and-Skills.md) — optional, opt-in enrichment
 
 ## Languages & translations
 
