@@ -8,6 +8,8 @@ import { nowIso, requestId } from '../lib/ids';
 import { badGateway, notFound, serviceUnavailable } from '../lib/errors';
 import type { AnalyticsRecorder } from '../analytics/recorder';
 import type { RealtimeHub } from '../realtime/hub';
+import type { ProviderManager } from '../providers/manager';
+import { overflowEnabled, pickOverflowProvider, runOverflow } from '../providers/overflow';
 import type { NodeRegistry } from './registry';
 import { selectNode } from './strategies';
 import { nodeBaseUrl, type ManagedNode } from './types';
@@ -59,6 +61,7 @@ export class Dispatcher {
     private readonly hub: RealtimeHub,
     private readonly recorder: AnalyticsRecorder,
     private readonly getSettings: () => Settings,
+    private readonly getProviders: () => ProviderManager | null = () => null,
   ) {}
 
   /** Healthy candidate nodes for an inference request (model-aware + context-aware). */
@@ -137,6 +140,27 @@ export class Dispatcher {
   ): Promise<void> {
     const settings = this.getSettings();
     const pool = this.candidates(opts.model, opts.estimatedTokens);
+
+    // Cloud overflow: when no candidate node has spare capacity (all saturated,
+    // or none healthy at all), spill to a configured cloud provider instead of
+    // queueing on busy nodes. Disabled / no usable provider → unchanged below.
+    if (
+      overflowEnabled(settings, opts.endpoint) &&
+      !pool.some((n) => n.runtime.inFlight < n.maxConcurrency)
+    ) {
+      const pm = this.getProviders();
+      const provider = pm ? pickOverflowProvider(pm, settings) : null;
+      if (pm && provider) {
+        await runOverflow(
+          { provider, providerManager: pm, hub: this.hub, recorder: this.recorder },
+          request,
+          reply,
+          opts,
+        );
+        return;
+      }
+    }
+
     if (pool.length === 0) {
       throw serviceUnavailable('No healthy nodes available to handle the request.');
     }

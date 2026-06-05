@@ -22,6 +22,7 @@ import type {
   UpdateMcpServerInput,
   UpdateNodeInput,
   UpdateOAuthProviderInput,
+  UpdateProviderInput,
   UpdateSettingsInput,
   UpdateSkillInput,
   UpdateUserInput,
@@ -162,6 +163,8 @@ export const api = {
   listProviders: () => request<Provider[]>('/admin/providers'),
   createProvider: (input: CreateProviderInput) =>
     request<Provider>('/admin/providers', { method: 'POST', body: input }),
+  updateProvider: (id: string, input: UpdateProviderInput) =>
+    request<Provider>(`/admin/providers/${id}`, { method: 'PATCH', body: input }),
   deleteProvider: (id: string) => request<void>(`/admin/providers/${id}`, { method: 'DELETE' }),
 
   // settings
