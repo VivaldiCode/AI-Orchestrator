@@ -36,23 +36,27 @@ export function issueTokens(app: FastifyInstance, user: TokenUser): TokenPair {
 }
 
 export function registerAuthRoutes(app: FastifyInstance): void {
+  // Stricter per-route limit on credential endpoints (brute-force defence, on
+  // top of the global limiter).
+  const strict = { config: { rateLimit: { max: 10, timeWindow: 60_000 } } };
+
   app.get('/auth/setup-status', async (_req, reply) => {
     return reply.send({ needsSetup: await app.auth.needsSetup() });
   });
 
-  app.post('/auth/setup', async (req, reply) => {
+  app.post('/auth/setup', strict, async (req, reply) => {
     const { username, password } = parseWith(setupSchema, req.body);
     const user = await app.auth.createAdmin(username, password);
     return reply.code(201).send({ user, tokens: issueTokens(app, user) });
   });
 
-  app.post('/auth/login', async (req, reply) => {
+  app.post('/auth/login', strict, async (req, reply) => {
     const { username, password } = parseWith(loginSchema, req.body);
     const row = await app.auth.login(username, password);
     return reply.send(issueTokens(app, app.auth.toUser(row)));
   });
 
-  app.post('/auth/refresh', async (req, reply) => {
+  app.post('/auth/refresh', strict, async (req, reply) => {
     const { refreshToken } = parseWith(refreshSchema, req.body);
     let payload;
     try {

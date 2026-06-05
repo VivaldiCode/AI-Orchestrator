@@ -11,9 +11,11 @@ AI Orchestrator is young. Contributions toward any of these are very welcome.
 - [x] **OAuth / OIDC SSO** — Google, Microsoft, Okta, generic OIDC ([guide](Authentication-OAuth.md))
 - [x] **Native agents** — `.deb` / `.app`+`.pkg` / `.exe` via Node SEA + per-OS CI ([guide](Native-Agents.md))
 - [x] **MCP servers & Skills** — registry, discovery, allowlist, opt-in triage + autonomous tool-call loop ([guide](MCP-and-Skills.md))
+- [x] **CodeQL code scanning** + per-route rate limits on auth/OAuth/WS endpoints
 
 ## Planned
 
+- [ ] **Cookie-based (httpOnly) dashboard auth** — move JWTs out of localStorage (XSS hardening)
 - [ ] Autonomous loop on streaming + `/v1/chat/completions`; LLM-based skill selection
 - [ ] Quick per-call model analysis (speed vs quality) feeding triage
 - [ ] Native agents: signed/notarized installers + auto-update; GPU metrics

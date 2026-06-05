@@ -55,6 +55,8 @@ function redirectUriFor(providerId: string): string {
  */
 export function registerOAuthRoutes(app: FastifyInstance): void {
   const admin = { preHandler: app.requireAdmin };
+  // Stricter per-route limit on the public OAuth handshake (abuse defence).
+  const strict = { config: { rateLimit: { max: 20, timeWindow: 60_000 } } };
 
   // --- public: login buttons + handshake -----------------------------------
 
@@ -62,7 +64,7 @@ export function registerOAuthRoutes(app: FastifyInstance): void {
     return reply.send(await app.oauth.listPublicProviders());
   });
 
-  app.get('/auth/oauth/:id/start', async (req, reply) => {
+  app.get('/auth/oauth/:id/start', strict, async (req, reply) => {
     const provider = await app.oauth.getProviderRow(pathId(req.params));
     if (!provider || !provider.enabled) throw notFound('Unknown or disabled provider.');
 
@@ -89,7 +91,7 @@ export function registerOAuthRoutes(app: FastifyInstance): void {
     return reply.redirect(url);
   });
 
-  app.get('/auth/oauth/:id/callback', async (req, reply) => {
+  app.get('/auth/oauth/:id/callback', strict, async (req, reply) => {
     const id = pathId(req.params);
     const q = req.query as Record<string, string | undefined>;
     const sealedRaw = readCookie(req);
@@ -131,7 +133,7 @@ export function registerOAuthRoutes(app: FastifyInstance): void {
     return reply.redirect(dest.toString());
   });
 
-  app.post('/auth/oauth/exchange', async (req, reply) => {
+  app.post('/auth/oauth/exchange', strict, async (req, reply) => {
     const body = req.body as { code?: unknown } | undefined;
     const code = typeof body?.code === 'string' ? body.code : '';
     if (!code) throw badRequest('Missing handoff code.');
