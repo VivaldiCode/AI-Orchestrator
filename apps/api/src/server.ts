@@ -43,6 +43,13 @@ export async function buildServer(): Promise<FastifyInstance> {
     if (err.validation) {
       return reply.code(400).send({ error: 'bad_request', message: err.message });
     }
+    // Honour client-error status on framework errors (e.g. malformed/empty body)
+    // instead of masking them as 500.
+    if (typeof err.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 500) {
+      return reply
+        .code(err.statusCode)
+        .send({ error: err.code ?? 'bad_request', message: err.message });
+    }
     req.log.error({ err }, 'unhandled error');
     return reply.code(500).send({ error: 'internal_error', message: 'Internal server error.' });
   });
