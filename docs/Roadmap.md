@@ -9,12 +9,13 @@ AI Orchestrator is young. Contributions toward any of these are very welcome.
 - [x] **Per-node model selection** — `enabledModels` allowlist ([strategies](Load-Balancing-Strategies.md))
 - [x] **Users & role-based access** — admin / editor / viewer + permissions, enforced per-route ([Users & Roles](Users-and-Roles.md))
 - [x] **OAuth / OIDC SSO** — Google, Microsoft, Okta, generic OIDC ([guide](Authentication-OAuth.md))
+- [x] **Native agents** — `.deb` / `.app`+`.pkg` / `.exe` via Node SEA + per-OS CI ([guide](Native-Agents.md))
 
 ## Planned (designed — see RFCs)
 
 - [ ] **MCP servers & Skills** via an opt-in triage node ([RFC](MCP-and-Skills.md))
-- [ ] **Native agents** — `.deb` / `.exe` / `.app` one-click install ([RFC](Native-Agents.md))
 - [ ] Quick per-call model analysis (speed vs quality) feeding triage
+- [ ] Native agents: signed/notarized installers + auto-update; GPU metrics
 
 ## Near term
 

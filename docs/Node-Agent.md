@@ -8,12 +8,13 @@ never touches Ollama or your data. Source + full install instructions: [`apps/ag
 
 ## Quick start
 
-On each Ollama host:
+On each Ollama host, install the **native binary** (no Node required) — see
+[Native Agents](Native-Agents.md) — or, if you already have Node, run it directly:
 
 ```bash
-node apps/agent/agent.mjs            # listens on 0.0.0.0:4127
+node apps/agent/agent.cjs            # listens on 0.0.0.0:4127
 # or with a shared token:
-AGENT_TOKEN=secret node apps/agent/agent.mjs
+AGENT_TOKEN=secret node apps/agent/agent.cjs
 ```
 
 Then, in the dashboard, set the node's **Agent port** (e.g. `4127`). The orchestrator polls
@@ -29,6 +30,8 @@ the roadmap (not portable via `node:os`).
 
 ## Keeping it running & security
 
-See [`apps/agent/README.md`](../apps/agent/README.md) for launchd (macOS), systemd (Linux) and
-Windows (Task Scheduler / NSSM) examples. The agent exposes only host metrics — still, keep it on a
-trusted network/VPN and/or set `AGENT_TOKEN`, and firewall the port to the orchestrator.
+The **native packages** ([Native Agents](Native-Agents.md)) install a boot service automatically
+(systemd / launchd / Scheduled Task). For the run-with-Node path, see
+[`apps/agent/README.md`](../apps/agent/README.md) for manual launchd/systemd examples. The agent
+exposes only host metrics — still, keep it on a trusted network/VPN and/or set `AGENT_TOKEN`, and
+firewall the port to the orchestrator.

@@ -17,6 +17,7 @@ optionally, across cloud AI providers (Anthropic, OpenAI, xAI, Amazon Bedrock).
 
 - [Adding Nodes](Adding-Nodes.md)
 - [Node Agent — CPU & memory](Node-Agent.md)
+- [Native Agents (.deb / .app / .exe)](Native-Agents.md)
 - [Load-Balancing Strategies](Load-Balancing-Strategies.md)
 - [Adding Providers](Adding-Providers.md)
 - [Dashboard Guide](Dashboard-Guide.md)
@@ -38,7 +39,6 @@ optionally, across cloud AI providers (Anthropic, OpenAI, xAI, Amazon Bedrock).
 Designs we're committed to and building toward — feedback and PRs welcome:
 
 - [MCP Servers & Skills (Triage Node)](MCP-and-Skills.md) — optional, opt-in enrichment
-- [Native Agents (.deb / .exe / .app)](Native-Agents.md) — one-click node install
 
 ## Languages & translations
 
