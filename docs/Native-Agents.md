@@ -49,7 +49,7 @@ Releases attach prebuilt, checksummed artifacts for all three OSes (see the
 
 ## Build approach — Node SEA
 
-Node 24 ships [Single Executable Applications](https://nodejs.org/api/single-executable.html): bake
+Node 26 ships [Single Executable Applications](https://nodejs.org/api/single-executable.html): bake
 `agent.cjs` (CommonJS — SEA mains must be CJS) into the Node runtime to get one self-contained
 binary — **no system Node required**, consistent with our zero-runtime-dependency stance
 ([Security](Security.md)). `apps/agent/build.mjs` automates blob creation, injection (via the

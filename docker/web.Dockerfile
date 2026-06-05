@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- build the dashboard ---------------------------------------------------
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/package.json

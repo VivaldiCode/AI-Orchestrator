@@ -8,7 +8,7 @@
 
 services:
   mock-ollama:
-    image: node:24-alpine
+    image: node:26-alpine
     command: node /mock.mjs
     environment:
       PORT: '11434'
@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
 
   mock-ollama-2:
-    image: node:24-alpine
+    image: node:26-alpine
     command: node /mock.mjs
     environment:
       PORT: '11434'
@@ -30,7 +30,7 @@ services:
   # Fake OIDC identity provider for end-to-end SSO testing. Reachable by the API
   # over the compose network as `mock-oidc`, and from the host on port 9000.
   mock-oidc:
-    image: node:24-alpine
+    image: node:26-alpine
     command: node /mock-oidc.mjs
     environment:
       PORT: '9000'
