@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # --- dependencies (production only) ----------------------------------------
-FROM node:24-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 # Copy manifests first for better layer caching.
 COPY package.json package-lock.json ./
@@ -11,7 +11,7 @@ COPY apps/dashboard/package.json apps/dashboard/package.json
 RUN npm ci --omit=dev -w @ai-orchestrator/api --include-workspace-root
 
 # --- runtime ---------------------------------------------------------------
-FROM node:24-alpine AS runtime
+FROM node:26-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 RUN addgroup -S app && adduser -S app -G app
