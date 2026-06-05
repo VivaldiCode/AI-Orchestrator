@@ -21,6 +21,7 @@ optionally, across cloud AI providers (Anthropic, OpenAI, xAI, Amazon Bedrock).
 - [Adding Providers](Adding-Providers.md)
 - [Dashboard Guide](Dashboard-Guide.md)
 - [Analytics](Analytics.md)
+- [Users & Roles (RBAC)](Users-and-Roles.md)
 
 ## Reference
 
@@ -30,6 +31,14 @@ optionally, across cloud AI providers (Anthropic, OpenAI, xAI, Amazon Bedrock).
 - [Testing](Testing.md)
 - [Roadmap](Roadmap.md)
 - [FAQ](FAQ.md)
+
+## Plans (RFCs)
+
+Designs we're committed to and building toward — feedback and PRs welcome:
+
+- [Authentication & OAuth/SSO](Authentication-OAuth.md) — Google / Microsoft / Okta
+- [MCP Servers & Skills (Triage Node)](MCP-and-Skills.md) — optional, opt-in enrichment
+- [Native Agents (.deb / .exe / .app)](Native-Agents.md) — one-click node install
 
 ## Languages & translations
 
