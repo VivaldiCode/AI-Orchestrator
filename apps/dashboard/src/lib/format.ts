@@ -6,6 +6,18 @@ export function formatLatency(ms: number | null | undefined): string {
   return `${(ms / 1000).toFixed(2)} s`;
 }
 
+export function formatBytes(bytes: number | null | undefined): string {
+  if (bytes == null) return '—';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let value = bytes;
+  let i = 0;
+  while (value >= 1024 && i < units.length - 1) {
+    value /= 1024;
+    i += 1;
+  }
+  return `${value.toFixed(i > 0 && value < 10 ? 1 : 0)} ${units[i]}`;
+}
+
 export function formatNumber(n: number | null | undefined, locale = 'en'): string {
   if (n == null) return '—';
   return new Intl.NumberFormat(locale).format(n);

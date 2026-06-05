@@ -55,6 +55,7 @@ function fakeRow(id: string, port: number): NodeRow {
     enabled: true,
     maxConcurrency: 4,
     tags: [],
+    agentPort: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   } as NodeRow;

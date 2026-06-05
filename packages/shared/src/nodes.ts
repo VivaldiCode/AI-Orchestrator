@@ -17,6 +17,8 @@ const nodeFields = {
   enabled: z.boolean(),
   maxConcurrency: z.number().int().min(1).max(1024),
   tags: z.array(z.string().min(1).max(40)).max(20),
+  /** Optional port of the node agent (system metrics bridge); null = disabled. */
+  agentPort: z.number().int().min(1).max(65535).nullable(),
 };
 
 /** Payload to register a new Ollama node (a Mac). */
@@ -28,6 +30,7 @@ export const createNodeSchema = z.object({
   enabled: nodeFields.enabled.default(true),
   maxConcurrency: nodeFields.maxConcurrency.default(4),
   tags: nodeFields.tags.default([]),
+  agentPort: nodeFields.agentPort.default(null),
 });
 export type CreateNodeInput = z.infer<typeof createNodeSchema>;
 
@@ -45,6 +48,19 @@ export const nodeSchema = z.object({
 export type Node = z.infer<typeof nodeSchema>;
 
 /** Live, in-memory runtime metrics for a node (not persisted as-is). */
+/** Host system metrics reported by the optional node agent. */
+export const systemStatsSchema = z.object({
+  cpu: z.number().min(0).max(1).nullable(),
+  cores: z.number().int().nonnegative().nullable(),
+  memUsed: z.number().nonnegative().nullable(),
+  memTotal: z.number().nonnegative().nullable(),
+  load1: z.number().nonnegative().nullable(),
+  platform: z.string().nullable(),
+  arch: z.string().nullable(),
+  uptimeSeconds: z.number().nonnegative().nullable(),
+});
+export type SystemStats = z.infer<typeof systemStatsSchema>;
+
 export const nodeRuntimeSchema = z.object({
   id: z.uuid(),
   status: nodeStatusSchema,
@@ -55,6 +71,8 @@ export const nodeRuntimeSchema = z.object({
   models: z.array(z.string()),
   version: z.string().nullable(),
   lastCheckedAt: z.string().nullable(),
+  /** Host CPU/memory from the node agent, or null when no agent is configured. */
+  system: systemStatsSchema.nullable(),
 });
 export type NodeRuntime = z.infer<typeof nodeRuntimeSchema>;
 

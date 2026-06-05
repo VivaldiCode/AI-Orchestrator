@@ -1,0 +1,34 @@
+# Node Agent (CPU & memory)
+
+Ollama doesn't report host CPU/RAM, so to see **per-node CPU and memory** in the dashboard you run
+a tiny **agent** on each machine that hosts Ollama (macOS, Windows, Linux).
+
+The agent is **dependency-free** (Node 18+, just `node:os`) and serves only local system stats — it
+never touches Ollama or your data. Source + full install instructions: [`apps/agent`](../apps/agent/README.md).
+
+## Quick start
+
+On each Ollama host:
+
+```bash
+node apps/agent/agent.mjs            # listens on 0.0.0.0:4127
+# or with a shared token:
+AGENT_TOKEN=secret node apps/agent/agent.mjs
+```
+
+Then, in the dashboard, set the node's **Agent port** (e.g. `4127`). The orchestrator polls
+`http://<node-host>:<agent-port>/stats` during its health checks and shows live CPU/memory on the
+node cards (Overview) and in the Nodes table.
+
+If you set `AGENT_TOKEN`, set a matching `NODE_AGENT_TOKEN` in the orchestrator's `.env`.
+
+## What it reports
+
+CPU usage %, memory used/total, 1-minute load average, platform/arch and uptime. GPU metrics are on
+the roadmap (not portable via `node:os`).
+
+## Keeping it running & security
+
+See [`apps/agent/README.md`](../apps/agent/README.md) for launchd (macOS), systemd (Linux) and
+Windows (Task Scheduler / NSSM) examples. The agent exposes only host metrics — still, keep it on a
+trusted network/VPN and/or set `AGENT_TOKEN`, and firewall the port to the orchestrator.

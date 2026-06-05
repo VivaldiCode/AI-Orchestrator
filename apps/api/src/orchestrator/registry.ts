@@ -14,6 +14,7 @@ function rowToManaged(row: NodeRow, runtime: RuntimeState): ManagedNode {
     enabled: row.enabled,
     maxConcurrency: row.maxConcurrency,
     tags: row.tags ?? [],
+    agentPort: row.agentPort ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     runtime,

@@ -9,6 +9,10 @@ export const en = {
   'common.never': 'never',
   'common.language': 'Language',
   'common.theme': 'Theme',
+  'common.cpu': 'CPU',
+  'common.memory': 'Memory',
+  'nodes.agentPort': 'Agent port (optional)',
+  'nodes.colSystem': 'System',
 
   // docs
   'nav.docs': 'Docs',

@@ -115,3 +115,34 @@ export function EmptyState({ title, hint }: { title: string; hint?: string }) {
     </Card>
   );
 }
+
+export function Meter({
+  label,
+  value,
+  percent,
+  tone = 'concert',
+}: {
+  label: string;
+  value: string;
+  percent: number;
+  tone?: 'concert' | 'baton';
+}) {
+  const pct = Math.min(100, Math.max(0, percent));
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between text-[11px] text-slate-400">
+        <span>{label}</span>
+        <span className="text-slate-300">{value}</span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+        <div
+          className={cn(
+            'h-full rounded-full',
+            tone === 'baton' ? 'bg-baton-500' : 'bg-concert-500',
+          )}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
