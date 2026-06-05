@@ -180,6 +180,7 @@ export function NodesPage() {
                 <th className="px-4 py-3">{t('nodes.colInFlight')}</th>
                 <th className="px-4 py-3">{t('nodes.colLatency')}</th>
                 <th className="px-4 py-3">{t('nodes.colSystem')}</th>
+                <th className="px-4 py-3">{t('nodes.weight')}</th>
                 <th className="px-4 py-3">{t('nodes.colMaxConc')}</th>
                 <th className="px-4 py-3 text-right">{t('nodes.colActions')}</th>
               </tr>
@@ -190,9 +191,6 @@ export function NodesPage() {
                   <tr>
                     <td className="px-4 py-3">
                       <div className="font-medium text-slate-100">{n.name}</div>
-                      <div className="text-xs text-slate-500">
-                        {t('nodes.weightLabel', { weight: n.weight })}
-                      </div>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-slate-400">
                       {n.protocol}://{n.host}:{n.port}
@@ -222,7 +220,22 @@ export function NodesPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <MaxConcurrencyEdit node={n} />
+                      <NodeNumberEdit
+                        node={n}
+                        field="weight"
+                        min={1}
+                        max={1000}
+                        label={t('nodes.weight')}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <NodeNumberEdit
+                        node={n}
+                        field="maxConcurrency"
+                        min={1}
+                        max={1024}
+                        label={t('nodes.maxConcurrency')}
+                      />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
@@ -249,7 +262,7 @@ export function NodesPage() {
                   </tr>
                   {expanded === n.id ? (
                     <tr>
-                      <td colSpan={8} className="p-0">
+                      <td colSpan={9} className="p-0">
                         <ModelsPanel
                           node={n}
                           saving={saveModels.isPending}
@@ -268,28 +281,42 @@ export function NodesPage() {
   );
 }
 
-/** Inline editor for a node's max concurrency; saves on blur/Enter when changed. */
-function MaxConcurrencyEdit({ node }: { node: NodeWithRuntime }) {
-  const { t } = useI18n();
+/** Inline editor for a node's numeric routing fields (weight, max concurrency).
+ *  Saves on blur/Enter, only when the value actually changed. */
+function NodeNumberEdit({
+  node,
+  field,
+  min,
+  max,
+  label,
+}: {
+  node: NodeWithRuntime;
+  field: 'weight' | 'maxConcurrency';
+  min: number;
+  max: number;
+  label: string;
+}) {
   const qc = useQueryClient();
-  const [value, setValue] = useState(String(node.maxConcurrency));
+  const current = node[field];
+  const [value, setValue] = useState(String(current));
 
   const save = useMutation({
-    mutationFn: (max: number) => api.updateNode(node.id, { maxConcurrency: max }),
+    mutationFn: (v: number) =>
+      api.updateNode(node.id, field === 'weight' ? { weight: v } : { maxConcurrency: v }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['nodes'] }),
   });
 
   const commit = () => {
-    const next = Math.max(1, Math.min(1024, Math.round(Number(value) || node.maxConcurrency)));
+    const next = Math.max(min, Math.min(max, Math.round(Number(value) || current)));
     setValue(String(next));
-    if (next !== node.maxConcurrency) save.mutate(next);
+    if (next !== current) save.mutate(next);
   };
 
   return (
     <input
       type="number"
-      min={1}
-      max={1024}
+      min={min}
+      max={max}
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onBlur={commit}
@@ -297,8 +324,8 @@ function MaxConcurrencyEdit({ node }: { node: NodeWithRuntime }) {
         if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
       }}
       disabled={save.isPending}
-      title={t('nodes.maxConcurrency')}
-      aria-label={t('nodes.maxConcurrency')}
+      title={label}
+      aria-label={label}
       className="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100 outline-none focus:border-concert-500 disabled:opacity-50"
     />
   );
