@@ -23,6 +23,7 @@ function mkNode(
     enabled: true,
     maxConcurrency: 4,
     tags: [],
+    agentPort: null,
     createdAt: '',
     updatedAt: '',
     runtime: {

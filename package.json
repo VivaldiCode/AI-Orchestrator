@@ -47,7 +47,12 @@
     "smoke": "node scripts/smoke-test.mjs",
     "db:migrate": "npm run db:migrate -w @ai-orchestrator/api",
     "audit": "npm audit --audit-level=high",
-    "audit:fix": "npm audit fix"
+    "audit:fix": "npm audit fix",
+    "clean:dotfiles": "find . -name node_modules -prune -o -name '._*' -type f -print -delete",
+    "compose:up": "npm run clean:dotfiles && docker compose up -d --build",
+    "compose:up:test": "npm run clean:dotfiles && docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build",
+    "compose:rebuild": "npm run clean:dotfiles && docker compose down && docker compose up -d --build --force-recreate",
+    "compose:down": "docker compose down"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

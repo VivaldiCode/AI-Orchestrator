@@ -16,6 +16,7 @@ optionally, across cloud AI providers (Anthropic, OpenAI, xAI, Amazon Bedrock).
 ## Guides
 
 - [Adding Nodes](Adding-Nodes.md)
+- [Node Agent — CPU & memory](Node-Agent.md)
 - [Load-Balancing Strategies](Load-Balancing-Strategies.md)
 - [Adding Providers](Adding-Providers.md)
 - [Dashboard Guide](Dashboard-Guide.md)

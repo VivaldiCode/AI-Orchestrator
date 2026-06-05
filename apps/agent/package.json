@@ -1,0 +1,17 @@
+{
+  "name": "@ai-orchestrator/agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Dependency-free system-metrics agent for AI Orchestrator nodes (macOS/Windows/Linux).",
+  "license": "MIT",
+  "bin": {
+    "ai-orchestrator-agent": "agent.mjs"
+  },
+  "scripts": {
+    "start": "node agent.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
