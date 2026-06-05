@@ -13,6 +13,7 @@ export interface RuntimeState {
   lastCheckedAt: string | null;
   consecutiveFailures: number;
   system: SystemStats | null;
+  modelContext: Record<string, number>;
 }
 
 /** A persisted node merged with its live runtime state. */
@@ -27,6 +28,7 @@ export interface ManagedNode {
   maxConcurrency: number;
   tags: string[];
   agentPort: number | null;
+  enabledModels: string[] | null;
   createdAt: string;
   updatedAt: string;
   runtime: RuntimeState;
@@ -44,6 +46,7 @@ export function freshRuntime(): RuntimeState {
     lastCheckedAt: null,
     consecutiveFailures: 0,
     system: null,
+    modelContext: {},
   };
 }
 
@@ -63,5 +66,6 @@ export function toNodeRuntime(n: ManagedNode): NodeRuntime {
     version: n.runtime.version,
     lastCheckedAt: n.runtime.lastCheckedAt,
     system: n.runtime.system,
+    modelContext: n.runtime.modelContext,
   };
 }

@@ -1,8 +1,18 @@
 import { eq, sql as dsql } from 'drizzle-orm';
-import type { ApiKey, ApiKeyCreated, ApiKeyScope, User } from '@ai-orchestrator/shared';
+import { effectivePermissions } from '@ai-orchestrator/shared';
+import type {
+  ApiKey,
+  ApiKeyCreated,
+  ApiKeyScope,
+  CreateUserInput,
+  Permission,
+  Role,
+  UpdateUserInput,
+  User,
+} from '@ai-orchestrator/shared';
 import type { DB } from '../db/client';
 import { apiKeys, users, type ApiKeyRow, type UserRow } from '../db/schema';
-import { conflict, unauthorized } from '../lib/errors';
+import { conflict, notFound, unauthorized } from '../lib/errors';
 import { generateApiKey, hashApiKey, hashPassword, verifyPassword } from '../lib/crypto';
 import { logger } from '../lib/logger';
 
@@ -35,12 +45,74 @@ export class AuthService {
   }
 
   toUser(row: UserRow): User {
+    const role = row.role as Role;
     return {
       id: row.id,
       username: row.username,
-      role: row.role as User['role'],
+      role,
+      permissions: effectivePermissions(role, row.permissions as Permission[] | null),
       createdAt: row.createdAt.toISOString(),
     };
+  }
+
+  // --- users (dashboard accounts) ------------------------------------------
+
+  async listUsers(): Promise<User[]> {
+    const rows = await this.db.select().from(users).orderBy(users.createdAt);
+    return rows.map((r) => this.toUser(r));
+  }
+
+  async createUser(input: CreateUserInput): Promise<User> {
+    const existing = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.username, input.username))
+      .limit(1);
+    if (existing.length > 0) throw conflict('A user with that username already exists.');
+    const passwordHash = await hashPassword(input.password);
+    const [row] = await this.db
+      .insert(users)
+      .values({
+        username: input.username,
+        passwordHash,
+        role: input.role,
+        permissions: input.permissions,
+      })
+      .returning();
+    return this.toUser(row);
+  }
+
+  async updateUser(id: string, patch: UpdateUserInput): Promise<User> {
+    const [current] = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    if (!current) throw notFound('User not found.');
+    // Never strip the last remaining admin of their admin role.
+    if (current.role === 'admin' && patch.role && patch.role !== 'admin') {
+      if ((await this.countAdmins()) <= 1) throw conflict('Cannot demote the last admin.');
+    }
+    const values: Partial<typeof users.$inferInsert> = {};
+    if (patch.role !== undefined) values.role = patch.role;
+    if (patch.permissions !== undefined) values.permissions = patch.permissions;
+    if (patch.password !== undefined) values.passwordHash = await hashPassword(patch.password);
+    if (Object.keys(values).length === 0) return this.toUser(current);
+    const [row] = await this.db.update(users).set(values).where(eq(users.id, id)).returning();
+    return this.toUser(row);
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    const [current] = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
+    if (!current) throw notFound('User not found.');
+    if (current.role === 'admin' && (await this.countAdmins()) <= 1) {
+      throw conflict('Cannot delete the last admin.');
+    }
+    await this.db.delete(users).where(eq(users.id, id));
+  }
+
+  async countAdmins(): Promise<number> {
+    const [r] = await this.db
+      .select({ c: dsql<number>`count(*)::int` })
+      .from(users)
+      .where(eq(users.role, 'admin'));
+    return r?.c ?? 0;
   }
 
   // --- API keys ------------------------------------------------------------

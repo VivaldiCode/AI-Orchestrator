@@ -19,6 +19,7 @@ function toDto(n: ManagedNode): NodeWithRuntime {
     maxConcurrency: n.maxConcurrency,
     tags: n.tags,
     agentPort: n.agentPort,
+    enabledModels: n.enabledModels,
     createdAt: n.createdAt,
     updatedAt: n.updatedAt,
     runtime: toNodeRuntime(n),

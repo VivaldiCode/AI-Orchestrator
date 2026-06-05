@@ -12,6 +12,23 @@ interface OllamaVersion {
   version?: string;
 }
 
+interface OllamaShow {
+  model_info?: Record<string, unknown>;
+  parameters?: string;
+}
+
+function parseContextLength(show: OllamaShow): number | null {
+  const info = show.model_info ?? {};
+  for (const [key, value] of Object.entries(info)) {
+    if (key.endsWith('.context_length') && typeof value === 'number') return value;
+  }
+  if (typeof show.parameters === 'string') {
+    const match = /num_ctx\s+(\d+)/.exec(show.parameters);
+    if (match) return Number(match[1]);
+  }
+  return null;
+}
+
 interface AgentStats {
   cpu?: number;
   cores?: number;
@@ -89,6 +106,7 @@ export class HealthChecker {
     }
 
     await this.checkAgent(node);
+    await this.discoverContext(node);
   }
 
   /** Best-effort poll of the optional node agent for host CPU/memory. */
@@ -115,6 +133,39 @@ export class HealthChecker {
       };
     } catch {
       // agent optional / unreachable — keep the previous value
+    }
+  }
+
+  /** Best-effort discovery of each model's context window via /api/show. */
+  private async discoverContext(node: ManagedNode): Promise<void> {
+    const base = nodeBaseUrl(node);
+    const ctx = node.runtime.modelContext;
+    for (const model of node.runtime.models) {
+      if (ctx[model] != null) continue;
+      try {
+        const show = await this.postJson<OllamaShow>(`${base}/api/show`, { name: model });
+        const len = parseContextLength(show);
+        if (len != null) ctx[model] = len;
+      } catch {
+        // ignore; retried next cycle
+      }
+    }
+  }
+
+  private async postJson<T>(url: string, body: unknown): Promise<T> {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return (await res.json()) as T;
+    } finally {
+      clearTimeout(timer);
     }
   }
 

@@ -6,12 +6,14 @@ import type {
   CreateApiKeyInput,
   CreateNodeInput,
   CreateProviderInput,
+  CreateUserInput,
   NodeWithRuntime,
   Provider,
   Settings,
   TokenPair,
   UpdateNodeInput,
   UpdateSettingsInput,
+  UpdateUserInput,
   User,
 } from '@ai-orchestrator/shared';
 
@@ -169,4 +171,12 @@ export const api = {
   createApiKey: (input: CreateApiKeyInput) =>
     request<ApiKeyCreated>('/admin/api-keys', { method: 'POST', body: input }),
   deleteApiKey: (id: string) => request<void>(`/admin/api-keys/${id}`, { method: 'DELETE' }),
+
+  // users
+  listUsers: () => request<User[]>('/admin/users'),
+  createUser: (input: CreateUserInput) =>
+    request<User>('/admin/users', { method: 'POST', body: input }),
+  updateUser: (id: string, input: UpdateUserInput) =>
+    request<User>(`/admin/users/${id}`, { method: 'PATCH', body: input }),
+  deleteUser: (id: string) => request<void>(`/admin/users/${id}`, { method: 'DELETE' }),
 };

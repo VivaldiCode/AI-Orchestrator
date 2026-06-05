@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { Fragment, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreateNodeInput } from '@ai-orchestrator/shared';
+import type { CreateNodeInput, NodeWithRuntime } from '@ai-orchestrator/shared';
 import { api } from '../lib/api';
 import { useI18n } from '../i18n';
 import type { TranslationKey } from '../i18n/en';
@@ -18,6 +18,7 @@ const EMPTY: CreateNodeInput = {
   maxConcurrency: 4,
   tags: [],
   agentPort: null,
+  enabledModels: null,
 };
 
 export function NodesPage() {
@@ -28,6 +29,7 @@ export function NodesPage() {
   const [form, setForm] = useState<CreateNodeInput>(EMPTY);
   const [error, setError] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<Record<string, string>>({});
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['nodes'] });
 
@@ -50,6 +52,15 @@ export function NodesPage() {
     mutationFn: (vars: { id: string; enabled: boolean }) =>
       api.updateNode(vars.id, { enabled: vars.enabled }),
     onSuccess: invalidate,
+  });
+
+  const saveModels = useMutation({
+    mutationFn: (vars: { id: string; enabledModels: string[] | null }) =>
+      api.updateNode(vars.id, { enabledModels: vars.enabledModels }),
+    onSuccess: () => {
+      setExpanded(null);
+      invalidate();
+    },
   });
 
   const test = useMutation({
@@ -174,62 +185,181 @@ export function NodesPage() {
             </thead>
             <tbody className="divide-y divide-slate-800">
               {nodes.map((n) => (
-                <tr key={n.id}>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-slate-100">{n.name}</div>
-                    <div className="text-xs text-slate-500">
-                      {t('nodes.weightLabel', { weight: n.weight })}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-slate-400">
-                    {n.protocol}://{n.host}:{n.port}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center gap-2">
-                      <span className={cn('h-2 w-2 rounded-full', statusDot(n.runtime.status))} />
-                      {t(`status.${n.runtime.status}` as TranslationKey)}
-                    </span>
-                    {testResult[n.id] ? (
-                      <div className="mt-1 text-xs text-slate-500">{testResult[n.id]}</div>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3">{n.runtime.inFlight}</td>
-                  <td className="px-4 py-3">{fmt.latency(n.runtime.latencyMs)}</td>
-                  <td className="px-4 py-3 text-xs text-slate-400">
-                    {n.runtime.system ? (
-                      <>
-                        <div>CPU {Math.round((n.runtime.system.cpu ?? 0) * 100)}%</div>
-                        <div>
-                          {formatBytes(n.runtime.system.memUsed)} /{' '}
-                          {formatBytes(n.runtime.system.memTotal)}
-                        </div>
-                      </>
-                    ) : (
-                      '—'
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" onClick={() => test.mutate(n.id)}>
-                        {t('nodes.test')}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => toggle.mutate({ id: n.id, enabled: !n.enabled })}
-                      >
-                        {n.enabled ? t('nodes.disable') : t('nodes.enable')}
-                      </Button>
-                      <Button variant="danger" onClick={() => remove.mutate(n.id)}>
-                        {t('nodes.delete')}
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                <Fragment key={n.id}>
+                  <tr>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-slate-100">{n.name}</div>
+                      <div className="text-xs text-slate-500">
+                        {t('nodes.weightLabel', { weight: n.weight })}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-slate-400">
+                      {n.protocol}://{n.host}:{n.port}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center gap-2">
+                        <span className={cn('h-2 w-2 rounded-full', statusDot(n.runtime.status))} />
+                        {t(`status.${n.runtime.status}` as TranslationKey)}
+                      </span>
+                      {testResult[n.id] ? (
+                        <div className="mt-1 text-xs text-slate-500">{testResult[n.id]}</div>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3">{n.runtime.inFlight}</td>
+                    <td className="px-4 py-3">{fmt.latency(n.runtime.latencyMs)}</td>
+                    <td className="px-4 py-3 text-xs text-slate-400">
+                      {n.runtime.system ? (
+                        <>
+                          <div>CPU {Math.round((n.runtime.system.cpu ?? 0) * 100)}%</div>
+                          <div>
+                            {formatBytes(n.runtime.system.memUsed)} /{' '}
+                            {formatBytes(n.runtime.system.memTotal)}
+                          </div>
+                        </>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          onClick={() => setExpanded(expanded === n.id ? null : n.id)}
+                        >
+                          {t('nodes.models')}
+                        </Button>
+                        <Button variant="ghost" onClick={() => test.mutate(n.id)}>
+                          {t('nodes.test')}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => toggle.mutate({ id: n.id, enabled: !n.enabled })}
+                        >
+                          {n.enabled ? t('nodes.disable') : t('nodes.enable')}
+                        </Button>
+                        <Button variant="danger" onClick={() => remove.mutate(n.id)}>
+                          {t('nodes.delete')}
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                  {expanded === n.id ? (
+                    <tr>
+                      <td colSpan={7} className="p-0">
+                        <ModelsPanel
+                          node={n}
+                          saving={saveModels.isPending}
+                          onSave={(enabledModels) => saveModels.mutate({ id: n.id, enabledModels })}
+                        />
+                      </td>
+                    </tr>
+                  ) : null}
+                </Fragment>
               ))}
             </tbody>
           </table>
         </Card>
       )}
+    </div>
+  );
+}
+
+/** Compact token count: 8192 → "8K", 131072 → "131K". */
+function formatCtx(n: number): string {
+  return n >= 1000 ? `${Math.round(n / 1000)}K` : String(n);
+}
+
+/**
+ * Per-node model allowlist editor. When "restrict" is off the node serves any
+ * model it has; when on, only the checked models are eligible for routing.
+ * Shows the discovered context window per model (used by context-aware routing).
+ */
+function ModelsPanel({
+  node,
+  onSave,
+  saving,
+}: {
+  node: NodeWithRuntime;
+  onSave: (enabledModels: string[] | null) => void;
+  saving: boolean;
+}) {
+  const { t } = useI18n();
+  const available = node.runtime.models ?? [];
+  const ctx = node.runtime.modelContext ?? {};
+  // Union of live models + any already-allowlisted ones (which may be offline).
+  const all = [...new Set([...available, ...(node.enabledModels ?? [])])].sort();
+  const [restrict, setRestrict] = useState(node.enabledModels != null);
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(node.enabledModels ?? available),
+  );
+
+  const toggleModel = (model: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(model)) next.delete(model);
+      else next.add(model);
+      return next;
+    });
+
+  return (
+    <div className="space-y-3 border-t border-slate-800 bg-slate-900/40 px-4 py-4">
+      <label className="flex items-center gap-3 text-sm text-slate-200">
+        <input
+          type="checkbox"
+          checked={restrict}
+          onChange={(e) => setRestrict(e.target.checked)}
+          className="h-4 w-4 accent-concert-500"
+        />
+        {t('nodes.restrictModels')}
+      </label>
+      <p className="text-xs text-slate-500">{t('nodes.restrictHint')}</p>
+
+      {all.length === 0 ? (
+        <p className="text-xs text-slate-500">{t('nodes.noModelsDiscovered')}</p>
+      ) : (
+        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {all.map((model) => {
+            const offline = !available.includes(model);
+            const ctxLen = ctx[model];
+            return (
+              <li key={model}>
+                <label
+                  className={cn(
+                    'flex items-center gap-2 rounded-lg border px-3 py-2',
+                    restrict
+                      ? 'border-slate-700 bg-slate-950'
+                      : 'border-slate-800 bg-slate-900/40 opacity-60',
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    disabled={!restrict}
+                    checked={!restrict || selected.has(model)}
+                    onChange={() => toggleModel(model)}
+                    className="h-4 w-4 accent-concert-500"
+                  />
+                  <span className="min-w-0 flex-1 truncate font-mono text-xs text-slate-200">
+                    {model}
+                  </span>
+                  <span className="shrink-0 text-[10px] uppercase tracking-wide text-slate-500">
+                    {ctxLen
+                      ? t('nodes.ctxLabel', { tokens: formatCtx(ctxLen) })
+                      : t('nodes.ctxUnknown')}
+                    {offline ? ` · ${t('nodes.offlineModel')}` : ''}
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <div className="flex items-center gap-3">
+        <Button onClick={() => onSave(restrict ? [...selected] : null)} disabled={saving}>
+          {saving ? t('nodes.addingButton') : t('nodes.saveModels')}
+        </Button>
+        {!restrict ? <span className="text-xs text-slate-500">{t('nodes.allModels')}</span> : null}
+      </div>
     </div>
   );
 }

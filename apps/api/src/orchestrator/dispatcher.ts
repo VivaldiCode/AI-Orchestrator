@@ -27,6 +27,23 @@ export interface DispatchOptions {
   model: string | null;
   /** Authenticated API key id (for per-client analytics), if any. */
   clientKeyId: string | null;
+  /** Estimated prompt tokens, for context-window-aware routing (0/undefined = unknown). */
+  estimatedTokens?: number;
+}
+
+const CONTEXT_MARGIN = 1.15; // headroom over the prompt estimate for the response
+
+function modelAllowed(node: ManagedNode, model: string): boolean {
+  const allow = node.enabledModels;
+  if (!allow || allow.length === 0) return true;
+  return allow.some((m) => modelMatches(m, model));
+}
+
+function contextFor(node: ManagedNode, model: string): number | null {
+  for (const [name, len] of Object.entries(node.runtime.modelContext)) {
+    if (modelMatches(name, model)) return len;
+  }
+  return null;
 }
 
 /**
@@ -44,16 +61,41 @@ export class Dispatcher {
     private readonly getSettings: () => Settings,
   ) {}
 
-  /** Healthy candidate nodes for an inference request (model-aware if enabled). */
-  candidates(model: string | null): ManagedNode[] {
+  /** Healthy candidate nodes for an inference request (model-aware + context-aware). */
+  candidates(model: string | null, estimatedTokens = 0): ManagedNode[] {
     const settings = this.getSettings();
     let pool = this.registry
       .listEnabled()
       .filter((n) => n.runtime.status === 'up' || n.runtime.status === 'degraded');
+
+    // Per-node model allowlist: if a node restricts its models, honour it.
+    if (model) {
+      pool = pool.filter((n) => modelAllowed(n, model));
+    }
+
+    // Model-aware: prefer nodes that actually report having the model.
     if (model && settings.modelAware) {
       const withModel = pool.filter((n) => n.runtime.models.some((m) => modelMatches(m, model)));
       if (withModel.length > 0) pool = withModel;
     }
+
+    // Context-aware: only nodes whose model context window fits the request. If
+    // none fit, fall back to the node(s) with the largest known context, so big
+    // calls always go to whoever supports more.
+    if (model && settings.contextAware && estimatedTokens > 0) {
+      const needed = Math.ceil(estimatedTokens * CONTEXT_MARGIN);
+      const fits = pool.filter((n) => {
+        const ctx = contextFor(n, model);
+        return ctx == null || ctx >= needed; // unknown context → don't over-restrict
+      });
+      if (fits.length > 0) {
+        pool = fits;
+      } else {
+        const maxCtx = Math.max(...pool.map((n) => contextFor(n, model) ?? 0));
+        if (maxCtx > 0) pool = pool.filter((n) => (contextFor(n, model) ?? 0) === maxCtx);
+      }
+    }
+
     return pool;
   }
 
@@ -64,7 +106,7 @@ export class Dispatcher {
     opts: DispatchOptions,
   ): Promise<void> {
     const settings = this.getSettings();
-    const pool = this.candidates(opts.model);
+    const pool = this.candidates(opts.model, opts.estimatedTokens);
     if (pool.length === 0) {
       throw serviceUnavailable('No healthy nodes available to handle the request.');
     }
