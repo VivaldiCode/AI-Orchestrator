@@ -1,4 +1,5 @@
 import type { preHandlerHookHandler } from 'fastify';
+import type { Permission } from '@ai-orchestrator/shared';
 import type { Orchestrator } from '../orchestrator/index';
 import type { ProviderManager } from '../providers/manager';
 import type { AuthService } from '../auth/service';
@@ -10,6 +11,7 @@ declare module 'fastify' {
     auth: AuthService;
     requireAdmin: preHandlerHookHandler;
     requireApiKey: preHandlerHookHandler;
+    requirePermission: (permission: Permission) => preHandlerHookHandler;
   }
 
   interface FastifyRequest {
@@ -20,7 +22,19 @@ declare module 'fastify' {
 
 declare module '@fastify/jwt' {
   interface FastifyJWT {
-    payload: { sub: string; username: string; role: string; type: 'access' | 'refresh' };
-    user: { sub: string; username: string; role: string; type: 'access' | 'refresh' };
+    payload: {
+      sub: string;
+      username: string;
+      role: string;
+      perms?: string[];
+      type: 'access' | 'refresh';
+    };
+    user: {
+      sub: string;
+      username: string;
+      role: string;
+      perms?: string[];
+      type: 'access' | 'refresh';
+    };
   }
 }

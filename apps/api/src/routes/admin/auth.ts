@@ -14,10 +14,16 @@ interface TokenUser {
   id: string;
   username: string;
   role: string;
+  permissions?: string[];
 }
 
 function issueTokens(app: FastifyInstance, user: TokenUser): TokenPair {
-  const base = { sub: user.id, username: user.username, role: user.role };
+  const base = {
+    sub: user.id,
+    username: user.username,
+    role: user.role,
+    perms: user.permissions ?? [],
+  };
   const accessToken = app.jwt.sign(
     { ...base, type: 'access' },
     { expiresIn: config.jwtAccessTtl * 1000 },
@@ -43,7 +49,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
   app.post('/auth/login', async (req, reply) => {
     const { username, password } = parseWith(loginSchema, req.body);
     const row = await app.auth.login(username, password);
-    return reply.send(issueTokens(app, { id: row.id, username: row.username, role: row.role }));
+    return reply.send(issueTokens(app, app.auth.toUser(row)));
   });
 
   app.post('/auth/refresh', async (req, reply) => {
@@ -54,6 +60,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
         sub: string;
         username: string;
         role: string;
+        perms?: string[];
         type: 'access' | 'refresh';
       }>(refreshToken);
     } catch {
@@ -61,14 +68,23 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     }
     if (payload.type !== 'refresh') throw unauthorized('Invalid token type.');
     return reply.send(
-      issueTokens(app, { id: payload.sub, username: payload.username, role: payload.role }),
+      issueTokens(app, {
+        id: payload.sub,
+        username: payload.username,
+        role: payload.role,
+        permissions: payload.perms,
+      }),
     );
   });
 
   app.get('/auth/me', { preHandler: app.requireAdmin }, async (req, reply) => {
-    const u = req.adminUser;
-    if (!u) throw unauthorized();
-    return reply.send({ id: u.sub, username: u.username, role: u.role });
+    const u = req.user;
+    return reply.send({
+      id: u.sub,
+      username: u.username,
+      role: u.role,
+      permissions: u.perms ?? [],
+    });
   });
 
   // --- API keys ------------------------------------------------------------

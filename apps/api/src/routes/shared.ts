@@ -1,4 +1,5 @@
 import type { FastifyRequest } from 'fastify';
+import { estimateRequestTokens } from '../orchestrator/tokens';
 
 /** Parse the raw (buffered) request body as JSON, or null. */
 export function parseBodyJson(req: FastifyRequest): Record<string, unknown> | null {
@@ -9,6 +10,11 @@ export function parseBodyJson(req: FastifyRequest): Record<string, unknown> | nu
   } catch {
     return null;
   }
+}
+
+/** Estimated prompt tokens for context-window-aware routing. */
+export function requestTokens(req: FastifyRequest): number {
+  return estimateRequestTokens(parseBodyJson(req));
 }
 
 /** Extract the requested model name from an Ollama/OpenAI body (`model` or `name`). */

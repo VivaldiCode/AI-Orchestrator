@@ -24,6 +24,7 @@ function mkNode(
     maxConcurrency: 4,
     tags: [],
     agentPort: null,
+    enabledModels: null,
     createdAt: '',
     updatedAt: '',
     runtime: {

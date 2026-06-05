@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { APP_NAME, APP_VERSION } from '../../version';
-import { clientKeyId, parseModel, queryParam } from '../shared';
+import { clientKeyId, parseModel, queryParam, requestTokens } from '../shared';
 
 /**
  * Faithful mirror of the Ollama REST API. Inference endpoints are
@@ -16,6 +16,7 @@ export function registerOllamaRoutes(app: FastifyInstance): void {
       endpoint,
       model: parseModel(req),
       clientKeyId: clientKeyId(req),
+      estimatedTokens: requestTokens(req),
     });
 
   const toNode = (endpoint: string) => (req: FastifyRequest, reply: FastifyReply) =>
@@ -23,6 +24,7 @@ export function registerOllamaRoutes(app: FastifyInstance): void {
       endpoint,
       model: parseModel(req),
       clientKeyId: clientKeyId(req),
+      estimatedTokens: requestTokens(req),
     });
 
   // --- inference (load-balanced, streaming) --------------------------------

@@ -21,6 +21,8 @@ export const settingsSchema = z.object({
   strategy: strategySchema.default('least-connections'),
   /** Only route to nodes that report having the requested model. */
   modelAware: z.boolean().default(true),
+  /** Only route to nodes whose model context window fits the request's tokens. */
+  contextAware: z.boolean().default(true),
   /** Automatically `pull` a missing model on a target node before routing. */
   autoPull: z.boolean().default(false),
   /** How many other nodes to try when the chosen one fails. */

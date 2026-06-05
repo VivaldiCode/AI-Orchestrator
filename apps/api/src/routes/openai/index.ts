@@ -4,7 +4,7 @@ import { nowIso, requestId } from '../../lib/ids';
 import { AnthropicAdapter } from '../../providers/anthropic';
 import { BedrockAdapter } from '../../providers/bedrock';
 import { proxyOpenAI } from '../../providers/openaiProxy';
-import { clientKeyId, parseBodyJson, parseModel, rewriteBodyModel } from '../shared';
+import { clientKeyId, parseBodyJson, parseModel, requestTokens, rewriteBodyModel } from '../shared';
 
 /**
  * OpenAI-compatible `/v1/*` surface. By default requests route to the local
@@ -50,6 +50,7 @@ async function handle(
       endpoint,
       model: route?.targetModel ?? requested,
       clientKeyId: keyId,
+      estimatedTokens: requestTokens(req),
     });
     return;
   }

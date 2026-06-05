@@ -19,6 +19,8 @@ const nodeFields = {
   tags: z.array(z.string().min(1).max(40)).max(20),
   /** Optional port of the node agent (system metrics bridge); null = disabled. */
   agentPort: z.number().int().min(1).max(65535).nullable(),
+  /** Allowlist of models this node serves; null/empty = all available models. */
+  enabledModels: z.array(z.string().min(1).max(200)).nullable(),
 };
 
 /** Payload to register a new Ollama node (a Mac). */
@@ -31,6 +33,7 @@ export const createNodeSchema = z.object({
   maxConcurrency: nodeFields.maxConcurrency.default(4),
   tags: nodeFields.tags.default([]),
   agentPort: nodeFields.agentPort.default(null),
+  enabledModels: nodeFields.enabledModels.default(null),
 });
 export type CreateNodeInput = z.infer<typeof createNodeSchema>;
 
@@ -73,6 +76,8 @@ export const nodeRuntimeSchema = z.object({
   lastCheckedAt: z.string().nullable(),
   /** Host CPU/memory from the node agent, or null when no agent is configured. */
   system: systemStatsSchema.nullable(),
+  /** Discovered context window (max tokens) per model name. */
+  modelContext: z.record(z.string(), z.number()),
 });
 export type NodeRuntime = z.infer<typeof nodeRuntimeSchema>;
 

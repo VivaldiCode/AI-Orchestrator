@@ -1,7 +1,51 @@
 import { z } from 'zod';
 
-export const roleSchema = z.enum(['admin', 'viewer']);
+export const roleSchema = z.enum(['admin', 'editor', 'viewer']);
 export type Role = z.infer<typeof roleSchema>;
+
+/**
+ * Fine-grained feature permissions (RBAC). Routes are gated on these; a user's
+ * effective set comes from their role's defaults unless explicitly overridden.
+ */
+export const permissionSchema = z.enum([
+  'nodes:read',
+  'nodes:write',
+  'providers:read',
+  'providers:write',
+  'analytics:read',
+  'apikeys:read',
+  'apikeys:write',
+  'settings:read',
+  'settings:write',
+  'users:read',
+  'users:write',
+]);
+export type Permission = z.infer<typeof permissionSchema>;
+
+/** Every known permission, in display order. */
+export const PERMISSIONS: readonly Permission[] = permissionSchema.options;
+
+/** Default permission set granted by each role. `admin` = everything. */
+export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
+  viewer: ['nodes:read', 'providers:read', 'analytics:read', 'apikeys:read', 'settings:read'],
+  editor: [
+    'nodes:read',
+    'nodes:write',
+    'providers:read',
+    'providers:write',
+    'analytics:read',
+    'apikeys:read',
+    'apikeys:write',
+    'settings:read',
+    'settings:write',
+  ],
+  admin: [...permissionSchema.options],
+};
+
+/** Effective permissions = explicit override (if any), else the role defaults. */
+export function effectivePermissions(role: Role, override?: Permission[] | null): Permission[] {
+  return override && override.length > 0 ? override : ROLE_PERMISSIONS[role];
+}
 
 /** Username + password used for first-run setup and login. */
 export const credentialsSchema = z.object({
@@ -22,9 +66,31 @@ export const userSchema = z.object({
   id: z.uuid(),
   username: z.string(),
   role: roleSchema,
+  /** Effective permissions, resolved from role + override; served to the client. */
+  permissions: z.array(permissionSchema),
   createdAt: z.string(),
 });
 export type User = z.infer<typeof userSchema>;
+
+/** Payload to create a user. Defaults to a full-permission admin for now. */
+export const createUserSchema = z.object({
+  username: credentialsSchema.shape.username,
+  password: credentialsSchema.shape.password,
+  role: roleSchema.default('admin'),
+  /** Optional explicit permission override; null = derive from role. */
+  permissions: z.array(permissionSchema).nullable().default(null),
+});
+export type CreateUserInput = z.infer<typeof createUserSchema>;
+
+/** Partial update of a user (PATCH). Username is immutable. */
+export const updateUserSchema = z
+  .object({
+    role: roleSchema,
+    permissions: z.array(permissionSchema).nullable(),
+    password: credentialsSchema.shape.password,
+  })
+  .partial();
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 
 export const tokenPairSchema = z.object({
   accessToken: z.string(),
