@@ -22,6 +22,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     void (async () => {
       try {
+        // One-time SSO handoff: ?oauth=<code> → exchange for tokens, then scrub the URL.
+        const params = new URLSearchParams(window.location.search);
+        const oauthCode = params.get('oauth');
+        if (oauthCode) {
+          params.delete('oauth');
+          const qs = params.toString();
+          window.history.replaceState(
+            {},
+            '',
+            window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash,
+          );
+          try {
+            setTokens(await api.oauthExchange(oauthCode));
+            const me = await api.me();
+            if (!active) return;
+            setUser(me);
+            setStatus('authenticated');
+            return;
+          } catch {
+            /* fall through to the normal flow */
+          }
+        }
+
         const { needsSetup } = await api.setupStatus();
         if (!active) return;
         if (needsSetup) {

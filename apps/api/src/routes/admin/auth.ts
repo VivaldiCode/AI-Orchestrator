@@ -17,7 +17,7 @@ interface TokenUser {
   permissions?: string[];
 }
 
-function issueTokens(app: FastifyInstance, user: TokenUser): TokenPair {
+export function issueTokens(app: FastifyInstance, user: TokenUser): TokenPair {
   const base = {
     sub: user.id,
     username: user.username,
@@ -77,7 +77,7 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     );
   });
 
-  app.get('/auth/me', { preHandler: app.requireAdmin }, async (req, reply) => {
+  app.get('/auth/me', { preHandler: app.requireUser }, async (req, reply) => {
     const u = req.user;
     return reply.send({
       id: u.sub,
@@ -88,17 +88,29 @@ export function registerAuthRoutes(app: FastifyInstance): void {
   });
 
   // --- API keys ------------------------------------------------------------
-  app.get('/api-keys', { preHandler: app.requireAdmin }, async (_req, reply) => {
-    return reply.send(await app.auth.listApiKeys());
-  });
+  app.get(
+    '/api-keys',
+    { preHandler: app.requirePermission('apikeys:read') },
+    async (_req, reply) => {
+      return reply.send(await app.auth.listApiKeys());
+    },
+  );
 
-  app.post('/api-keys', { preHandler: app.requireAdmin }, async (req, reply) => {
-    const { name, scopes } = parseWith(createApiKeySchema, req.body);
-    return reply.code(201).send(await app.auth.createApiKey(name, scopes));
-  });
+  app.post(
+    '/api-keys',
+    { preHandler: app.requirePermission('apikeys:write') },
+    async (req, reply) => {
+      const { name, scopes } = parseWith(createApiKeySchema, req.body);
+      return reply.code(201).send(await app.auth.createApiKey(name, scopes));
+    },
+  );
 
-  app.delete('/api-keys/:id', { preHandler: app.requireAdmin }, async (req, reply) => {
-    await app.auth.revokeApiKey(pathId(req.params));
-    return reply.code(204).send();
-  });
+  app.delete(
+    '/api-keys/:id',
+    { preHandler: app.requirePermission('apikeys:write') },
+    async (req, reply) => {
+      await app.auth.revokeApiKey(pathId(req.params));
+      return reply.code(204).send();
+    },
+  );
 }

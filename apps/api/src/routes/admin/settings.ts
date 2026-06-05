@@ -6,27 +6,33 @@ import { settings as settingsTable } from '../../db/schema';
 import { parseWith } from './util';
 
 export function registerSettingsRoutes(app: FastifyInstance): void {
-  const admin = { preHandler: app.requireAdmin };
+  app.get(
+    '/settings',
+    { preHandler: app.requirePermission('settings:read') },
+    async (_req, reply) => {
+      return reply.send(app.orchestrator.getSettings());
+    },
+  );
 
-  app.get('/settings', admin, async (_req, reply) => {
-    return reply.send(app.orchestrator.getSettings());
-  });
-
-  app.put('/settings', admin, async (req, reply) => {
-    const patch = parseWith(updateSettingsSchema, req.body);
-    const next: Settings = settingsSchema.parse({ ...app.orchestrator.getSettings(), ...patch });
-    await db
-      .update(settingsTable)
-      .set({
-        strategy: next.strategy,
-        modelAware: next.modelAware,
-        contextAware: next.contextAware,
-        autoPull: next.autoPull,
-        failoverRetries: next.failoverRetries,
-        updatedAt: new Date(),
-      })
-      .where(eq(settingsTable.id, 1));
-    app.orchestrator.setSettings(next);
-    return reply.send(next);
-  });
+  app.put(
+    '/settings',
+    { preHandler: app.requirePermission('settings:write') },
+    async (req, reply) => {
+      const patch = parseWith(updateSettingsSchema, req.body);
+      const next: Settings = settingsSchema.parse({ ...app.orchestrator.getSettings(), ...patch });
+      await db
+        .update(settingsTable)
+        .set({
+          strategy: next.strategy,
+          modelAware: next.modelAware,
+          contextAware: next.contextAware,
+          autoPull: next.autoPull,
+          failoverRetries: next.failoverRetries,
+          updatedAt: new Date(),
+        })
+        .where(eq(settingsTable.id, 1));
+      app.orchestrator.setSettings(next);
+      return reply.send(next);
+    },
+  );
 }

@@ -5,6 +5,7 @@ import { db } from './db/client';
 import { AppError } from './lib/errors';
 import { logger, loggerOptions } from './lib/logger';
 import { AuthService } from './auth/service';
+import { OAuthService } from './auth/oauth';
 import { Orchestrator } from './orchestrator/index';
 import { ProviderManager } from './providers/manager';
 import { registerAuth } from './plugins/auth';
@@ -26,6 +27,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   app.decorate('orchestrator', new Orchestrator(db));
   app.decorate('providers', new ProviderManager(db));
   app.decorate('auth', new AuthService(db));
+  app.decorate('oauth', new OAuthService(db));
 
   app.setErrorHandler((err: FastifyError, req, reply) => {
     if (err instanceof AppError) {

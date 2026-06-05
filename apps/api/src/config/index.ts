@@ -33,6 +33,8 @@ const envSchema = z.object({
   JWT_REFRESH_TTL: z.coerce.number().int().min(300).default(2592000),
 
   DASHBOARD_ORIGIN: z.string().default('http://localhost:8080,http://localhost:5173'),
+  // Externally reachable base URL, used to build OAuth redirect URIs.
+  PUBLIC_BASE_URL: z.string().default('http://localhost:8080'),
 
   RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(600),
   RATE_LIMIT_WINDOW: z.coerce.number().int().min(1000).default(60000),
@@ -92,6 +94,7 @@ export const config = {
   dashboardOrigins: env.DASHBOARD_ORIGIN.split(',')
     .map((s) => s.trim())
     .filter(Boolean),
+  publicBaseUrl: env.PUBLIC_BASE_URL.replace(/\/+$/, ''),
   rateLimitMax: env.RATE_LIMIT_MAX,
   rateLimitWindow: env.RATE_LIMIT_WINDOW,
   defaultStrategy: env.DEFAULT_STRATEGY,

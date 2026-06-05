@@ -7,11 +7,11 @@ AI Orchestrator is young. Contributions toward any of these are very welcome.
 - [x] Node agent for CPU/memory metrics ([Node Agent](Node-Agent.md))
 - [x] **Context-aware routing** — token-fit with auto-discovered context windows ([strategies](Load-Balancing-Strategies.md))
 - [x] **Per-node model selection** — `enabledModels` allowlist ([strategies](Load-Balancing-Strategies.md))
-- [x] **Users & role-based access** — admin / editor / viewer + permissions ([Users & Roles](Users-and-Roles.md))
+- [x] **Users & role-based access** — admin / editor / viewer + permissions, enforced per-route ([Users & Roles](Users-and-Roles.md))
+- [x] **OAuth / OIDC SSO** — Google, Microsoft, Okta, generic OIDC ([guide](Authentication-OAuth.md))
 
 ## Planned (designed — see RFCs)
 
-- [ ] **OAuth / OIDC SSO** — Google, Microsoft, Okta ([RFC](Authentication-OAuth.md))
 - [ ] **MCP servers & Skills** via an opt-in triage node ([RFC](MCP-and-Skills.md))
 - [ ] **Native agents** — `.deb` / `.exe` / `.app` one-click install ([RFC](Native-Agents.md))
 - [ ] Quick per-call model analysis (speed vs quality) feeding triage

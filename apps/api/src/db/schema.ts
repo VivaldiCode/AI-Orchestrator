@@ -9,6 +9,7 @@ import {
   jsonb,
   smallint,
   index,
+  uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
 // NOTE: this schema mirrors the hand-written SQL migrations (the source of
@@ -18,7 +19,8 @@ import {
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   username: text('username').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
+  // Null for SSO-only accounts (no local password). See identities/oauth_providers.
+  passwordHash: text('password_hash'),
   role: text('role').notNull().default('admin'),
   /** Optional explicit permission override; null = derive from role. */
   permissions: jsonb('permissions').$type<string[]>(),
@@ -74,6 +76,40 @@ export const modelRoutes = pgTable('model_routes', {
   enabled: boolean('enabled').notNull().default(true),
 });
 
+export const oauthProviders = pgTable('oauth_providers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  type: text('type').notNull(),
+  displayName: text('display_name').notNull(),
+  issuer: text('issuer').notNull(),
+  clientId: text('client_id').notNull(),
+  // AES-256-GCM ciphertext (v1:iv:tag:ct). Never returned by the API.
+  clientSecretEncrypted: text('client_secret_encrypted'),
+  scopes: jsonb('scopes').notNull().$type<string[]>().default([]),
+  enabled: boolean('enabled').notNull().default(true),
+  allowedDomains: jsonb('allowed_domains').notNull().$type<string[]>().default([]),
+  defaultRole: text('default_role').notNull().default('viewer'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** External identities (OIDC subjects) linked to a local user account. */
+export const identities = pgTable(
+  'identities',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    providerId: uuid('provider_id')
+      .notNull()
+      .references(() => oauthProviders.id, { onDelete: 'cascade' }),
+    subject: text('subject').notNull(),
+    email: text('email'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+  },
+  (t) => [uniqueIndex('identities_provider_subject_idx').on(t.providerId, t.subject)],
+);
+
 export const settings = pgTable('settings', {
   id: smallint('id').primaryKey().default(1),
   strategy: text('strategy').notNull().default('least-connections'),
@@ -116,5 +152,7 @@ export type NodeRow = typeof nodes.$inferSelect;
 export type ProviderRow = typeof providers.$inferSelect;
 export type UserRow = typeof users.$inferSelect;
 export type ApiKeyRow = typeof apiKeys.$inferSelect;
+export type OAuthProviderRow = typeof oauthProviders.$inferSelect;
+export type IdentityRow = typeof identities.$inferSelect;
 export type SettingsRow = typeof settings.$inferSelect;
 export type RequestEventRow = typeof requestEvents.$inferInsert;

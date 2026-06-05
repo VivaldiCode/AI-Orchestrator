@@ -4,8 +4,12 @@ import { getAnalytics } from '../../analytics/queries';
 import { parseWith } from './util';
 
 export function registerAnalyticsRoutes(app: FastifyInstance): void {
-  app.get('/analytics', { preHandler: app.requireAdmin }, async (req, reply) => {
-    const query = parseWith(analyticsQuerySchema, req.query);
-    return reply.send(await getAnalytics(query));
-  });
+  app.get(
+    '/analytics',
+    { preHandler: app.requirePermission('analytics:read') },
+    async (req, reply) => {
+      const query = parseWith(analyticsQuerySchema, req.query);
+      return reply.send(await getAnalytics(query));
+    },
+  );
 }
