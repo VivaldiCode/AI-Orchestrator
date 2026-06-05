@@ -1,11 +1,10 @@
 # MCP Servers & Skills (Triage Node)
 
-> **Status: phase 1 shipped.** AI Orchestrator can optionally enrich requests with
+> **Status: shipped (phases 1 & 2).** AI Orchestrator can optionally enrich requests with
 > [Model Context Protocol](https://modelcontextprotocol.io) (MCP) tools and reusable **Skills**,
-> via an **opt-in triage step**. Phase 1 (below) is built and verified; the autonomous
-> tool-call loop is phase 2.
+> via an **opt-in triage step** — including an autonomous tool-call loop.
 
-## What's shipped (phase 1)
+## What's shipped
 
 - **MCP server registry** (dashboard → **MCP Servers**): add HTTP/stdio servers (auth token
   encrypted at rest), **discover** their tools, and **allow-list** which tools triage may use.
@@ -16,9 +15,14 @@
   to the model. Disabled (default) or non-chat requests pass through untouched; clients can bypass
   per-request with the `x-triage: off` header.
 
-**Phase 2 (planned):** the autonomous loop — execute the model's tool calls against the MCP server
-and feed results back over multiple turns (bounded by **Max tool calls**), plus automatic skill
-selection by intent. Today phase 1 _advertises_ tools and applies skills.
+- **Autonomous tool-call loop (phase 2):** for a non-streaming (`stream:false`) `/api/chat` request
+  with eligible tools, the orchestrator runs the agentic loop — call the model, execute the tool
+  calls it requests against MCP, feed the results back, and repeat until it answers, bounded by
+  **Max tool calls**. A skill is chosen explicitly (`"skill"` field) or auto-selected by a name
+  match against the message; tool errors are surfaced back to the model rather than aborting.
+
+> **Scope:** the loop runs on the Ollama-native `/api/chat` path with `stream:false`. Streaming
+> requests and `/v1/chat/completions` use phase-1 behaviour (advertise tools, single pass).
 
 ## Quick use
 
@@ -26,7 +30,8 @@ selection by intent. Today phase 1 _advertises_ tools and applies skills.
    tick the tools you want under **Tools**.
 2. **Skills** → add a skill (system prompt, optional model, optional tool preset).
 3. **Settings** → enable **Triage**.
-4. Call `/api/chat` (or `/v1/chat/completions`) with a `"skill": "<name>"` field to apply it.
+4. Call `/api/chat` with `"stream": false` and (optionally) a `"skill": "<name>"` field — the
+   orchestrator runs the tool loop and returns the final answer.
 
 ## The idea
 
