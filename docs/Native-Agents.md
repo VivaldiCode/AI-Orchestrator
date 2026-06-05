@@ -8,6 +8,10 @@
 
 ## Why
 
+> **The agent is optional** — it only feeds per-node **CPU/memory** to the dashboard
+> ([Node Agent](Node-Agent.md)). The orchestrator load-balances and routes without it. Install it
+> only on machines where you want those stats.
+
 Adding a node otherwise means: install Node, copy the script, run it, keep it running. A native
 agent collapses that to **download → install → set port/token**. Same telemetry, friendlier on-ramp.
 
