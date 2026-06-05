@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { APP_NAME, APP_VERSION } from '../../version';
-import { triageChat } from '../../orchestrator/triage';
+import { runTriageAgent, triageChat } from '../../orchestrator/triage';
 import { clientKeyId, parseModel, queryParam, requestTokens } from '../shared';
 
 /**
@@ -13,7 +13,9 @@ export function registerOllamaRoutes(app: FastifyInstance): void {
   const pre = { preHandler: app.requireApiKey };
 
   const inference = (endpoint: string) => async (req: FastifyRequest, reply: FastifyReply) => {
-    await triageChat(app, req); // opt-in: enrich chat with a Skill + MCP tools
+    // Phase 2: autonomous tool-call loop (non-streaming chat with eligible tools).
+    if (endpoint === '/api/chat' && (await runTriageAgent(app, req, reply))) return;
+    await triageChat(app, req); // phase 1: enrich chat with a Skill + advertise MCP tools
     return dispatcher.proxyOllama(req, reply, {
       endpoint,
       model: parseModel(req),
