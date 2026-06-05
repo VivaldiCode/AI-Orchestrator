@@ -22,6 +22,7 @@ const BASE_SETTINGS: Settings = {
   maxToolCalls: 5,
   cloudOverflow: true,
   cloudOverflowProviderId: '',
+  privacyMode: false,
 };
 
 function provider(over: Partial<ProviderConfig>): ProviderConfig {

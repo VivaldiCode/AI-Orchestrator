@@ -162,6 +162,19 @@ export function SettingsPage() {
           ) : null}
         </div>
 
+        <div className="border-t border-slate-800 pt-5">
+          <label className="flex items-start gap-3 text-sm text-slate-200">
+            <input
+              type="checkbox"
+              checked={form.privacyMode}
+              onChange={(e) => setForm({ ...form, privacyMode: e.target.checked })}
+              className="mt-0.5 h-4 w-4 accent-concert-500"
+            />
+            {t('settings.privacyMode')}
+          </label>
+          <p className="mt-2 text-xs text-slate-500">{t('settings.privacyModeHint')}</p>
+        </div>
+
         <div className="flex items-center gap-3">
           <Button onClick={() => save.mutate(form)} disabled={save.isPending}>
             {save.isPending ? t('settings.savingButton') : t('settings.saveButton')}

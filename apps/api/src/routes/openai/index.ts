@@ -1,11 +1,19 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { badRequest } from '../../lib/errors';
+import { badRequest, forbidden } from '../../lib/errors';
 import { nowIso, requestId } from '../../lib/ids';
 import { AnthropicAdapter } from '../../providers/anthropic';
 import { BedrockAdapter } from '../../providers/bedrock';
 import { proxyOpenAI } from '../../providers/openaiProxy';
 import { triageChat } from '../../orchestrator/triage';
-import { clientKeyId, parseBodyJson, parseModel, requestTokens, rewriteBodyModel } from '../shared';
+import {
+  clientIpOf,
+  clientKeyId,
+  consumeLocalOnly,
+  parseBodyJson,
+  parseModel,
+  requestTokens,
+  rewriteBodyModel,
+} from '../shared';
 
 /**
  * OpenAI-compatible `/v1/*` surface. By default requests route to the local
@@ -39,8 +47,11 @@ async function handle(
   endpoint: string,
 ): Promise<void> {
   const requested = parseModel(req) ?? '';
+  const localOnly = consumeLocalOnly(req);
+  const privacy = localOnly || app.orchestrator.getSettings().privacyMode;
   const route = app.providers.resolve(requested);
   const keyId = clientKeyId(req);
+  const ip = clientIpOf(req);
 
   // Default + ollama-routed → local cluster (nodes serve /v1 natively).
   if (!route || route.providerType === 'ollama') {
@@ -52,9 +63,18 @@ async function handle(
       endpoint,
       model: parseModel(req) ?? route?.targetModel ?? requested,
       clientKeyId: keyId,
+      clientIp: ip,
       estimatedTokens: requestTokens(req),
+      localOnly,
     });
     return;
+  }
+
+  // Privacy: a model that maps to a cloud provider must not leave the cluster.
+  if (privacy) {
+    throw forbidden(
+      `Privacy: "${requested}" routes to a cloud provider, blocked by local-only/privacy mode. Use a local model or disable privacy.`,
+    );
   }
 
   // OpenAI-compatible cloud providers (openai/xai/mistral/compatible) → streaming proxy.
@@ -75,6 +95,7 @@ async function handle(
         originalModel: requested,
         endpoint,
         clientKeyId: keyId,
+        clientIp: ip,
       },
       app.orchestrator.hub,
       app.orchestrator.recorder,
@@ -121,6 +142,7 @@ async function handle(
     latencyMs,
     promptTokens: result.promptTokens,
     completionTokens: result.completionTokens,
+    clientIp: ip,
     at: nowIso(),
   });
   await app.orchestrator.recorder.record({

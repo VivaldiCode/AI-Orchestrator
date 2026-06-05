@@ -37,6 +37,7 @@ export class Orchestrator {
       maxToolCalls: 5,
       cloudOverflow: false,
       cloudOverflowProviderId: '',
+      privacyMode: false,
     };
     this.dispatcher = new Dispatcher(
       this.registry,
@@ -104,6 +105,7 @@ export class Orchestrator {
           maxToolCalls: row.maxToolCalls,
           cloudOverflow: row.cloudOverflow,
           cloudOverflowProviderId: row.cloudOverflowProviderId,
+          privacyMode: row.privacyMode,
         };
       }
     } catch (err) {

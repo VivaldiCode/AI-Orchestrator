@@ -74,6 +74,9 @@ export const en = {
   'overview.noNodesHint': 'Add your Macs on the Nodes page.',
   'overview.liveRequests': 'Live requests',
   'overview.noRequests': 'No requests yet. Point a client at the orchestrator.',
+  'overview.colTime': 'Time',
+  'overview.colIp': 'Client IP',
+  'overview.colTokens': 'Tokens (prompt ↑ / completion ↓)',
   'overview.cardInFlight': 'in-flight',
   'overview.cardLatency': 'latency',
   'overview.cardModels': 'models',
@@ -167,6 +170,7 @@ export const en = {
   'analytics.byModel': 'By model',
   'analytics.byProvider': 'By provider',
   'analytics.noData': 'No data.',
+  'analytics.unknownNode': 'Cloud / provider',
   'analytics.loadError': 'Could not load analytics',
   'analytics.loadErrorHint': 'Is the database reachable?',
   'analytics.loading': 'Crunching numbers…',
@@ -332,6 +336,10 @@ export const en = {
   'settings.cloudOverflowAuto': 'Auto (first eligible provider)',
   'settings.cloudOverflowHint':
     'Only OpenAI-compatible providers with an API key and a default model are eligible. The default model is used for spilled requests.',
+  'settings.privacyMode':
+    'Privacy mode: keep all inference local (never use cloud providers or overflow)',
+  'settings.privacyModeHint':
+    'Per request, clients can also send header `x-ai-orchestrator-local-only: 1` or body `{ "local_only": true }`.',
   'settings.saveButton': 'Save settings',
   'settings.savingButton': 'Saving…',
   'settings.saved': 'Saved ✓',

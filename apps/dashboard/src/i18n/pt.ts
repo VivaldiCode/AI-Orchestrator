@@ -76,6 +76,9 @@ export const pt: Dict = {
   'overview.noNodesHint': 'Adicione seus Macs na página Nós.',
   'overview.liveRequests': 'Requisições ao vivo',
   'overview.noRequests': 'Nenhuma requisição ainda. Aponte um cliente para o orquestrador.',
+  'overview.colTime': 'Hora',
+  'overview.colIp': 'IP do cliente',
+  'overview.colTokens': 'Tokens (prompt ↑ / resposta ↓)',
   'overview.cardInFlight': 'em andamento',
   'overview.cardLatency': 'latência',
   'overview.cardModels': 'modelos',
@@ -169,6 +172,7 @@ export const pt: Dict = {
   'analytics.byModel': 'Por modelo',
   'analytics.byProvider': 'Por provedor',
   'analytics.noData': 'Sem dados.',
+  'analytics.unknownNode': 'Nuvem / provedor',
   'analytics.loadError': 'Não foi possível carregar as análises',
   'analytics.loadErrorHint': 'O banco de dados está acessível?',
   'analytics.loading': 'Processando números…',
@@ -335,6 +339,10 @@ export const pt: Dict = {
   'settings.cloudOverflowAuto': 'Automático (1º provedor elegível)',
   'settings.cloudOverflowHint':
     'Apenas provedores compatíveis com OpenAI, com chave de API e um modelo padrão, são elegíveis. O modelo padrão é usado nas requisições encaminhadas.',
+  'settings.privacyMode':
+    'Modo privacidade: manter toda a inferência local (nunca usar provedores de nuvem nem overflow)',
+  'settings.privacyModeHint':
+    'Por requisição, os clientes também podem enviar o header `x-ai-orchestrator-local-only: 1` ou o corpo `{ "local_only": true }`.',
   'settings.saveButton': 'Salvar configurações',
   'settings.savingButton': 'Salvando…',
   'settings.saved': 'Salvo ✓',
