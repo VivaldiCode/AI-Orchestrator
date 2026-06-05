@@ -16,6 +16,7 @@ export interface OpenAIProxyTarget {
   originalModel: string;
   endpoint: string;
   clientKeyId: string | null;
+  clientIp?: string | null;
 }
 
 /**
@@ -58,6 +59,7 @@ export async function proxyOpenAI(
     provider: target.providerName,
     model: target.originalModel,
     endpoint: target.endpoint,
+    clientIp: target.clientIp ?? null,
     at: nowIso(),
   });
 
@@ -79,6 +81,7 @@ export async function proxyOpenAI(
       latencyMs,
       promptTokens,
       completionTokens,
+      clientIp: target.clientIp ?? null,
       at: nowIso(),
     });
     await recorder.record({

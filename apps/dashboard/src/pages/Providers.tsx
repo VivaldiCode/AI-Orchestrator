@@ -20,6 +20,18 @@ const PROVIDER_TYPES: ProviderType[] = [
   'openai-compatible',
 ];
 
+/** Hint shown in the Base URL field, per provider type. */
+const BASE_URL_PLACEHOLDER: Partial<Record<ProviderType, string>> = {
+  openai: 'https://api.openai.com',
+  anthropic: 'https://api.anthropic.com',
+  xai: 'https://api.x.ai',
+  google: 'https://generativelanguage.googleapis.com',
+  mistral: 'https://api.mistral.ai',
+  'openai-compatible': 'https://your-endpoint.example/v1',
+};
+
+const baseUrlHint = (type: ProviderType): string => BASE_URL_PLACEHOLDER[type] ?? 'https://…';
+
 interface ProviderForm {
   type: ProviderType;
   name: string;
@@ -143,7 +155,7 @@ export function ProvidersPage() {
                 <Input
                   value={form.baseUrl}
                   onChange={(e) => setForm({ ...form, baseUrl: e.target.value })}
-                  placeholder="https://api.openai.com"
+                  placeholder={baseUrlHint(form.type)}
                 />
               </Field>
               <Field label={t('providers.apiKey')}>
@@ -291,7 +303,7 @@ function ProviderCard({ provider: p }: { provider: Provider }) {
               <Field label={t('providers.baseUrl')}>
                 <Input
                   value={edit.baseUrl}
-                  placeholder="https://api.openai.com"
+                  placeholder={baseUrlHint(p.type)}
                   onChange={(e) => setEdit({ ...edit, baseUrl: e.target.value })}
                 />
               </Field>

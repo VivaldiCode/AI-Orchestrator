@@ -15,6 +15,7 @@ const BASE: Settings = {
   maxToolCalls: 5,
   cloudOverflow: false,
   cloudOverflowProviderId: '',
+  privacyMode: false,
 };
 
 interface SkillStub {
