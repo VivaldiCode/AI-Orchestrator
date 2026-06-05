@@ -3,13 +3,16 @@ import type { Permission } from '@ai-orchestrator/shared';
 import type { Orchestrator } from '../orchestrator/index';
 import type { ProviderManager } from '../providers/manager';
 import type { AuthService } from '../auth/service';
+import type { OAuthService } from '../auth/oauth';
 
 declare module 'fastify' {
   interface FastifyInstance {
     orchestrator: Orchestrator;
     providers: ProviderManager;
     auth: AuthService;
+    oauth: OAuthService;
     requireAdmin: preHandlerHookHandler;
+    requireUser: preHandlerHookHandler;
     requireApiKey: preHandlerHookHandler;
     requirePermission: (permission: Permission) => preHandlerHookHandler;
   }

@@ -43,14 +43,15 @@ function buildCreds(input: CredsInput): string | null {
 }
 
 export function registerProviderRoutes(app: FastifyInstance): void {
-  const admin = { preHandler: app.requireAdmin };
+  const read = { preHandler: app.requirePermission('providers:read') };
+  const write = { preHandler: app.requirePermission('providers:write') };
 
-  app.get('/providers', admin, async (_req, reply) => {
+  app.get('/providers', read, async (_req, reply) => {
     const rows = await db.select().from(providers);
     return reply.send(rows.map(toPublic));
   });
 
-  app.post('/providers', admin, async (req, reply) => {
+  app.post('/providers', write, async (req, reply) => {
     const input = parseWith(createProviderSchema, req.body);
     const [row] = await db
       .insert(providers)
@@ -68,7 +69,7 @@ export function registerProviderRoutes(app: FastifyInstance): void {
     return reply.code(201).send(toPublic(row));
   });
 
-  app.patch('/providers/:id', admin, async (req, reply) => {
+  app.patch('/providers/:id', write, async (req, reply) => {
     const id = pathId(req.params);
     const input = parseWith(updateProviderSchema, req.body);
     const update: Partial<typeof providers.$inferInsert> = { updatedAt: new Date() };
@@ -87,7 +88,7 @@ export function registerProviderRoutes(app: FastifyInstance): void {
     return reply.send(toPublic(row));
   });
 
-  app.delete('/providers/:id', admin, async (req, reply) => {
+  app.delete('/providers/:id', write, async (req, reply) => {
     const id = pathId(req.params);
     const rows = await db
       .delete(providers)
@@ -99,11 +100,11 @@ export function registerProviderRoutes(app: FastifyInstance): void {
   });
 
   // --- model registry ------------------------------------------------------
-  app.get('/model-routes', admin, async (_req, reply) => {
+  app.get('/model-routes', read, async (_req, reply) => {
     return reply.send(await db.select().from(modelRoutes));
   });
 
-  app.post('/model-routes', admin, async (req, reply) => {
+  app.post('/model-routes', write, async (req, reply) => {
     const input = parseWith(createModelRouteSchema, req.body);
     const [row] = await db
       .insert(modelRoutes)
@@ -119,7 +120,7 @@ export function registerProviderRoutes(app: FastifyInstance): void {
     return reply.code(201).send(row);
   });
 
-  app.delete('/model-routes/:id', admin, async (req, reply) => {
+  app.delete('/model-routes/:id', write, async (req, reply) => {
     const id = pathId(req.params);
     const rows = await db
       .delete(modelRoutes)

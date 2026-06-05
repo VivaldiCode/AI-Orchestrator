@@ -25,6 +25,18 @@ export async function registerAuth(app: FastifyInstance): Promise<void> {
     request.adminUser = { sub: payload.sub, username: payload.username, role: payload.role };
   });
 
+  // Any authenticated dashboard user (any role) with a valid access token.
+  app.decorate('requireUser', async function (request: FastifyRequest, _reply: FastifyReply) {
+    try {
+      await request.jwtVerify();
+    } catch {
+      throw unauthorized('Authentication required.');
+    }
+    const payload = request.user;
+    if (payload.type !== 'access') throw unauthorized('Invalid token type.');
+    request.adminUser = { sub: payload.sub, username: payload.username, role: payload.role };
+  });
+
   // Gate a route on a specific feature permission (RBAC). `admin` always passes;
   // other roles must carry the permission in their token (or via role defaults).
   app.decorate('requirePermission', function (permission: Permission) {
