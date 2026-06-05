@@ -100,6 +100,7 @@ export const pt: Dict = {
   'nodes.colStatus': 'Status',
   'nodes.colInFlight': 'Em andamento',
   'nodes.colLatency': 'Latência',
+  'nodes.colMaxConc': 'Conc. máx.',
   'nodes.colActions': 'Ações',
   'nodes.weightLabel': 'peso {weight}',
   'nodes.test': 'Testar',
