@@ -98,7 +98,10 @@ interface RequestOptions {
 
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const tokens = getTokens();
-  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  const headers: Record<string, string> = {};
+  // Only declare a JSON body when one is actually sent — otherwise Fastify
+  // rejects bodyless requests (e.g. DELETE) with FST_ERR_CTP_EMPTY_JSON_BODY.
+  if (opts.body !== undefined) headers['content-type'] = 'application/json';
   if (opts.auth !== false && tokens) headers.authorization = `Bearer ${tokens.accessToken}`;
 
   const init: RequestInit = {

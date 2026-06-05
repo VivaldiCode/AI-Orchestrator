@@ -231,12 +231,17 @@ function ProviderCard({ provider: p }: { provider: Provider }) {
 
   const toggle = useMutation({
     mutationFn: () => api.updateProvider(p.id, { enabled: !p.enabled }),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      setError(null);
+      invalidate();
+    },
+    onError: (e: unknown) => setError(e instanceof Error ? e.message : t('providers.editError')),
   });
 
   const remove = useMutation({
     mutationFn: () => api.deleteProvider(p.id),
     onSuccess: invalidate,
+    onError: (e: unknown) => setError(e instanceof Error ? e.message : t('providers.editError')),
   });
 
   const submitEdit = (e: FormEvent) => {
@@ -362,9 +367,10 @@ function ProviderCard({ provider: p }: { provider: Provider }) {
           {t('providers.edit')}
         </Button>
         <Button variant="danger" onClick={confirmDelete} disabled={remove.isPending}>
-          {t('providers.delete')}
+          {remove.isPending ? t('providers.saving') : t('providers.delete')}
         </Button>
       </div>
+      {error ? <p className="mt-3 text-right text-sm text-rose-400">{error}</p> : null}
     </Card>
   );
 }
