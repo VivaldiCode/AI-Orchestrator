@@ -99,6 +99,36 @@ export class Dispatcher {
     return pool;
   }
 
+  /**
+   * Non-streaming single `/api/chat` call to a selected node. Used by the triage
+   * agent loop, which needs the full response to inspect/execute tool calls.
+   */
+  async chatOnce(
+    model: string | null,
+    body: Record<string, unknown>,
+    estimatedTokens = 0,
+  ): Promise<Record<string, unknown>> {
+    const pool = this.candidates(model, estimatedTokens);
+    const node = selectNode(this.getSettings().strategy, pool, this.rrCounter++);
+    if (!node) throw serviceUnavailable('No healthy nodes available to handle the request.');
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 120000);
+    this.registry.incInFlight(node.id);
+    try {
+      const res = await fetch(`${nodeBaseUrl(node)}/api/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ...body, stream: false }),
+        signal: ctrl.signal,
+      });
+      if (!res.ok) throw badGateway(`Node ${node.name} returned ${res.status}.`);
+      return (await res.json()) as Record<string, unknown>;
+    } finally {
+      clearTimeout(timer);
+      this.registry.decInFlight(node.id);
+    }
+  }
+
   /** Load-balanced proxy for inference endpoints (generate/chat/embed). */
   async proxyOllama(
     request: FastifyRequest,
