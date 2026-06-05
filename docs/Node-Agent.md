@@ -1,7 +1,13 @@
 # Node Agent (CPU & memory)
 
-Ollama doesn't report host CPU/RAM, so to see **per-node CPU and memory** in the dashboard you run
-a tiny **agent** on each machine that hosts Ollama (macOS, Windows, Linux).
+> **The agent is optional.** The orchestrator discovers, health-checks, load-balances and routes to
+> a node using only Ollama's own API — no agent required. The agent's _only_ job is to add that
+> machine's **CPU / memory** to the dashboard. Skip it and everything still works; the node's
+> "System" column just shows "—". A node is marked `up` purely from its Ollama endpoint, never from
+> the agent.
+
+Ollama doesn't report host CPU/RAM, so to see **per-node CPU and memory** in the dashboard you can
+run a tiny **agent** on each machine that hosts Ollama (macOS, Windows, Linux).
 
 The agent is **dependency-free** (Node 18+, just `node:os`) and serves only local system stats — it
 never touches Ollama or your data. Source + full install instructions: [`apps/agent`](../apps/agent/README.md).
