@@ -98,6 +98,7 @@ export const en = {
   'nodes.colStatus': 'Status',
   'nodes.colInFlight': 'In-flight',
   'nodes.colLatency': 'Latency',
+  'nodes.colMaxConc': 'Max conc.',
   'nodes.colActions': 'Actions',
   'nodes.weightLabel': 'weight {weight}',
   'nodes.test': 'Test',
