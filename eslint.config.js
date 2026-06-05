@@ -14,6 +14,7 @@ export default tseslint.config(
       '**/test-results/**',
       '**/.vite/**',
       '**/._*',
+      'scripts/**',
       'apps/landing/**',
       'assets/**',
     ],
