@@ -9,6 +9,10 @@ import { registerOpenAIRoutes } from './openai/index';
  */
 export async function registerProxyRoutes(app: FastifyInstance): Promise<void> {
   await app.register(async (scope) => {
+    // Drop inherited parsers (notably Fastify's built-in application/json, which
+    // would otherwise turn the body into an object) so EVERY content type is kept
+    // as raw bytes — letting us read the model and forward the JSON verbatim.
+    scope.removeAllContentTypeParsers();
     scope.addContentTypeParser('*', { parseAs: 'buffer' }, (_req, body, done) => {
       done(null, body);
     });
