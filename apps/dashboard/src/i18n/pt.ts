@@ -10,6 +10,10 @@ export const pt: Dict = {
   'common.never': 'nunca',
   'common.language': 'Idioma',
   'common.theme': 'Tema',
+  'common.cpu': 'CPU',
+  'common.memory': 'Memória',
+  'nodes.agentPort': 'Porta do agente (opcional)',
+  'nodes.colSystem': 'Sistema',
 
   // docs
   'nav.docs': 'Docs',

@@ -5,7 +5,7 @@ import { api } from '../lib/api';
 import { useI18n } from '../i18n';
 import type { TranslationKey } from '../i18n/en';
 import { useRealtimeStore } from '../lib/store';
-import { formatLatency, statusDot } from '../lib/format';
+import { formatBytes, formatLatency, statusDot } from '../lib/format';
 import { Button, Card, cn, EmptyState, Field, Input, Spinner } from '../components/ui';
 
 const EMPTY: CreateNodeInput = {
@@ -17,6 +17,7 @@ const EMPTY: CreateNodeInput = {
   enabled: true,
   maxConcurrency: 4,
   tags: [],
+  agentPort: null,
 };
 
 export function NodesPage() {
@@ -134,6 +135,16 @@ export function NodesPage() {
               }
             />
           </Field>
+          <Field label={t('nodes.agentPort')}>
+            <Input
+              type="number"
+              value={form.agentPort ?? ''}
+              onChange={(e) =>
+                setForm({ ...form, agentPort: e.target.value ? Number(e.target.value) : null })
+              }
+              placeholder="4127"
+            />
+          </Field>
           <div className="flex items-end">
             <Button type="submit" disabled={create.isPending}>
               {create.isPending ? t('nodes.addingButton') : t('nodes.addButton')}
@@ -157,6 +168,7 @@ export function NodesPage() {
                 <th className="px-4 py-3">{t('nodes.colStatus')}</th>
                 <th className="px-4 py-3">{t('nodes.colInFlight')}</th>
                 <th className="px-4 py-3">{t('nodes.colLatency')}</th>
+                <th className="px-4 py-3">{t('nodes.colSystem')}</th>
                 <th className="px-4 py-3 text-right">{t('nodes.colActions')}</th>
               </tr>
             </thead>
@@ -183,6 +195,19 @@ export function NodesPage() {
                   </td>
                   <td className="px-4 py-3">{n.runtime.inFlight}</td>
                   <td className="px-4 py-3">{fmt.latency(n.runtime.latencyMs)}</td>
+                  <td className="px-4 py-3 text-xs text-slate-400">
+                    {n.runtime.system ? (
+                      <>
+                        <div>CPU {Math.round((n.runtime.system.cpu ?? 0) * 100)}%</div>
+                        <div>
+                          {formatBytes(n.runtime.system.memUsed)} /{' '}
+                          {formatBytes(n.runtime.system.memTotal)}
+                        </div>
+                      </>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" onClick={() => test.mutate(n.id)}>

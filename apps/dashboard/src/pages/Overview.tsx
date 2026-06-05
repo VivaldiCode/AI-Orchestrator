@@ -4,8 +4,8 @@ import { api } from '../lib/api';
 import { useI18n } from '../i18n';
 import type { TranslationKey } from '../i18n/en';
 import { useRealtimeStore } from '../lib/store';
-import { statusDot } from '../lib/format';
-import { Card, cn, EmptyState, Spinner, StatCard } from '../components/ui';
+import { formatBytes, statusDot } from '../lib/format';
+import { Card, cn, EmptyState, Meter, Spinner, StatCard } from '../components/ui';
 
 function NodeLiveCard({ node }: { node: NodeWithRuntime }) {
   const { t, fmt } = useI18n();
@@ -40,6 +40,25 @@ function NodeLiveCard({ node }: { node: NodeWithRuntime }) {
           <div className="text-[10px] uppercase text-slate-500">{t('overview.cardModels')}</div>
         </div>
       </div>
+      {runtime.system ? (
+        <div className="mt-3 space-y-2">
+          <Meter
+            label={t('common.cpu')}
+            value={`${Math.round((runtime.system.cpu ?? 0) * 100)}%`}
+            percent={(runtime.system.cpu ?? 0) * 100}
+          />
+          <Meter
+            label={t('common.memory')}
+            tone="baton"
+            value={`${formatBytes(runtime.system.memUsed)} / ${formatBytes(runtime.system.memTotal)}`}
+            percent={
+              runtime.system.memTotal
+                ? ((runtime.system.memUsed ?? 0) / runtime.system.memTotal) * 100
+                : 0
+            }
+          />
+        </div>
+      ) : null}
     </Card>
   );
 }
