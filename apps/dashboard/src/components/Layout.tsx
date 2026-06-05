@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import type { Permission } from '@ai-orchestrator/shared';
 import { useAuth } from '../lib/auth';
 import { useI18n } from '../i18n';
 import type { TranslationKey } from '../i18n/en';
@@ -9,13 +10,14 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { ThemeToggle } from './ThemeToggle';
 import { cn } from './ui';
 
-const NAV: { to: string; key: TranslationKey; end: boolean }[] = [
+const NAV: { to: string; key: TranslationKey; end: boolean; perm?: Permission }[] = [
   { to: '/', key: 'nav.overview', end: true },
-  { to: '/nodes', key: 'nav.nodes', end: false },
-  { to: '/providers', key: 'nav.providers', end: false },
-  { to: '/analytics', key: 'nav.analytics', end: false },
-  { to: '/api-keys', key: 'nav.apiKeys', end: false },
-  { to: '/settings', key: 'nav.settings', end: false },
+  { to: '/nodes', key: 'nav.nodes', end: false, perm: 'nodes:read' },
+  { to: '/providers', key: 'nav.providers', end: false, perm: 'providers:read' },
+  { to: '/analytics', key: 'nav.analytics', end: false, perm: 'analytics:read' },
+  { to: '/api-keys', key: 'nav.apiKeys', end: false, perm: 'apikeys:read' },
+  { to: '/users', key: 'nav.users', end: false, perm: 'users:read' },
+  { to: '/settings', key: 'nav.settings', end: false, perm: 'settings:read' },
   { to: '/help', key: 'nav.docs', end: false },
 ];
 
@@ -37,7 +39,9 @@ export function Layout() {
         </div>
 
         <nav className="flex flex-col gap-1">
-          {NAV.map((item) => (
+          {NAV.filter(
+            (item) => !item.perm || (user?.permissions?.includes(item.perm) ?? false),
+          ).map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
