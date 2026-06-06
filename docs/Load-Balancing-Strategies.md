@@ -3,15 +3,37 @@
 The strategy decides which healthy node handles each inference request. Change it live on the
 dashboard **Settings** page, or set the initial value with `DEFAULT_STRATEGY`.
 
-| Strategy            | Behaviour                                                                       | Good for                       |
-| ------------------- | ------------------------------------------------------------------------------- | ------------------------------ |
-| `round-robin`       | Rotate evenly across nodes (stable order).                                      | Homogeneous machines           |
-| `least-connections` | Fewest in-flight requests wins.                                                 | Mixed request sizes (default)  |
-| `least-latency`     | Lowest recent health-check latency wins.                                        | Machines with different speeds |
-| `weighted`          | Minimise `inFlight / weight` — higher-weight machines take proportionally more. | Heterogeneous hardware         |
+| Strategy            | Behaviour                                                                       | Good for                          |
+| ------------------- | ------------------------------------------------------------------------------- | --------------------------------- |
+| `round-robin`       | Rotate evenly across nodes (stable order).                                      | Homogeneous machines              |
+| `least-connections` | Fewest in-flight requests wins.                                                 | Mixed request sizes (default)     |
+| `least-latency`     | Lowest recent health-check latency wins.                                        | Machines with different speeds    |
+| `weighted`          | Minimise `inFlight / weight` — higher-weight machines take proportionally more. | Heterogeneous hardware            |
+| `performance`       | Predicted completion time from **measured 24h speed** + current load.           | Mixed-speed fleets (M5/M3 Max/M3) |
 
 All strategies are **deterministic** (ties broken by node id), which keeps them predictable and
 easy to test (`apps/api/src/orchestrator/strategies.ts`).
+
+## Performance-aware routing (mixed fleets)
+
+`performance` compensates for machines of different speeds (e.g. an M5 next to an M3 Max and an
+M3). Every minute the orchestrator recomputes, per node, from the **last 24h** of `request_events`:
+
+- **ms/token** — total processing time ÷ total tokens (the per-token cost),
+- **tokens/sec** — its inverse (shown on the Overview as each node's live speed),
+- **avg completion time** — the typical full-request duration.
+
+Each request is then routed to the node with the lowest **predicted completion time**:
+
+```
+score(node) = inFlight · avgCompletionTime      (clear the current backlog)
+            + estimatedTokens · msPerToken       (generate this request)
+```
+
+So **large prompts gravitate to the fastest machine**, while **small or unknown-size requests are
+balanced by load**. A node with no history yet borrows the fleet average, so it still receives
+traffic and gets sampled. Token estimates come from the same estimator as context-aware routing
+(~4 chars/token). Stats refresh every 60s over a 24h window.
 
 ## Model-aware routing
 

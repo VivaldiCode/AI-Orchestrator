@@ -40,6 +40,19 @@ function NodeLiveCard({ node }: { node: NodeWithRuntime }) {
           <div className="text-[10px] uppercase text-slate-500">{t('overview.cardModels')}</div>
         </div>
       </div>
+      <div className="mt-3 flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2 text-xs">
+        <span className="uppercase tracking-wide text-slate-500">{t('overview.cardSpeed')}</span>
+        {runtime.perf?.tokensPerSecond != null ? (
+          <span className="font-medium text-concert-300">
+            {fmt.number(Math.round(runtime.perf.tokensPerSecond))} tok/s
+            <span className="ml-2 font-normal text-slate-500">
+              · {fmt.latency(runtime.perf.avgLatencyMs)} {t('overview.cardLatency')}
+            </span>
+          </span>
+        ) : (
+          <span className="text-slate-600">{t('overview.perfNoData')}</span>
+        )}
+      </div>
       {runtime.system ? (
         <div className="mt-3 space-y-2">
           <Meter

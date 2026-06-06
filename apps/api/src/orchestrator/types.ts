@@ -1,4 +1,10 @@
-import type { NodeProtocol, NodeRuntime, NodeStatus, SystemStats } from '@ai-orchestrator/shared';
+import type {
+  NodePerf,
+  NodeProtocol,
+  NodeRuntime,
+  NodeStatus,
+  SystemStats,
+} from '@ai-orchestrator/shared';
 
 /** Mutable, in-memory runtime state tracked per node. */
 export interface RuntimeState {
@@ -14,6 +20,8 @@ export interface RuntimeState {
   consecutiveFailures: number;
   system: SystemStats | null;
   modelContext: Record<string, number>;
+  /** Measured inference performance (refreshed periodically from analytics). */
+  perf: NodePerf | null;
 }
 
 /** A persisted node merged with its live runtime state. */
@@ -47,6 +55,7 @@ export function freshRuntime(): RuntimeState {
     consecutiveFailures: 0,
     system: null,
     modelContext: {},
+    perf: null,
   };
 }
 
@@ -67,5 +76,6 @@ export function toNodeRuntime(n: ManagedNode): NodeRuntime {
     lastCheckedAt: n.runtime.lastCheckedAt,
     system: n.runtime.system,
     modelContext: n.runtime.modelContext,
+    perf: n.runtime.perf,
   };
 }
