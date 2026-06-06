@@ -9,6 +9,12 @@
       content="Open-source, self-hosted gateway that mirrors the Ollama API and load-balances inference across your Macs and cloud AI providers."
     />
     <link rel="icon" type="image/svg+xml" href="logo.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="styles.css" />
     <meta property="og:title" content="AI Orchestrator" />
     <meta
@@ -16,44 +22,27 @@
       content="Conduct your LLM fleet — one baton, many instruments."
     />
     <meta property="og:type" content="website" />
-    <style>
-      .lang-switch {
-        display: inline-flex;
-        gap: 4px;
-        margin-left: 14px;
-      }
-      .lang-switch button {
-        background: transparent;
-        border: 1px solid var(--border);
-        color: var(--muted);
-        border-radius: 8px;
-        padding: 4px 8px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        cursor: pointer;
-      }
-      .lang-switch button.active {
-        background: var(--indigo);
-        color: #fff;
-        border-color: var(--indigo);
-      }
-    </style>
+    <meta name="theme-color" content="#020617" />
     <script src="i18n.js" defer></script>
   </head>
   <body>
-    <header class="nav">
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <header class="nav" id="top">
       <a class="brand" href="#top">
-        <img src="logo.svg" width="36" height="36" alt="AI Orchestrator logo" />
+        <img src="logo.svg" width="34" height="34" alt="AI Orchestrator logo" />
         <span>AI Orchestrator</span>
       </a>
       <nav class="nav-links">
         <a href="#features" data-i18n="nav.features">Features</a>
+        <a href="#architecture" data-i18n="nav.architecture">Architecture</a>
         <a href="#how" data-i18n="nav.how">How it works</a>
         <a
-          href="https://github.com/VivaldiCode/ollama-orquestrator"
+          class="nav-gh"
+          href="https://github.com/VivaldiCode/AI-Orchestrator"
           rel="noopener"
           data-i18n="nav.github"
-          >GitHub</a
+          >GitHub ★</a
         >
         <div class="lang-switch" id="lang-switch" role="group" aria-label="Language">
           <button type="button" data-lang="en">EN</button>
@@ -62,9 +51,9 @@
       </nav>
     </header>
 
-    <main id="top">
+    <main>
       <section class="hero">
-        <p class="eyebrow" data-i18n="hero.eyebrow">100% open source · MIT</p>
+        <p class="eyebrow" data-i18n="hero.eyebrow">100% open source · MIT · self-hosted</p>
         <h1>
           <span data-i18n="hero.titleLead">Conduct your</span>
           <span class="accent" data-i18n="hero.titleAccent">LLM fleet</span
@@ -72,13 +61,13 @@
         </h1>
         <p class="subtitle" data-i18n="hero.subtitle">
           A self-hosted gateway that mirrors the Ollama API and load-balances inference across all
-          your Macs — and, optionally, across Anthropic, OpenAI, xAI and Amazon Bedrock. Like
-          Vivaldi conducting an orchestra: one baton, many instruments, perfectly in time. 🎻
+          your Macs — and, optionally, across Anthropic, OpenAI, xAI, Mistral and Amazon Bedrock.
+          Like Vivaldi conducting an orchestra: one baton, many instruments, perfectly in time. 🎻
         </p>
         <div class="cta">
           <a
             class="btn primary"
-            href="https://github.com/VivaldiCode/ollama-orquestrator"
+            href="https://github.com/VivaldiCode/AI-Orchestrator"
             rel="noopener"
             data-i18n="hero.ctaGithub"
           >
@@ -86,54 +75,175 @@
           </a>
           <a class="btn ghost" href="#quickstart" data-i18n="hero.ctaQuickstart">Quick start</a>
         </div>
-        <pre class="snippet"><code># point any Ollama client at the orchestrator
+
+        <figure class="snippet">
+          <button class="copy" type="button" aria-label="Copy">
+            <span data-i18n="copy.label">Copy</span>
+          </button>
+          <pre><code># point any Ollama client at the orchestrator
 curl http://localhost:11435/api/chat -d '{
   "model": "llama3.2",
   "messages": [{ "role": "user", "content": "Olá!" }]
 }'</code></pre>
+        </figure>
+
+        <ul class="trust" aria-label="providers">
+          <li class="trust-label" data-i18n="trust.label">Works with</li>
+          <li>Ollama</li>
+          <li>OpenAI</li>
+          <li>Anthropic</li>
+          <li>xAI</li>
+          <li>Mistral</li>
+          <li>Bedrock</li>
+        </ul>
+      </section>
+
+      <section class="stats" aria-label="highlights">
+        <div class="stat">
+          <strong data-i18n="stat.dropinValue">Drop-in</strong>
+          <span data-i18n="stat.dropinLabel">100% Ollama-compatible API</span>
+        </div>
+        <div class="stat">
+          <strong data-i18n="stat.realtimeValue">Real-time</strong>
+          <span data-i18n="stat.realtimeLabel">live dashboard + deep analytics</span>
+        </div>
+        <div class="stat">
+          <strong data-i18n="stat.smartValue">Adaptive</strong>
+          <span data-i18n="stat.smartLabel">routes by measured node speed</span>
+        </div>
+        <div class="stat">
+          <strong data-i18n="stat.openValue">MIT</strong>
+          <span data-i18n="stat.openLabel">open source, runs on your hardware</span>
+        </div>
       </section>
 
       <section id="features" class="features">
         <h2 data-i18n="features.title">Everything you need to run your own AI fleet</h2>
+        <p class="section-sub" data-i18n="features.subtitle">
+          One endpoint in front of every Mac and cloud model — balanced, observable and private.
+        </p>
         <div class="grid">
           <article class="card">
-            <h3 data-i18n="f.mirror.title">🔀 Drop-in Ollama mirror</h3>
+            <div class="ic">🔀</div>
+            <h3 data-i18n="f.mirror.title">Drop-in Ollama mirror</h3>
             <p data-i18n="f.mirror.desc">
-              Every Ollama endpoint, proxied with streaming. Change the base URL and you're done.
+              Every Ollama endpoint, proxied with streaming. Change the base URL and you're done —
+              an OpenAI-compatible /v1 surface is included too.
             </p>
           </article>
           <article class="card">
-            <h3 data-i18n="f.lb.title">⚖️ Smart load balancing</h3>
+            <div class="ic">⚖️</div>
+            <h3 data-i18n="f.lb.title">Performance-aware balancing</h3>
             <p data-i18n="f.lb.desc">
-              Round-robin, least-connections, least-latency, weighted — plus model-aware routing and
-              failover.
+              Routes by each machine's measured 24h speed (tokens/s, ms/token) and live load — big
+              prompts go to the fastest Mac. Round-robin, least-connections, latency and weighted
+              too, with automatic failover.
             </p>
           </article>
           <article class="card">
-            <h3 data-i18n="f.multi.title">🧩 Multi-provider</h3>
+            <div class="ic">🧩</div>
+            <h3 data-i18n="f.multi.title">Multi-provider + cloud overflow</h3>
             <p data-i18n="f.multi.desc">
-              An OpenAI-compatible /v1 layer routes to cloud providers. Secrets encrypted at rest.
+              Add OpenAI, Anthropic, xAI, Mistral or Bedrock. When every node is saturated, requests
+              spill to the cloud automatically — credentials encrypted at rest.
             </p>
           </article>
           <article class="card">
-            <h3 data-i18n="f.dashboard.title">📊 Real-time dashboard</h3>
+            <div class="ic">📊</div>
+            <h3 data-i18n="f.dashboard.title">Real-time dashboard</h3>
             <p data-i18n="f.dashboard.desc">
-              See per-Mac load live, add nodes, manage providers and pick the routing strategy.
+              Watch per-Mac load, in-flight requests and a live feed (timestamp, client IP, tokens).
+              Add nodes, manage providers and switch strategy on the fly.
             </p>
           </article>
           <article class="card">
-            <h3 data-i18n="f.analytics.title">📈 Analytics</h3>
+            <div class="ic">📈</div>
+            <h3 data-i18n="f.analytics.title">Analytics deep-dive</h3>
             <p data-i18n="f.analytics.desc">
-              Throughput, latency p50/p95/p99, tokens and error rates, powered by TimescaleDB.
+              Throughput, latency avg/min/max/p50/p95/p99, token usage over time and per-machine
+              allocation — powered by TimescaleDB.
             </p>
           </article>
           <article class="card">
-            <h3 data-i18n="f.security.title">🔒 Security-first</h3>
+            <div class="ic">🔒</div>
+            <h3 data-i18n="f.security.title">Security &amp; privacy</h3>
             <p data-i18n="f.security.desc">
-              Helmet, strict CORS, rate limiting, JWT auth, hashed API keys, audited dependencies.
+              JWT + OIDC SSO, hashed API keys, rate limiting, audited deps — plus a privacy mode
+              that keeps chosen prompts 100% local, never touching the cloud.
             </p>
           </article>
         </div>
+      </section>
+
+      <section id="architecture" class="architecture">
+        <h2 data-i18n="arch.title">One baton, many instruments</h2>
+        <p class="section-sub" data-i18n="arch.subtitle">
+          Clients talk to a single endpoint; the orchestrator conducts the fleet.
+        </p>
+        <div class="diagram">
+          <svg
+            viewBox="0 0 900 360"
+            role="img"
+            aria-labelledby="archtitle"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            <title id="archtitle">Architecture diagram</title>
+            <defs>
+              <linearGradient id="core" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#6366f1" />
+                <stop offset="100%" stop-color="#4f46e5" />
+              </linearGradient>
+              <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+                <path d="M0,0 L7,3 L0,6 Z" fill="#64748b" />
+              </marker>
+            </defs>
+            <!-- clients -->
+            <g class="d-box">
+              <rect x="20" y="120" width="180" height="120" rx="14" />
+              <text class="d-h" x="110" y="160" data-i18n="arch.clients">Clients</text>
+              <text class="d-s" x="110" y="186">Ollama API</text>
+              <text class="d-s" x="110" y="208">OpenAI /v1</text>
+            </g>
+            <!-- core -->
+            <g>
+              <rect x="350" y="100" width="200" height="160" rx="18" fill="url(#core)" />
+              <text class="d-core-h" x="450" y="150">AI Orchestrator</text>
+              <text class="d-core-s" x="450" y="178" data-i18n="arch.coreA">load balance</text>
+              <text class="d-core-s" x="450" y="200" data-i18n="arch.coreB">health · failover</text>
+              <text class="d-core-s" x="450" y="222" data-i18n="arch.coreC">analytics · auth</text>
+            </g>
+            <!-- nodes -->
+            <g class="d-box">
+              <rect x="700" y="40" width="180" height="56" rx="12" />
+              <text class="d-n" x="790" y="74">🖥️ Mac · M5</text>
+            </g>
+            <g class="d-box">
+              <rect x="700" y="110" width="180" height="56" rx="12" />
+              <text class="d-n" x="790" y="144">🖥️ Mac · M3 Max</text>
+            </g>
+            <g class="d-box">
+              <rect x="700" y="180" width="180" height="56" rx="12" />
+              <text class="d-n" x="790" y="214">🖥️ Mac · M3</text>
+            </g>
+            <g class="d-box d-cloud">
+              <rect x="700" y="262" width="180" height="56" rx="12" />
+              <text class="d-n" x="790" y="296" data-i18n="arch.cloud">☁️ Cloud (overflow)</text>
+            </g>
+            <!-- links -->
+            <path class="d-link" d="M200,180 L350,180" marker-end="url(#arr)" />
+            <path class="d-link" d="M550,150 C620,120 650,80 700,68" marker-end="url(#arr)" />
+            <path class="d-link" d="M550,170 C620,160 650,150 700,138" marker-end="url(#arr)" />
+            <path class="d-link" d="M550,190 C620,200 650,200 700,208" marker-end="url(#arr)" />
+            <path
+              class="d-link d-dash"
+              d="M550,220 C620,260 650,280 700,290"
+              marker-end="url(#arr)"
+            />
+          </svg>
+        </div>
+        <p class="diagram-cap" data-i18n="arch.caption">
+          PostgreSQL + TimescaleDB stores config and every request event for analytics.
+        </p>
       </section>
 
       <section id="how" class="how">
@@ -144,7 +254,7 @@ curl http://localhost:11435/api/chat -d '{
             <div>
               <h3 data-i18n="how.s1.title">Run the stack</h3>
               <p data-i18n="how.s1.desc">
-                docker compose up brings up the orchestrator, dashboard and database.
+                One docker compose up brings up the orchestrator, dashboard and database.
               </p>
             </div>
           </li>
@@ -162,7 +272,7 @@ curl http://localhost:11435/api/chat -d '{
             <div>
               <h3 data-i18n="how.s3.title">Point your clients</h3>
               <p data-i18n="how.s3.desc">
-                Send Ollama or OpenAI-style requests — the orchestra plays in balance.
+                Send Ollama or OpenAI-style requests — the orchestra plays in perfect balance.
               </p>
             </div>
           </li>
@@ -171,11 +281,19 @@ curl http://localhost:11435/api/chat -d '{
 
       <section id="quickstart" class="quickstart">
         <h2 data-i18n="quickstart.title">Quick start</h2>
-        <pre class="snippet"><code>git clone https://github.com/VivaldiCode/ollama-orquestrator.git
-cd ollama-orquestrator
-cp .env.example .env          # then set ORCHESTRATOR_MASTER_KEY and JWT_SECRET
+        <p class="section-sub" data-i18n="quickstart.subtitle">
+          Up and running in under a minute with Docker.
+        </p>
+        <figure class="snippet wide">
+          <button class="copy" type="button" aria-label="Copy">
+            <span data-i18n="copy.label">Copy</span>
+          </button>
+          <pre><code>git clone https://github.com/VivaldiCode/AI-Orchestrator.git
+cd AI-Orchestrator
+cp .env.example .env          # set ORCHESTRATOR_MASTER_KEY and JWT_SECRET
 docker compose up -d --build
 open http://localhost:8080    # create the first admin and add your Macs</code></pre>
+        </figure>
       </section>
 
       <section class="opensource">
@@ -187,7 +305,7 @@ open http://localhost:8080    # create the first admin and add your Macs</code><
         </p>
         <a
           class="btn primary"
-          href="https://github.com/VivaldiCode/ollama-orquestrator"
+          href="https://github.com/VivaldiCode/AI-Orchestrator"
           rel="noopener"
           data-i18n="os.cta"
         >
@@ -201,12 +319,13 @@ open http://localhost:8080    # create the first admin and add your Macs</code><
         <span data-i18n="footer.builtBy">Built by</span> <strong>VivaldiCode</strong> ·
         <span data-i18n="footer.license">MIT License</span> ·
         <a
-          href="https://github.com/VivaldiCode/ollama-orquestrator"
+          href="https://github.com/VivaldiCode/AI-Orchestrator"
           rel="noopener"
           data-i18n="footer.source"
           >Source</a
         >
       </p>
+      <p class="footer-tag" data-i18n="footer.tagline">Conduct your LLM fleet. 🎻</p>
     </footer>
   </body>
 </html>
