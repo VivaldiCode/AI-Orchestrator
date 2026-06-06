@@ -82,6 +82,8 @@ export const pt: Dict = {
   'overview.cardInFlight': 'em andamento',
   'overview.cardLatency': 'latência',
   'overview.cardModels': 'modelos',
+  'overview.cardSpeed': 'velocidade (24h)',
+  'overview.perfNoData': 'sem amostras ainda',
 
   // nodes
   'nodes.title': 'Nós',
@@ -365,4 +367,6 @@ export const pt: Dict = {
   'strategy.weighted': 'Favorece nós de maior peso, ajustado pela carga atual.',
   'strategy.least-connections': 'Envia para o nó com menos requisições em andamento.',
   'strategy.least-latency': 'Envia para o nó que responde mais rápido.',
+  'strategy.performance':
+    'Roteia pelo tempo previsto de conclusão usando a velocidade medida nas últimas 24h (tokens/s, ms/token) + carga atual — prompts grandes vão para a máquina mais rápida, pequenos são equilibrados. Ideal para um parque heterogéneo.',
 };

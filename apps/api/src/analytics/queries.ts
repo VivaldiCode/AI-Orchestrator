@@ -2,6 +2,7 @@ import type {
   AnalyticsQuery,
   AnalyticsSummary,
   BreakdownItem,
+  NodePerf,
   NodeSeriesPoint,
   TimeseriesPoint,
 } from '@ai-orchestrator/shared';
@@ -96,6 +97,50 @@ export function pivotNodeSeries(rows: NodeSeriesRow[]): {
       return point as NodeSeriesPoint;
     });
   return { points, keys: keyList };
+}
+
+interface NodePerfRow {
+  node: string;
+  samples: number;
+  avg_latency: number | null;
+  total_tokens: number;
+  total_latency_ms: number;
+}
+
+/**
+ * Per-node measured inference performance over the last `windowHours`, used by
+ * the performance-aware routing strategy. Throughput is total tokens ÷ total
+ * processing time; `msPerToken` is its inverse (the routing cost factor). Only
+ * successful, timed requests count.
+ */
+export async function getNodePerformance(windowHours = 24): Promise<Map<string, NodePerf>> {
+  const rows = await sql<NodePerfRow[]>`
+    SELECT node_id::text AS node,
+      count(*)::int AS samples,
+      avg(latency_ms)::float AS avg_latency,
+      coalesce(sum(total_tokens), 0)::float AS total_tokens,
+      coalesce(sum(latency_ms), 0)::float AS total_latency_ms
+    FROM request_events
+    WHERE node_id IS NOT NULL
+      AND time >= now() - make_interval(hours => ${windowHours}::int)
+      AND status < 400
+      AND latency_ms IS NOT NULL AND latency_ms > 0
+    GROUP BY node_id
+  `;
+  const map = new Map<string, NodePerf>();
+  for (const r of rows) {
+    const seconds = r.total_latency_ms / 1000;
+    const tokensPerSecond = seconds > 0 && r.total_tokens > 0 ? r.total_tokens / seconds : null;
+    const msPerToken = r.total_tokens > 0 ? r.total_latency_ms / r.total_tokens : null;
+    map.set(r.node, {
+      samples: r.samples,
+      avgLatencyMs: r.avg_latency,
+      tokensPerSecond,
+      msPerToken,
+      windowHours,
+    });
+  }
+  return map;
 }
 
 /**

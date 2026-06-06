@@ -1,4 +1,4 @@
-import type { NodeRuntime } from '@ai-orchestrator/shared';
+import type { NodePerf, NodeRuntime } from '@ai-orchestrator/shared';
 import type { DB } from '../db/client';
 import { nodes as nodesTable, type NodeRow } from '../db/schema';
 import { freshRuntime, toNodeRuntime, type ManagedNode, type RuntimeState } from './types';
@@ -92,6 +92,13 @@ export class NodeRegistry {
     n.runtime.totalRequests++;
     n.runtime.totalErrors++;
     if (n.runtime.status === 'up') n.runtime.status = 'degraded';
+  }
+
+  /** Replace each node's measured performance stats (from the analytics refresh). */
+  setPerformance(perfById: Map<string, NodePerf>): void {
+    for (const n of this.map.values()) {
+      n.runtime.perf = perfById.get(n.id) ?? null;
+    }
   }
 
   snapshot(): NodeRuntime[] {

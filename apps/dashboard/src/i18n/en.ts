@@ -80,6 +80,8 @@ export const en = {
   'overview.cardInFlight': 'in-flight',
   'overview.cardLatency': 'latency',
   'overview.cardModels': 'models',
+  'overview.cardSpeed': 'speed (24h)',
+  'overview.perfNoData': 'no samples yet',
 
   // nodes
   'nodes.title': 'Nodes',
@@ -362,6 +364,8 @@ export const en = {
   'strategy.weighted': 'Favour higher-weight nodes, adjusted for live load.',
   'strategy.least-connections': 'Send to the node with the fewest in-flight requests.',
   'strategy.least-latency': 'Send to the fastest-responding node.',
+  'strategy.performance':
+    'Route by predicted completion time from measured 24h speed (tokens/s, ms/token) + current load — big prompts go to the fastest machine, small ones are balanced. Best for a mixed fleet.',
 };
 
 export type Dict = typeof en;

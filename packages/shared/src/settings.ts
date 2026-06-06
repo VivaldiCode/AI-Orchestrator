@@ -6,6 +6,7 @@ export const strategySchema = z.enum([
   'weighted',
   'least-connections',
   'least-latency',
+  'performance',
 ]);
 export type Strategy = z.infer<typeof strategySchema>;
 
@@ -14,6 +15,7 @@ export const STRATEGIES: Strategy[] = [
   'weighted',
   'least-connections',
   'least-latency',
+  'performance',
 ];
 
 /** Global orchestrator settings (single row). */
