@@ -6,10 +6,16 @@ import { settings as settingsTable } from '../db/schema';
 import { nowIso } from '../lib/ids';
 import { logger } from '../lib/logger';
 import { AnalyticsRecorder } from '../analytics/recorder';
+import { getNodePerformance } from '../analytics/queries';
 import { RealtimeHub } from '../realtime/hub';
 import { Dispatcher } from './dispatcher';
 import { HealthChecker } from './health';
 import { NodeRegistry } from './registry';
+
+/** How often to recompute per-node performance stats from analytics. */
+const PERF_REFRESH_MS = 60_000;
+/** Look-back window for performance-aware routing. */
+const PERF_WINDOW_HOURS = 24;
 
 /** Top-level facade wiring the registry, health checker and dispatcher. */
 export class Orchestrator {
@@ -21,6 +27,7 @@ export class Orchestrator {
   private settings: Settings;
   /** Set after construction (server.ts) so the dispatcher can spill to cloud. */
   private providerManager: ProviderManager | null = null;
+  private perfTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(private readonly db: DB) {
     this.registry = new NodeRegistry(db);
@@ -77,11 +84,31 @@ export class Orchestrator {
     await this.loadSettings();
     await this.registry.load();
     this.health.start();
+    await this.refreshPerformance();
+    this.perfTimer = setInterval(() => void this.refreshPerformance(), PERF_REFRESH_MS);
+    this.perfTimer.unref?.();
     logger.info({ nodes: this.registry.list().length }, 'orchestrator started');
   }
 
   async stop(): Promise<void> {
     this.health.stop();
+    if (this.perfTimer) {
+      clearInterval(this.perfTimer);
+      this.perfTimer = null;
+    }
+  }
+
+  /**
+   * Recompute per-node inference performance (24h) from analytics and push it
+   * into the registry, so the performance strategy routes by measured speed.
+   */
+  async refreshPerformance(): Promise<void> {
+    try {
+      const perf = await getNodePerformance(PERF_WINDOW_HOURS);
+      this.registry.setPerformance(perf);
+    } catch (err) {
+      logger.warn({ err }, 'failed to refresh node performance stats');
+    }
   }
 
   /** Re-read nodes from the database (after a CRUD change). */

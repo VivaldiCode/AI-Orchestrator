@@ -47,10 +47,56 @@ export function weighted(nodes: ManagedNode[]): ManagedNode | null {
   return minBy(nodes, (n) => n.runtime.inFlight / Math.max(1, n.weight));
 }
 
+// Neutral fallbacks used until a node (or the fleet) has measured data.
+const DEFAULT_MS_PER_TOKEN = 8;
+const DEFAULT_REQUEST_MS = 1000;
+
+function mean(xs: number[]): number {
+  return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0;
+}
+
+/**
+ * Performance-aware: route by *predicted completion time* using each node's
+ * measured speed over the last 24h (ms/token + avg completion) and its current
+ * in-flight backlog:
+ *
+ *   score(node) = inFlight · avgRequestTime   (time to clear the backlog)
+ *               + estimatedTokens · msPerToken (this request's generation time)
+ *
+ * The fastest machine wins big requests; small/unknown-size requests fall back
+ * to the avg request time and get balanced by load. Nodes without data borrow
+ * the fleet average so they still receive (and get sampled by) traffic. This is
+ * what compensates a mixed fleet (e.g. M5 vs M3 Max vs M3).
+ */
+export function performanceAware(
+  nodes: ManagedNode[],
+  estimatedTokens: number,
+): ManagedNode | null {
+  if (nodes.length === 0) return null;
+  const tokenRates = nodes
+    .map((n) => n.runtime.perf?.msPerToken)
+    .filter((v): v is number => v != null);
+  const reqTimes = nodes
+    .map((n) => n.runtime.perf?.avgLatencyMs)
+    .filter((v): v is number => v != null);
+  const fleetMsPerToken = tokenRates.length ? mean(tokenRates) : DEFAULT_MS_PER_TOKEN;
+  const fleetReqMs = reqTimes.length ? mean(reqTimes) : DEFAULT_REQUEST_MS;
+
+  return minBy(nodes, (n) => {
+    const perf = n.runtime.perf;
+    const msPerToken = perf?.msPerToken ?? fleetMsPerToken;
+    const avgReqMs = perf?.avgLatencyMs ?? fleetReqMs;
+    const serviceMs = estimatedTokens > 0 ? estimatedTokens * msPerToken : avgReqMs;
+    const queueMs = n.runtime.inFlight * avgReqMs;
+    return queueMs + serviceMs;
+  });
+}
+
 export function selectNode(
   strategy: Strategy,
   candidates: ManagedNode[],
   roundRobinCounter: number,
+  estimatedTokens = 0,
 ): ManagedNode | null {
   switch (strategy) {
     case 'round-robin':
@@ -61,6 +107,8 @@ export function selectNode(
       return leastLatency(candidates);
     case 'weighted':
       return weighted(candidates);
+    case 'performance':
+      return performanceAware(candidates, estimatedTokens);
     default:
       return leastConnections(candidates);
   }

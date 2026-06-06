@@ -116,7 +116,7 @@ export class Dispatcher {
     estimatedTokens = 0,
   ): Promise<Record<string, unknown>> {
     const pool = this.candidates(model, estimatedTokens);
-    const node = selectNode(this.getSettings().strategy, pool, this.rrCounter++);
+    const node = selectNode(this.getSettings().strategy, pool, this.rrCounter++, estimatedTokens);
     if (!node) throw serviceUnavailable('No healthy nodes available to handle the request.');
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 120000);
@@ -176,7 +176,12 @@ export class Dispatcher {
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const remaining = pool.filter((n) => !tried.has(n.id));
-      const node = selectNode(settings.strategy, remaining, this.rrCounter++);
+      const node = selectNode(
+        settings.strategy,
+        remaining,
+        this.rrCounter++,
+        opts.estimatedTokens ?? 0,
+      );
       if (!node) break;
       tried.add(node.id);
       const committed = await this.attempt(node, request, reply, opts);

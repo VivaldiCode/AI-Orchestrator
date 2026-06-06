@@ -64,6 +64,24 @@ export const systemStatsSchema = z.object({
 });
 export type SystemStats = z.infer<typeof systemStatsSchema>;
 
+/**
+ * Measured inference performance over a recent window (from analytics), used by
+ * the performance-aware load-balancing strategy. Null fields = not enough data.
+ */
+export const nodePerfSchema = z.object({
+  /** Number of completed requests in the window that fed these stats. */
+  samples: z.number().int().nonnegative(),
+  /** Average full-request completion time (ms). */
+  avgLatencyMs: z.number().nonnegative().nullable(),
+  /** Effective throughput: total tokens ÷ total processing time. */
+  tokensPerSecond: z.number().nonnegative().nullable(),
+  /** Inverse throughput (ms of processing per token) — the routing cost factor. */
+  msPerToken: z.number().nonnegative().nullable(),
+  /** Look-back window these stats were computed over (hours). */
+  windowHours: z.number().positive(),
+});
+export type NodePerf = z.infer<typeof nodePerfSchema>;
+
 export const nodeRuntimeSchema = z.object({
   id: z.uuid(),
   status: nodeStatusSchema,
@@ -78,6 +96,8 @@ export const nodeRuntimeSchema = z.object({
   system: systemStatsSchema.nullable(),
   /** Discovered context window (max tokens) per model name. */
   modelContext: z.record(z.string(), z.number()),
+  /** Measured inference performance (24h), or null until enough samples exist. */
+  perf: nodePerfSchema.nullable(),
 });
 export type NodeRuntime = z.infer<typeof nodeRuntimeSchema>;
 
