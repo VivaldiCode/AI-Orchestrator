@@ -36,7 +36,7 @@ const I18N = {
       "Every Ollama endpoint, proxied with streaming. Change the base URL and you're done — an OpenAI-compatible /v1 surface is included too.",
     'f.lb.title': 'Performance-aware balancing',
     'f.lb.desc':
-      "Routes by each machine's measured 24h speed (tokens/s, ms/token) and live load — big prompts go to the fastest Mac. Round-robin, least-connections, latency and weighted too, with automatic failover.",
+      "Routes by each machine's measured 24h speed (tokens/s, ms/token) and live load — big prompts go to the fastest node. Round-robin, least-connections, latency and weighted too, with automatic failover.",
     'f.multi.title': 'Multi-provider + cloud overflow',
     'f.multi.desc':
       'Add OpenAI, Anthropic, xAI, Mistral or Bedrock. When every node is saturated, requests spill to the cloud automatically — credentials encrypted at rest.',
@@ -111,7 +111,7 @@ const I18N = {
       'Todos os endpoints do Ollama, com streaming. Troque a URL base e pronto — uma camada compatível com OpenAI (/v1) também está incluída.',
     'f.lb.title': 'Balanceamento por desempenho',
     'f.lb.desc':
-      'Roteia pela velocidade medida de cada máquina nas últimas 24h (tokens/s, ms/token) e pela carga atual — prompts grandes vão para o Mac mais rápido. Também round-robin, least-connections, latência e peso, com failover automático.',
+      'Roteia pela velocidade medida de cada máquina nas últimas 24h (tokens/s, ms/token) e pela carga atual — prompts grandes vão para o nó mais rápido. Também round-robin, least-connections, latência e peso, com failover automático.',
     'f.multi.title': 'Multi-provedor + overflow na nuvem',
     'f.multi.desc':
       'Adicione OpenAI, Anthropic, xAI, Mistral ou Bedrock. Quando todos os nós estão saturados, as requisições vão para a nuvem automaticamente — segredos criptografados em repouso.',
