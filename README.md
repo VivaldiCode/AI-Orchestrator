@@ -14,7 +14,7 @@
 
 _Like Vivaldi conducting an orchestra — one baton, many instruments, perfectly in time._
 
-**English** · [Português](README.pt.md)
+**English** · [Português](README.pt.md) · [Español](README.es.md)
 
 </div>
 

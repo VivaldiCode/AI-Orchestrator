@@ -6,7 +6,7 @@
 
 **Gateway self-hosted que espelha a API do Ollama e balanceia a inferência entre todos os seus Macs — e, opcionalmente, entre provedores de IA na nuvem (Anthropic, OpenAI, xAI, Amazon Bedrock).**
 
-[English](README.md) · **Português**
+[English](README.md) · **Português** · [Español](README.es.md)
 
 _Como Vivaldi regendo uma orquestra — uma batuta, muitos instrumentos, em perfeita sintonia._
 

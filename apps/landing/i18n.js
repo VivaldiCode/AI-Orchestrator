@@ -284,8 +284,7 @@ function initCopyButtons() {
       const span = btn.querySelector('span');
       if (!code || !navigator.clipboard) return;
       void navigator.clipboard.writeText(code.textContent || '').then(() => {
-        const lang = document.documentElement.lang === 'pt' ? 'pt' : 'en';
-        const dict = I18N[lang] || I18N.en;
+        const dict = I18N[document.documentElement.lang] || I18N.en;
         if (span) span.textContent = dict['copy.done'];
         btn.classList.add('done');
         setTimeout(() => {
