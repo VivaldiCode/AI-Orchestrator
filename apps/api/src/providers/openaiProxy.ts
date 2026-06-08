@@ -118,7 +118,9 @@ export async function proxyOpenAI(
 
   reply.hijack();
   const res = reply.raw;
-  res.writeHead(upstream.status, buildResponseHeaders(upstream.headers));
+  const outHeaders = buildResponseHeaders(upstream.headers);
+  outHeaders['x-orchestrator-provider'] = target.providerName;
+  res.writeHead(upstream.status, outHeaders);
 
   if (!upstream.body) {
     res.end();

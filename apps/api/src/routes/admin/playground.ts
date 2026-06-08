@@ -11,6 +11,7 @@ import { config } from '../../config/index';
 import { db } from '../../db/client';
 import { modelRoutes } from '../../db/schema';
 import { AppError } from '../../lib/errors';
+import type { ProviderConfig, ResolvedRoute } from '../../providers/types';
 import { handle as handleOpenAI } from '../openai/index';
 import { parseWith } from './util';
 
@@ -106,15 +107,35 @@ export async function runPlayground(
   format: PlaygroundFormat,
   body: Record<string, unknown>,
   ctx: { ip: string | null },
+  providerId?: string,
 ): Promise<PlaygroundResult> {
+  // A specific provider forces that provider directly (skips the alias registry),
+  // so the playground can test any configured provider, not just routed aliases.
+  let override: ResolvedRoute | undefined;
+  if (providerId && providerId !== 'ollama') {
+    const cfg = app.providers.getConfig(providerId);
+    if (!cfg) {
+      return {
+        status: 400,
+        latencyMs: 0,
+        servedBy: { nodeId: null, nodeName: null, provider: null },
+        contentType: 'application/json',
+        body: { error: 'Provider not found.' },
+        raw: '{"error":"Provider not found."}',
+      };
+    }
+    const model = typeof body.model === 'string' ? body.model : '';
+    override = { providerType: cfg.type, targetModel: model, provider: cfg };
+  }
+
   const url = format === 'anthropic' ? '/v1/messages' : '/v1/chat/completions';
   const req = syntheticRequest(url, body, ctx.ip);
   const { reply, raw, done } = capturingReply();
   const started = performance.now();
 
   try {
-    if (format === 'anthropic') await runAnthropicMessages(app, req, reply);
-    else await handleOpenAI(app, req, reply, '/v1/chat/completions');
+    if (format === 'anthropic') await runAnthropicMessages(app, req, reply, override);
+    else await handleOpenAI(app, req, reply, '/v1/chat/completions', override);
   } catch (err) {
     const status = err instanceof AppError ? err.statusCode : 500;
     const message = err instanceof Error ? err.message : 'Playground request failed.';
@@ -153,12 +174,38 @@ export async function runPlayground(
   };
 }
 
+const MODELS_TIMEOUT_MS = 5000;
+
+/** Best-effort live model catalog for a provider via its `/v1/models` endpoint. */
+async function fetchProviderModels(app: FastifyInstance, p: ProviderConfig): Promise<string[]> {
+  const key = p.credentials.apiKey;
+  if (!key || p.type === 'bedrock') return [];
+  const isAnthropic = p.type === 'anthropic';
+  const baseUrl = isAnthropic ? p.baseUrl || 'https://api.anthropic.com' : app.providers.baseUrlFor(p);
+  if (!baseUrl) return [];
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), MODELS_TIMEOUT_MS);
+  try {
+    const headers: Record<string, string> = isAnthropic
+      ? { 'x-api-key': key, 'anthropic-version': '2023-06-01', accept: 'application/json' }
+      : { authorization: `Bearer ${key}`, accept: 'application/json' };
+    const res = await fetch(`${baseUrl}/v1/models`, { headers, signal: ctrl.signal });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { data?: { id?: unknown }[] };
+    return (json.data ?? []).map((m) => (typeof m.id === 'string' ? m.id : '')).filter(Boolean);
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function registerPlaygroundRoutes(app: FastifyInstance): void {
   const read = { preHandler: app.requirePermission('providers:read') };
 
   app.post('/playground', read, async (req, reply) => {
     const input = parseWith(playgroundRequestSchema, req.body);
-    const result = await runPlayground(app, input.format, input.body, { ip: req.ip ?? null });
+    const result = await runPlayground(app, input.format, input.body, { ip: req.ip ?? null }, input.providerId);
     return reply.send(result);
   });
 
@@ -181,13 +228,21 @@ export function registerPlaygroundRoutes(app: FastifyInstance): void {
       models: [...new Set([...nodeModels, ...ollamaAliases])].sort(),
     });
 
-    for (const p of app.providers.list()) {
+    // Fetch each provider's live model catalog in parallel (best-effort), then
+    // merge with its routed aliases + default model so the picker is populated.
+    const providers = app.providers.list();
+    const fetched = await Promise.allSettled(providers.map((p) => fetchProviderModels(app, p)));
+    providers.forEach((p, i) => {
+      const f = fetched[i];
+      const live = f.status === 'fulfilled' ? f.value : [];
       const aliases = routes
         .filter((r) => r.providerId === p.id || (r.providerId == null && r.providerType === p.type))
         .map((r) => r.alias);
-      const models = [...new Set([...aliases, ...(p.defaultModel ? [p.defaultModel] : [])])].sort();
+      const models = [
+        ...new Set([...live, ...aliases, ...(p.defaultModel ? [p.defaultModel] : [])]),
+      ].sort();
       groups.push({ id: p.id, label: p.name, providerType: p.type, models });
-    }
+    });
 
     return reply.send({ groups });
   });

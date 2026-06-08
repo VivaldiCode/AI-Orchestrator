@@ -58,6 +58,7 @@ export async function runAnthropicMessages(
   app: FastifyInstance,
   req: FastifyRequest,
   reply: FastifyReply,
+  routeOverride?: ResolvedRoute,
 ): Promise<void> {
   const localOnly = consumeLocalOnly(req);
   const body = parseBodyJson(req) ?? {};
@@ -65,7 +66,9 @@ export async function runAnthropicMessages(
   const settings = app.orchestrator.getSettings();
   const privacy = localOnly || settings.privacyMode;
 
-  let route = app.providers.resolve(requested);
+  // An explicit override (e.g. the playground targeting a chosen provider) skips
+  // the alias registry + the claude-* passthrough default.
+  let route = routeOverride ?? app.providers.resolve(requested);
   // Friendly default: an unmapped Claude model passes through to a configured
   // Anthropic provider, so Claude Code "just works" once a key is added.
   if (!route && /^claude/i.test(requested)) {
