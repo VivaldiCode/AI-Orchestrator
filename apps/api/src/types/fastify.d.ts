@@ -6,6 +6,7 @@ import type { AuthService } from '../auth/service';
 import type { OAuthService } from '../auth/oauth';
 import type { McpService } from '../mcp/service';
 import type { RequestArchive } from '../archive/index';
+import type { PriceBook } from '../cost/pricebook';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -15,6 +16,7 @@ declare module 'fastify' {
     oauth: OAuthService;
     mcp: McpService;
     archive: RequestArchive;
+    prices: PriceBook;
     requireAdmin: preHandlerHookHandler;
     requireUser: preHandlerHookHandler;
     requireApiKey: preHandlerHookHandler;

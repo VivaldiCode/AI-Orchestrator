@@ -28,6 +28,7 @@ export const timeseriesPointSchema = z.object({
   promptTokens: z.number(),
   completionTokens: z.number(),
   totalTokens: z.number(),
+  costUsd: z.number(),
 });
 export type TimeseriesPoint = z.infer<typeof timeseriesPointSchema>;
 
@@ -45,6 +46,7 @@ export const breakdownItemSchema = z.object({
   errors: z.number(),
   avgLatencyMs: z.number().nullable(),
   totalTokens: z.number(),
+  costUsd: z.number(),
 });
 export type BreakdownItem = z.infer<typeof breakdownItemSchema>;
 
@@ -64,6 +66,7 @@ export const analyticsSummarySchema = z.object({
   completionTokens: z.number(),
   totalTokens: z.number(),
   avgTokensPerRequest: z.number(),
+  totalCostUsd: z.number(),
   byNode: z.array(breakdownItemSchema),
   byModel: z.array(breakdownItemSchema),
   byProvider: z.array(breakdownItemSchema),

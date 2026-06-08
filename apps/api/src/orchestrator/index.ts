@@ -7,8 +7,9 @@ import { settings as settingsTable } from '../db/schema';
 import { nowIso } from '../lib/ids';
 import { logger } from '../lib/logger';
 import { AnalyticsRecorder } from '../analytics/recorder';
-import { getNodePerformance } from '../analytics/queries';
+import { getNodePerformance, getProviderSpend } from '../analytics/queries';
 import { RealtimeHub } from '../realtime/hub';
+import type { PriceBook } from '../cost/pricebook';
 import { Dispatcher } from './dispatcher';
 import { HealthChecker } from './health';
 import { NodeRegistry } from './registry';
@@ -33,10 +34,11 @@ export class Orchestrator {
   constructor(
     private readonly db: DB,
     private readonly archive: RequestArchive,
+    private readonly prices: PriceBook,
   ) {
     this.registry = new NodeRegistry(db);
     this.hub = new RealtimeHub();
-    this.recorder = new AnalyticsRecorder(db);
+    this.recorder = new AnalyticsRecorder(db, prices);
     this.settings = {
       strategy: config.defaultStrategy,
       modelAware: true,
@@ -90,7 +92,11 @@ export class Orchestrator {
     await this.registry.load();
     this.health.start();
     await this.refreshPerformance();
-    this.perfTimer = setInterval(() => void this.refreshPerformance(), PERF_REFRESH_MS);
+    await this.refreshProviderSpend();
+    this.perfTimer = setInterval(() => {
+      void this.refreshPerformance();
+      void this.refreshProviderSpend();
+    }, PERF_REFRESH_MS);
     this.perfTimer.unref?.();
     logger.info({ nodes: this.registry.list().length }, 'orchestrator started');
   }
@@ -113,6 +119,24 @@ export class Orchestrator {
       this.registry.setPerformance(perf);
     } catch (err) {
       logger.warn({ err }, 'failed to refresh node performance stats');
+    }
+  }
+
+  /**
+   * Recompute month-to-date spend per provider and push it to the provider
+   * manager, so budget-exceeded providers are skipped during routing.
+   */
+  async refreshProviderSpend(): Promise<void> {
+    if (!this.providerManager) return;
+    try {
+      const now = new Date();
+      const monthStart = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+      ).toISOString();
+      const spend = await getProviderSpend(monthStart);
+      this.providerManager.setSpend(spend);
+    } catch (err) {
+      logger.warn({ err }, 'failed to refresh provider spend');
     }
   }
 

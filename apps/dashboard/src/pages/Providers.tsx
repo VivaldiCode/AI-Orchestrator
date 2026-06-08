@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
+  CreateModelPriceInput,
   CreateProviderInput,
   Provider,
   ProviderType,
@@ -41,6 +42,7 @@ interface ProviderForm {
   apiKey: string;
   accessKeyId: string;
   secretAccessKey: string;
+  budgetMonthlyUsd: string;
 }
 
 const EMPTY: ProviderForm = {
@@ -52,6 +54,7 @@ const EMPTY: ProviderForm = {
   apiKey: '',
   accessKeyId: '',
   secretAccessKey: '',
+  budgetMonthlyUsd: '',
 };
 
 export function ProvidersPage() {
@@ -75,6 +78,7 @@ export function ProvidersPage() {
         ...(form.apiKey ? { apiKey: form.apiKey } : {}),
         ...(form.accessKeyId ? { accessKeyId: form.accessKeyId } : {}),
         ...(form.secretAccessKey ? { secretAccessKey: form.secretAccessKey } : {}),
+        ...(form.budgetMonthlyUsd ? { budgetMonthlyUsd: Number(form.budgetMonthlyUsd) } : {}),
       };
       return api.createProvider(input);
     },
@@ -167,6 +171,16 @@ export function ProvidersPage() {
               </Field>
             </>
           )}
+          <Field label={t('providers.budget')}>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              value={form.budgetMonthlyUsd}
+              onChange={(e) => setForm({ ...form, budgetMonthlyUsd: e.target.value })}
+              placeholder="0 = none"
+            />
+          </Field>
           <div className="flex items-end">
             <Button type="submit" disabled={create.isPending}>
               {create.isPending ? t('providers.addingButton') : t('providers.addButton')}
@@ -187,6 +201,8 @@ export function ProvidersPage() {
           ))}
         </div>
       )}
+
+      <PricingSection />
     </div>
   );
 }
@@ -199,6 +215,7 @@ interface EditForm {
   apiKey: string;
   accessKeyId: string;
   secretAccessKey: string;
+  budgetMonthlyUsd: string;
 }
 
 function ProviderCard({ provider: p }: { provider: Provider }) {
@@ -217,6 +234,7 @@ function ProviderCard({ provider: p }: { provider: Provider }) {
     apiKey: '',
     accessKeyId: '',
     secretAccessKey: '',
+    budgetMonthlyUsd: String(p.budgetMonthlyUsd ?? 0),
   });
 
   const save = useMutation({
@@ -246,7 +264,11 @@ function ProviderCard({ provider: p }: { provider: Provider }) {
 
   const submitEdit = (e: FormEvent) => {
     e.preventDefault();
-    const input: UpdateProviderInput = { name: edit.name, defaultModel: edit.defaultModel };
+    const input: UpdateProviderInput = {
+      name: edit.name,
+      defaultModel: edit.defaultModel,
+      budgetMonthlyUsd: Number(edit.budgetMonthlyUsd) || 0,
+    };
     if (isBedrock) {
       if (edit.region) input.region = edit.region;
       if (edit.accessKeyId) input.accessKeyId = edit.accessKeyId;
@@ -322,6 +344,15 @@ function ProviderCard({ provider: p }: { provider: Provider }) {
               </Field>
             </>
           )}
+          <Field label={t('providers.budget')}>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              value={edit.budgetMonthlyUsd}
+              onChange={(e) => setEdit({ ...edit, budgetMonthlyUsd: e.target.value })}
+            />
+          </Field>
           {error ? <p className="text-sm text-rose-400">{error}</p> : null}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
@@ -358,6 +389,18 @@ function ProviderCard({ provider: p }: { provider: Provider }) {
         {p.region ? <div>region: {p.region}</div> : null}
         {p.defaultModel ? <div>model: {p.defaultModel}</div> : null}
         <div>{p.hasCredentials ? t('providers.credStored') : t('providers.noCreds')}</div>
+        <div
+          className={
+            p.budgetMonthlyUsd > 0 && p.spentThisMonthUsd >= p.budgetMonthlyUsd
+              ? 'text-rose-400'
+              : ''
+          }
+        >
+          {t('providers.spend')}: ${p.spentThisMonthUsd.toFixed(2)}
+          {p.budgetMonthlyUsd > 0
+            ? ` / $${p.budgetMonthlyUsd.toFixed(2)}`
+            : ` (${t('providers.noBudget')})`}
+        </div>
       </div>
       <div className="mt-4 flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={() => toggle.mutate()} disabled={toggle.isPending}>
@@ -372,5 +415,144 @@ function ProviderCard({ provider: p }: { provider: Provider }) {
       </div>
       {error ? <p className="mt-3 text-right text-sm text-rose-400">{error}</p> : null}
     </Card>
+  );
+}
+
+interface PriceForm {
+  provider: string;
+  model: string;
+  inputPerMtok: string;
+  outputPerMtok: string;
+}
+
+const EMPTY_PRICE: PriceForm = {
+  provider: 'openai',
+  model: '*',
+  inputPerMtok: '',
+  outputPerMtok: '',
+};
+
+/** Per-model token pricing (USD per 1M tokens) used for cost tracking. */
+function PricingSection() {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const pricesQuery = useQuery({ queryKey: ['prices'], queryFn: api.listPrices });
+  const [form, setForm] = useState<PriceForm>(EMPTY_PRICE);
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['prices'] });
+
+  const save = useMutation({
+    mutationFn: () => {
+      const input: CreateModelPriceInput = {
+        provider: form.provider.trim(),
+        model: form.model.trim() || '*',
+        inputPerMtok: Number(form.inputPerMtok) || 0,
+        outputPerMtok: Number(form.outputPerMtok) || 0,
+      };
+      return api.createPrice(input);
+    },
+    onSuccess: () => {
+      setForm({ ...EMPTY_PRICE, provider: form.provider });
+      invalidate();
+    },
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => api.deletePrice(id),
+    onSuccess: invalidate,
+  });
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    save.mutate();
+  };
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-lg font-medium text-slate-100">{t('pricing.title')}</h2>
+        <p className="text-sm text-slate-400">{t('pricing.subtitle')}</p>
+      </div>
+
+      <Card>
+        <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <Field label={t('pricing.provider')}>
+            <Input
+              value={form.provider}
+              onChange={(e) => setForm({ ...form, provider: e.target.value })}
+              placeholder="openai / ollama / …"
+              required
+            />
+          </Field>
+          <Field label={t('pricing.model')}>
+            <Input
+              value={form.model}
+              onChange={(e) => setForm({ ...form, model: e.target.value })}
+              placeholder="* = default"
+            />
+          </Field>
+          <Field label={t('pricing.inputRate')}>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              value={form.inputPerMtok}
+              onChange={(e) => setForm({ ...form, inputPerMtok: e.target.value })}
+            />
+          </Field>
+          <Field label={t('pricing.outputRate')}>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              value={form.outputPerMtok}
+              onChange={(e) => setForm({ ...form, outputPerMtok: e.target.value })}
+            />
+          </Field>
+          <div className="flex items-end">
+            <Button type="submit" disabled={save.isPending}>
+              {t('pricing.save')}
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      {pricesQuery.isLoading ? (
+        <Spinner label={t('pricing.loading')} />
+      ) : (pricesQuery.data ?? []).length === 0 ? (
+        <EmptyState title={t('pricing.empty')} />
+      ) : (
+        <Card className="overflow-hidden p-0">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-900/80 text-left text-xs uppercase text-slate-500">
+              <tr>
+                <th className="px-4 py-3">{t('pricing.provider')}</th>
+                <th className="px-4 py-3">{t('pricing.model')}</th>
+                <th className="px-4 py-3 text-right">{t('pricing.inputRate')}</th>
+                <th className="px-4 py-3 text-right">{t('pricing.outputRate')}</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {(pricesQuery.data ?? []).map((p) => (
+                <tr key={p.id}>
+                  <td className="px-4 py-2 text-slate-300">{p.provider}</td>
+                  <td className="px-4 py-2 font-mono text-xs text-slate-400">{p.model}</td>
+                  <td className="px-4 py-2 text-right tabular-nums text-slate-300">
+                    ${p.inputPerMtok}
+                  </td>
+                  <td className="px-4 py-2 text-right tabular-nums text-slate-300">
+                    ${p.outputPerMtok}
+                  </td>
+                  <td className="px-4 py-2 text-right">
+                    <Button variant="ghost" onClick={() => remove.mutate(p.id)}>
+                      {t('providers.delete')}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
+    </section>
   );
 }

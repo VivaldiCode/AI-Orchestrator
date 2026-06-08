@@ -48,16 +48,15 @@ export function pickOverflowProvider(
   pm: ProviderManager,
   settings: Settings,
 ): ProviderConfig | null {
-  const usable = pm
-    .list()
-    .filter(
-      (c) =>
-        c.enabled &&
-        pm.isOpenAIFamily(c.type) &&
-        !!c.credentials.apiKey &&
-        !!c.defaultModel &&
-        !!pm.baseUrlFor(c),
-    );
+  const usable = pm.list().filter(
+    (c) =>
+      c.enabled &&
+      pm.isOpenAIFamily(c.type) &&
+      !!c.credentials.apiKey &&
+      !!c.defaultModel &&
+      !!pm.baseUrlFor(c) &&
+      !pm.overBudget(c), // monthly budget exceeded → skip, reroute to the next one
+  );
   if (settings.cloudOverflowProviderId) {
     return usable.find((c) => c.id === settings.cloudOverflowProviderId) ?? null;
   }

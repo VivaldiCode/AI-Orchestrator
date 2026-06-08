@@ -61,11 +61,28 @@ export const providers = pgTable('providers', {
   baseUrl: text('base_url'),
   region: text('region'),
   defaultModel: text('default_model'),
+  // Monthly spend cap (USD). 0 = no budget. Over budget → routing skips it.
+  budgetMonthlyUsd: doublePrecision('budget_monthly_usd').notNull().default(0),
   // AES-256-GCM ciphertext (v1:iv:tag:ct). Never returned by the API.
   credentialsEncrypted: text('credentials_encrypted'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Per-model token pricing (USD per 1M tokens). `provider`='ollama' for local. */
+export const modelPrices = pgTable(
+  'model_prices',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    provider: text('provider').notNull(),
+    model: text('model').notNull(),
+    inputPerMtok: doublePrecision('input_per_mtok').notNull().default(0),
+    outputPerMtok: doublePrecision('output_per_mtok').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('model_prices_provider_model_idx').on(t.provider, t.model)],
+);
 
 export const modelRoutes = pgTable('model_routes', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -179,6 +196,7 @@ export const requestEvents = pgTable(
     promptTokens: integer('prompt_tokens'),
     completionTokens: integer('completion_tokens'),
     totalTokens: integer('total_tokens'),
+    costUsd: doublePrecision('cost_usd'),
     error: text('error'),
     clientKeyId: uuid('client_key_id'),
   },
@@ -191,6 +209,7 @@ export const requestEvents = pgTable(
 
 export type NodeRow = typeof nodes.$inferSelect;
 export type ProviderRow = typeof providers.$inferSelect;
+export type ModelPriceRow = typeof modelPrices.$inferSelect;
 export type UserRow = typeof users.$inferSelect;
 export type ApiKeyRow = typeof apiKeys.$inferSelect;
 export type OAuthProviderRow = typeof oauthProviders.$inferSelect;

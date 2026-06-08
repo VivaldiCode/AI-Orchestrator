@@ -27,6 +27,8 @@ const providerFields = {
   baseUrl: z.url().max(2048).optional(),
   region: z.string().max(64).optional(),
   defaultModel: z.string().max(200).optional(),
+  /** Monthly spend cap (USD). 0 = no budget. Over budget → routing skips it. */
+  budgetMonthlyUsd: z.number().min(0).max(1_000_000).optional(),
 };
 
 /** Create payload — `apiKey` is write-only and is encrypted at rest. */
@@ -54,6 +56,10 @@ export const providerSchema = z.object({
   defaultModel: z.string().nullable(),
   /** Whether credentials are stored (the secret value itself is never returned). */
   hasCredentials: z.boolean(),
+  /** Monthly budget (USD); 0 = none. */
+  budgetMonthlyUsd: z.number(),
+  /** Spend so far this calendar month (USD), computed from analytics. */
+  spentThisMonthUsd: z.number(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

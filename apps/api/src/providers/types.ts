@@ -15,6 +15,8 @@ export interface ProviderConfig {
   baseUrl: string | null;
   region: string | null;
   defaultModel: string | null;
+  /** Monthly spend cap (USD). 0 = no budget. */
+  budgetMonthlyUsd: number;
   credentials: ProviderCredentials;
 }
 
