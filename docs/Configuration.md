@@ -23,6 +23,18 @@ at startup with Zod and refuses to boot on invalid values.
 | `HEALTHCHECK_INTERVAL_MS` | `10000`                                       | how often nodes are pinged                                    |
 | `HEALTHCHECK_TIMEOUT_MS`  | `3000`                                        | health-check timeout                                          |
 | `NODE_FAILOVER_RETRIES`   | `2`                                           | other nodes to try on failure                                 |
+| `ARCHIVE_ENABLED`         | `false`                                       | persist every request + response to disk (prompt history)     |
+| `ARCHIVE_DIR`             | `/data/archive`                               | archive root — mount a volume here so it survives redeploys   |
+| `ARCHIVE_MAX_BODY_BYTES`  | `5000000`                                     | per-body cap (0 = unlimited)                                  |
+| `ARCHIVE_RETENTION_DAYS`  | `0`                                           | auto-delete days older than this (0 = keep forever)           |
+
+## Request archive
+
+With `ARCHIVE_ENABLED=true`, every proxied inference request is written to disk under
+`ARCHIVE_DIR/<YYYY-MM-DD>/` as three files per request: `<id>.json` (metadata), `<id>.request`
+(the raw prompt body) and `<id>.response` (the raw response). Mount a volume at `ARCHIVE_DIR` so
+the history persists across redeploys. Browse it through the [Admin API](Admin-API.md)
+(`/admin/archive`). Covers the Ollama mirror and cloud overflow.
 
 ## Generating secrets
 

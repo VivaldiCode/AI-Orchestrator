@@ -8,6 +8,7 @@ import { registerSettingsRoutes } from './settings';
 import { registerUserRoutes } from './users';
 import { registerMcpRoutes } from './mcp';
 import { registerSkillRoutes } from './skills';
+import { registerArchiveRoutes } from './archive';
 
 /** All management endpoints, served under the `/admin` prefix (JSON bodies). */
 export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
@@ -22,6 +23,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       registerAnalyticsRoutes(scope);
       registerMcpRoutes(scope);
       registerSkillRoutes(scope);
+      registerArchiveRoutes(scope);
     },
     { prefix: '/admin' },
   );

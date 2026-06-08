@@ -2,6 +2,7 @@ import type { Settings } from '@ai-orchestrator/shared';
 import { config } from '../config/index';
 import type { DB } from '../db/client';
 import type { ProviderManager } from '../providers/manager';
+import type { RequestArchive } from '../archive/index';
 import { settings as settingsTable } from '../db/schema';
 import { nowIso } from '../lib/ids';
 import { logger } from '../lib/logger';
@@ -29,7 +30,10 @@ export class Orchestrator {
   private providerManager: ProviderManager | null = null;
   private perfTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private readonly db: DB) {
+  constructor(
+    private readonly db: DB,
+    private readonly archive: RequestArchive,
+  ) {
     this.registry = new NodeRegistry(db);
     this.hub = new RealtimeHub();
     this.recorder = new AnalyticsRecorder(db);
@@ -52,6 +56,7 @@ export class Orchestrator {
       this.recorder,
       () => this.settings,
       () => this.providerManager,
+      this.archive,
     );
     this.health = new HealthChecker(
       this.registry,

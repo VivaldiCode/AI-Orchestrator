@@ -203,6 +203,12 @@ export const en = {
   'apiKeys.creatingButton': 'Creating…',
   'apiKeys.noKeys': 'No API keys',
   'apiKeys.noKeysHint': 'Inference is open until you create the first key.',
+  'apiKeys.scope': 'Scope',
+  'apiKeys.scopeInference': 'Inference (clients)',
+  'apiKeys.scopeAdmin': 'Admin (full API)',
+  'apiKeys.adminHint':
+    'Admin keys can call the whole /admin API without the UI — send as Authorization: Bearer <key>. Keep them secret.',
+  'apiKeys.colScope': 'Scope',
   'apiKeys.colName': 'Name',
   'apiKeys.colPrefix': 'Prefix',
   'apiKeys.colLastUsed': 'Last used',

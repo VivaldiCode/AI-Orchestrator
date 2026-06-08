@@ -98,6 +98,33 @@ export async function readTailWeb(
   return tail;
 }
 
+/**
+ * Read a web stream fully as text, keeping at most `maxBytes` from the start
+ * (0 = unlimited). Always drains to the end so a tee'd sibling isn't blocked.
+ * Used to capture full response bodies for the request archive.
+ */
+export async function readCappedWeb(
+  stream: ReadableStream<Uint8Array>,
+  maxBytes: number,
+): Promise<string> {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let out = '';
+  let stopped = false;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (stopped) continue; // keep draining, stop accumulating
+    out += decoder.decode(value, { stream: true });
+    if (maxBytes > 0 && out.length >= maxBytes) {
+      out = out.slice(0, maxBytes);
+      stopped = true;
+    }
+  }
+  if (!stopped) out += decoder.decode();
+  return out;
+}
+
 /** Read a (bounded) error body without throwing. */
 export async function safeText(res: Response, max = 4096): Promise<string> {
   try {
