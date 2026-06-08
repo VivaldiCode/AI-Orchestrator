@@ -1,7 +1,9 @@
 # API Reference
 
-The orchestrator exposes three surfaces: the **Ollama mirror** (`/api/*`), the
-**OpenAI-compatible** layer (`/v1/*`), and the **management API** (`/admin/*`).
+The orchestrator exposes four surfaces: the **Ollama mirror** (`/api/*`), the
+**OpenAI-compatible** layer (`/v1/*`), the **Anthropic Messages API**
+(`/v1/messages`, what Claude Code speaks), and the **management API**
+(`/admin/*`).
 
 > **Interactive docs:** Swagger UI is served at **`/docs`** and the raw spec at
 > **`/openapi.json`** — both reachable from the dashboard's **Docs** page.
@@ -36,11 +38,25 @@ model management targets a single node (choose with `?node=<id>`).
 Routing: model aliases resolve through the model registry; unmapped models go to the local
 Ollama cluster.
 
+## Anthropic Messages API (`/v1/messages`)
+
+The API Claude Code speaks. See **[Using Claude Code](Claude-Code.md)** for the full guide.
+
+| Method | Path                         | Notes                                       |
+| ------ | ---------------------------- | ------------------------------------------- |
+| POST   | `/v1/messages`               | streaming + non-streaming, tools            |
+| POST   | `/v1/messages/count_tokens`  | `{ "input_tokens": N }` estimate            |
+
+Routing: a model mapped to (or matching) an Anthropic provider **passes through** with full
+fidelity; otherwise the request is translated Anthropic⇄OpenAI and dispatched to the local
+cluster (with failover) or cloud overflow — tool calling and streaming included.
+
 ## Authentication
 
-- **Inference** (`/api/*`, `/v1/*`): open until the first API key is created, then a
-  `Authorization: Bearer <key>` is required.
-- **Management** (`/admin/*`): a dashboard JWT access token.
+- **Inference** (`/api/*`, `/v1/*`, `/v1/messages`): open until the first API key is created,
+  then a credential is required. Accepts `Authorization: Bearer <key>` **or** `x-api-key: <key>`
+  (so Claude Code's `ANTHROPIC_AUTH_TOKEN` and `ANTHROPIC_API_KEY` both work).
+- **Management** (`/admin/*`): a dashboard JWT access token, or an admin-scoped API key.
 
 ## Management API (`/admin/*`)
 

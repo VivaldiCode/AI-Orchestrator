@@ -82,9 +82,14 @@ export async function registerAuth(app: FastifyInstance): Promise<void> {
     if (count === 0) return; // open mode until the operator creates the first key
 
     const header = request.headers.authorization;
-    const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
+    // Accept `Authorization: Bearer <key>` (OpenAI / ANTHROPIC_AUTH_TOKEN) or the
+    // `x-api-key` header (Anthropic Messages API / Claude Code's ANTHROPIC_API_KEY).
+    let token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
+    if (!token && typeof request.headers['x-api-key'] === 'string') {
+      token = request.headers['x-api-key'];
+    }
     if (!token) {
-      throw unauthorized('API key required: Authorization: Bearer <key>.');
+      throw unauthorized('API key required: Authorization: Bearer <key> or x-api-key: <key>.');
     }
     const row = await app.auth.verifyApiKey(token);
     if (!row) throw unauthorized('Invalid API key.');
