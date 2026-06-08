@@ -118,7 +118,8 @@ export const es: Dict = {
   'nodes.loading': 'Cargando nodos…',
   'nodes.models': 'Modelos',
   'nodes.restrictModels': 'Restringir a los modelos seleccionados',
-  'nodes.restrictHint': 'Cuando está desactivado, este nodo puede servir cualquier modelo que tenga.',
+  'nodes.restrictHint':
+    'Cuando está desactivado, este nodo puede servir cualquier modelo que tenga.',
   'nodes.noModelsDiscovered':
     'Aún no se han descubierto modelos. Ejecuta un health check o prueba el nodo.',
   'nodes.ctxLabel': '{tokens} ctx',
@@ -194,7 +195,8 @@ export const es: Dict = {
   'providers.reconnect': 'Reconectar',
   'providers.disconnect': 'Desconectar',
   'providers.connecting': 'Conectando…',
-  'providers.deviceInstructions': 'Abre el enlace, inicia sesión e introduce este código para autorizar:',
+  'providers.deviceInstructions':
+    'Abre el enlace, inicia sesión e introduce este código para autorizar:',
   'providers.deviceWaiting': 'Esperando aprobación…',
   'providers.openLink': 'Abrir página de autorización',
   'providers.expiresLabel': 'caduca',
@@ -326,7 +328,8 @@ export const es: Dict = {
 
   // authentication / SSO
   'sso.title': 'Autenticación (SSO)',
-  'sso.subtitle': 'Permite que la gente inicie sesión con Google, Microsoft, Okta o cualquier proveedor OIDC.',
+  'sso.subtitle':
+    'Permite que la gente inicie sesión con Google, Microsoft, Okta o cualquier proveedor OIDC.',
   'sso.addProvider': 'Añadir un proveedor',
   'sso.type': 'Tipo',
   'sso.type.google': 'Google',
@@ -362,7 +365,8 @@ export const es: Dict = {
 
   // mcp servers
   'mcp.title': 'Servidores MCP',
-  'mcp.subtitle': 'Conecta servidores Model Context Protocol para exponer herramientas a la triage.',
+  'mcp.subtitle':
+    'Conecta servidores Model Context Protocol para exponer herramientas a la triage.',
   'mcp.addServer': 'Añadir un servidor',
   'mcp.name': 'Nombre',
   'mcp.transport': 'Transporte',
@@ -424,12 +428,14 @@ export const es: Dict = {
   'settings.title': 'Configuración',
   'settings.subtitle': 'Ajusta cómo el orquestador enruta las solicitudes.',
   'settings.strategy': 'Estrategia de balanceo de carga',
-  'settings.modelAware': 'Enrutamiento consciente del modelo (solo envía a nodos que tienen el modelo)',
+  'settings.modelAware':
+    'Enrutamiento consciente del modelo (solo envía a nodos que tienen el modelo)',
   'settings.contextAware':
     'Enrutamiento consciente del contexto (solo nodos cuya ventana de contexto admite la solicitud; las llamadas grandes van a la mayor)',
   'settings.autoPull': 'Descargar automáticamente los modelos ausentes antes de enrutar',
   'settings.failoverRetries': 'Reintentos de failover',
-  'settings.triageEnabled': 'Triage (opt-in): aplica una Skill + anuncia herramientas MCP antes de enrutar',
+  'settings.triageEnabled':
+    'Triage (opt-in): aplica una Skill + anuncia herramientas MCP antes de enrutar',
   'settings.triageModel': 'Modelo de triage (opcional, anula el modelo solicitado)',
   'settings.maxToolCalls': 'Máx. de llamadas de herramienta',
   'settings.cloudOverflow':
