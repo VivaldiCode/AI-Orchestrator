@@ -181,7 +181,9 @@ export const en = {
   'playground.subtitle':
     'Send a test request to your providers in the OpenAI or Anthropic format — routed through the orchestrator.',
   'playground.format': 'Format',
+  'playground.provider': 'Provider',
   'playground.model': 'Model',
+  'playground.noModels': 'No models available',
   'playground.modelPlaceholder': 'e.g. llama3.1 or a mapped alias',
   'playground.system': 'System prompt (optional)',
   'playground.systemPlaceholder': 'You are a helpful assistant.',

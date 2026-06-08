@@ -14,6 +14,7 @@ import type {
   DeviceLogin,
   DevicePoll,
   McpServer,
+  PlaygroundOptions,
   PlaygroundRequest,
   PlaygroundResult,
   ModelPrice,
@@ -186,6 +187,7 @@ export const api = {
   // query playground
   playground: (input: PlaygroundRequest) =>
     request<PlaygroundResult>('/admin/playground', { method: 'POST', body: input }),
+  playgroundOptions: () => request<PlaygroundOptions>('/admin/playground/options'),
 
   // model prices (cost tracking)
   listPrices: () => request<ModelPrice[]>('/admin/prices'),
