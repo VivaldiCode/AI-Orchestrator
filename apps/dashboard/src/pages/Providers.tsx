@@ -440,6 +440,10 @@ function PricingSection() {
   const pricesQuery = useQuery({ queryKey: ['prices'], queryFn: api.listPrices });
   const [form, setForm] = useState<PriceForm>(EMPTY_PRICE);
   const invalidate = () => qc.invalidateQueries({ queryKey: ['prices'] });
+  // Stable display order so inline edits never reshuffle rows.
+  const prices = [...(pricesQuery.data ?? [])].sort(
+    (a, b) => a.provider.localeCompare(b.provider) || a.model.localeCompare(b.model),
+  );
 
   const save = useMutation({
     mutationFn: () => {
@@ -518,7 +522,7 @@ function PricingSection() {
 
       {pricesQuery.isLoading ? (
         <Spinner label={t('pricing.loading')} />
-      ) : (pricesQuery.data ?? []).length === 0 ? (
+      ) : prices.length === 0 ? (
         <EmptyState title={t('pricing.empty')} />
       ) : (
         <Card className="overflow-hidden p-0">
@@ -533,7 +537,7 @@ function PricingSection() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {(pricesQuery.data ?? []).map((p) => (
+              {prices.map((p) => (
                 <tr key={p.id}>
                   <td className="px-4 py-2 text-slate-300">{p.provider}</td>
                   <td className="px-4 py-2 font-mono text-xs text-slate-400">{p.model}</td>
