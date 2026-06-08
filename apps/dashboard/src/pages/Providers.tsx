@@ -62,6 +62,37 @@ const EMPTY: ProviderForm = {
   authMode: 'api-key',
 };
 
+/** First day of the current month, ISO — month-to-date spend window. */
+function monthStartIso(): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+}
+
+/** The local Ollama cluster as a pseudo-provider card → its detail page. */
+function LocalOllamaCard() {
+  const { t } = useI18n();
+  const spend = useQuery({
+    queryKey: ['provider-spend', 'ollama'],
+    queryFn: () => api.analytics({ provider: 'ollama', from: monthStartIso(), bucket: '1d' }),
+  });
+  return (
+    <Card>
+      <div className="flex items-center justify-between gap-2">
+        <Link to="/providers/ollama" className="font-medium text-slate-100 hover:text-concert-400">
+          {t('providers.localOllama')}
+        </Link>
+        <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-400">local</span>
+      </div>
+      <div className="mt-2 space-y-1 text-xs text-slate-500">
+        <div>{t('providers.localHint')}</div>
+        <div>
+          {t('providers.spend')}: ${(spend.data?.totalCostUsd ?? 0).toFixed(2)}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export function ProvidersPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
@@ -217,6 +248,10 @@ export function ProvidersPage() {
         </form>
         {error ? <p className="mt-3 text-sm text-rose-400">{error}</p> : null}
       </Card>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <LocalOllamaCard />
+      </div>
 
       {providersQuery.isLoading ? (
         <Spinner label={t('providers.loading')} />
