@@ -20,14 +20,22 @@ export function ProviderDetailPage() {
   const { t } = useI18n();
   const { id = '' } = useParams();
 
+  const isOllama = id === 'ollama';
   const providersQuery = useQuery({ queryKey: ['providers'], queryFn: api.listProviders });
-  const provider = (providersQuery.data ?? []).find((p) => p.id === id);
+  const realProvider = (providersQuery.data ?? []).find((p) => p.id === id);
+  // The local cluster is not a DB row — synthesize it so it gets a detail page.
+  const provider: { id: string; name: string; type: string; authMode: string } | undefined = isOllama
+    ? { id: 'ollama', name: t('providers.localOllama'), type: 'ollama', authMode: 'api-key' }
+    : realProvider;
   const type = provider?.type ?? '';
+
+  const pricesQuery = useQuery({ queryKey: ['prices'], queryFn: api.listPrices });
+  const rates = (pricesQuery.data ?? []).filter((p) => p.provider === type);
 
   const balanceQuery = useQuery({
     queryKey: ['provider-balance', id],
     queryFn: () => api.getProviderBalance(id),
-    enabled: !!provider,
+    enabled: !!provider && !isOllama,
   });
   const spendQuery = useQuery({
     queryKey: ['provider-spend', type],
@@ -40,7 +48,7 @@ export function ProviderDetailPage() {
     enabled: !!provider,
   });
 
-  if (providersQuery.isLoading) return <Spinner label={t('common.loading')} />;
+  if (!isOllama && providersQuery.isLoading) return <Spinner label={t('common.loading')} />;
   if (!provider) {
     return (
       <div className="space-y-4">
@@ -74,11 +82,32 @@ export function ProviderDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Balance */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Pricing (energy cost for the local cluster; configured rates for cloud) */}
         <Card>
-          <h2 className="mb-3 text-lg font-medium text-slate-100">{t('providers.balanceTitle')}</h2>
-          {balanceQuery.isLoading ? (
+          <h2 className="mb-3 text-lg font-medium text-slate-100">{t('providers.pricingTitle')}</h2>
+          {rates.length === 0 ? (
+            <p className="text-sm text-slate-500">{t('providers.noPricing')}</p>
+          ) : (
+            <div className="space-y-1 text-sm">
+              {rates.map((r) => (
+                <div key={r.id} className="flex justify-between gap-2 text-slate-300">
+                  <span className="truncate">{r.model}</span>
+                  <span className="shrink-0 text-slate-400">
+                    ${r.inputPerMtok} / ${r.outputPerMtok}
+                  </span>
+                </div>
+              ))}
+              <div className="pt-1 text-xs text-slate-500">{t('providers.perMtokNote')}</div>
+            </div>
+          )}
+        </Card>
+
+        {/* Balance — cloud providers only (the local cluster has no account balance) */}
+        {!isOllama ? (
+          <Card>
+            <h2 className="mb-3 text-lg font-medium text-slate-100">{t('providers.balanceTitle')}</h2>
+            {balanceQuery.isLoading ? (
             <Spinner label={t('common.loading')} />
           ) : balance?.available ? (
             <div>
@@ -97,7 +126,8 @@ export function ProviderDetailPage() {
               {balance?.note ? <div className="mt-1 text-xs text-slate-500">{balance.note}</div> : null}
             </div>
           )}
-        </Card>
+          </Card>
+        ) : null}
 
         {/* Spend this month */}
         <Card>
