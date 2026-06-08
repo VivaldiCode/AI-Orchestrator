@@ -368,6 +368,11 @@ async function callTarget(
     registry.recordSuccess(t.nodeId);
   };
 
+  // Expose which node/provider served the request (used by the playground + clients).
+  const orchHeaders: Record<string, string> = t.nodeId
+    ? { 'x-orchestrator-node': t.nodeId, 'x-orchestrator-node-name': t.nodeName ?? '' }
+    : { 'x-orchestrator-provider': t.providerLabel };
+
   logger.info(
     { provider: t.providerLabel, model: ctx.requested, nodeId: t.nodeId, stream: ctx.stream },
     'anthropic /v1/messages dispatched (translated)',
@@ -384,7 +389,7 @@ async function callTarget(
     clearTimeout(timer);
     const msg = openAIToAnthropic(json, ctx.requested);
     const outText = JSON.stringify(msg);
-    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', ...orchHeaders });
     res.end(outText);
     const usage = msg.usage as { input_tokens: number; output_tokens: number };
     finishNode();
@@ -398,6 +403,7 @@ async function callTarget(
     'content-type': 'text/event-stream; charset=utf-8',
     'cache-control': 'no-cache',
     connection: 'keep-alive',
+    ...orchHeaders,
   });
   const translator = new AnthropicStreamTranslator(ctx.requested, ctx.inputEstimate);
   const cap = archive?.maxBytes ?? 0;
