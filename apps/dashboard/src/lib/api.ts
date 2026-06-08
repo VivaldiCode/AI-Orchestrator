@@ -6,11 +6,13 @@ import type {
   CreateApiKeyInput,
   CreateMcpServerInput,
   CreateNodeInput,
+  CreateModelPriceInput,
   CreateOAuthProviderInput,
   CreateProviderInput,
   CreateSkillInput,
   CreateUserInput,
   McpServer,
+  ModelPrice,
   NodeWithRuntime,
   OAuthProvider,
   Provider,
@@ -20,6 +22,7 @@ import type {
   Skill,
   TokenPair,
   UpdateMcpServerInput,
+  UpdateModelPriceInput,
   UpdateNodeInput,
   UpdateOAuthProviderInput,
   UpdateProviderInput,
@@ -169,6 +172,14 @@ export const api = {
   updateProvider: (id: string, input: UpdateProviderInput) =>
     request<Provider>(`/admin/providers/${id}`, { method: 'PATCH', body: input }),
   deleteProvider: (id: string) => request<void>(`/admin/providers/${id}`, { method: 'DELETE' }),
+
+  // model prices (cost tracking)
+  listPrices: () => request<ModelPrice[]>('/admin/prices'),
+  createPrice: (input: CreateModelPriceInput) =>
+    request<ModelPrice>('/admin/prices', { method: 'POST', body: input }),
+  updatePrice: (id: string, input: UpdateModelPriceInput) =>
+    request<ModelPrice>(`/admin/prices/${id}`, { method: 'PATCH', body: input }),
+  deletePrice: (id: string) => request<void>(`/admin/prices/${id}`, { method: 'DELETE' }),
 
   // settings
   getSettings: () => request<Settings>('/admin/settings'),

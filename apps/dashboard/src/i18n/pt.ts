@@ -158,6 +158,19 @@ export const pt: Dict = {
   'providers.editError': 'Falha ao atualizar o provedor',
   'providers.apiKeyKeep': 'Deixe em branco para manter a chave atual',
   'providers.confirmDelete': 'Remover este provedor? Esta ação não pode ser desfeita.',
+  'providers.budget': 'Budget mensal (USD)',
+  'providers.spend': 'Gasto este mês',
+  'providers.noBudget': 'sem budget',
+  'pricing.title': 'Preços por modelo',
+  'pricing.subtitle':
+    'USD por 1M de tokens, usado no cálculo de custo. O modelo "*" é o padrão do provedor; defina as taxas locais (ollama) manualmente.',
+  'pricing.provider': 'Provedor',
+  'pricing.model': 'Modelo',
+  'pricing.inputRate': 'Entrada $/1M',
+  'pricing.outputRate': 'Saída $/1M',
+  'pricing.save': 'Salvar preço',
+  'pricing.loading': 'Carregando preços…',
+  'pricing.empty': 'Nenhum preço ainda',
 
   // analytics
   'analytics.title': 'Análises',
@@ -184,6 +197,7 @@ export const pt: Dict = {
   'analytics.throughput': 'Vazão',
   'analytics.perMinute': 'req/min (méd.)',
   'analytics.totalTokens': 'Tokens totais',
+  'analytics.totalCost': 'Custo total',
   'analytics.tokensPerReq': '{count}/req méd.',
   'analytics.minLatency': 'Latência mín.',
   'analytics.maxLatency': 'Latência máx.',

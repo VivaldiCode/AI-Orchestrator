@@ -12,7 +12,7 @@ import { encryptSecret } from '../../lib/crypto';
 import { notFound } from '../../lib/errors';
 import { parseWith, pathId } from './util';
 
-function toPublic(row: ProviderRow): Provider {
+function toPublic(row: ProviderRow, spentThisMonthUsd: number): Provider {
   return {
     id: row.id,
     type: row.type as Provider['type'],
@@ -22,6 +22,8 @@ function toPublic(row: ProviderRow): Provider {
     region: row.region,
     defaultModel: row.defaultModel,
     hasCredentials: row.credentialsEncrypted != null,
+    budgetMonthlyUsd: row.budgetMonthlyUsd ?? 0,
+    spentThisMonthUsd,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -48,7 +50,7 @@ export function registerProviderRoutes(app: FastifyInstance): void {
 
   app.get('/providers', read, async (_req, reply) => {
     const rows = await db.select().from(providers);
-    return reply.send(rows.map(toPublic));
+    return reply.send(rows.map((r) => toPublic(r, app.providers.spentForType(r.type))));
   });
 
   app.post('/providers', write, async (req, reply) => {
@@ -62,11 +64,12 @@ export function registerProviderRoutes(app: FastifyInstance): void {
         baseUrl: input.baseUrl ?? null,
         region: input.region ?? null,
         defaultModel: input.defaultModel ?? null,
+        budgetMonthlyUsd: input.budgetMonthlyUsd ?? 0,
         credentialsEncrypted: buildCreds(input),
       })
       .returning();
     await app.providers.load();
-    return reply.code(201).send(toPublic(row));
+    return reply.code(201).send(toPublic(row, app.providers.spentForType(row.type)));
   });
 
   app.patch('/providers/:id', write, async (req, reply) => {
@@ -79,13 +82,14 @@ export function registerProviderRoutes(app: FastifyInstance): void {
     if (input.baseUrl !== undefined) update.baseUrl = input.baseUrl;
     if (input.region !== undefined) update.region = input.region;
     if (input.defaultModel !== undefined) update.defaultModel = input.defaultModel;
+    if (input.budgetMonthlyUsd !== undefined) update.budgetMonthlyUsd = input.budgetMonthlyUsd;
     const newCreds = buildCreds(input);
     if (newCreds) update.credentialsEncrypted = newCreds;
 
     const [row] = await db.update(providers).set(update).where(eq(providers.id, id)).returning();
     if (!row) throw notFound('Provider not found.');
     await app.providers.load();
-    return reply.send(toPublic(row));
+    return reply.send(toPublic(row, app.providers.spentForType(row.type)));
   });
 
   app.delete('/providers/:id', write, async (req, reply) => {

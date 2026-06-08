@@ -25,6 +25,8 @@ interface RouteEntry {
 export class ProviderManager {
   private configs: ProviderConfig[] = [];
   private routes: RouteEntry[] = [];
+  /** Month-to-date spend (USD) per provider type, refreshed from analytics. */
+  private spendByType = new Map<string, number>();
 
   constructor(private readonly db: DB) {}
 
@@ -41,6 +43,7 @@ export class ProviderManager {
       baseUrl: r.baseUrl,
       region: r.region,
       defaultModel: r.defaultModel,
+      budgetMonthlyUsd: r.budgetMonthlyUsd ?? 0,
       credentials: this.decrypt(r.credentialsEncrypted),
     }));
     this.routes = routeRows.map((r) => ({
@@ -76,6 +79,26 @@ export class ProviderManager {
 
   baseUrlFor(cfg: ProviderConfig): string | null {
     return cfg.baseUrl ?? DEFAULT_BASE_URLS[cfg.type] ?? null;
+  }
+
+  /** Replace month-to-date spend per provider type (from the analytics refresh). */
+  setSpend(spendByType: Map<string, number>): void {
+    this.spendByType = spendByType;
+  }
+
+  /** Month-to-date spend (USD) for a provider. */
+  spentFor(cfg: ProviderConfig): number {
+    return this.spentForType(cfg.type);
+  }
+
+  /** Month-to-date spend (USD) for a provider type. */
+  spentForType(type: string): number {
+    return this.spendByType.get(type) ?? 0;
+  }
+
+  /** True when the provider has a budget and has met or exceeded it this month. */
+  overBudget(cfg: ProviderConfig): boolean {
+    return cfg.budgetMonthlyUsd > 0 && this.spentFor(cfg) >= cfg.budgetMonthlyUsd;
   }
 
   /** Resolve a public model alias to a provider + target model (null → local Ollama). */

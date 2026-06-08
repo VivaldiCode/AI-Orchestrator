@@ -83,6 +83,9 @@ function Breakdown({
                 </div>
                 <div className="mt-1 flex justify-between text-[11px] text-slate-500">
                   <span>{t('analytics.reqUnit', { count: fmt.number(item.requests) })}</span>
+                  {item.costUsd > 0 ? (
+                    <span className="text-baton-400">${item.costUsd.toFixed(2)}</span>
+                  ) : null}
                   <span>{fmt.latency(item.avgLatencyMs)}</span>
                 </div>
               </li>
@@ -193,6 +196,10 @@ export function AnalyticsPage() {
               hint={t('analytics.perMinute')}
             />
             <StatCard label={t('analytics.errorRate')} value={fmt.percent(summary.errorRate)} />
+            <StatCard
+              label={t('analytics.totalCost')}
+              value={`$${summary.totalCostUsd.toFixed(2)}`}
+            />
             <StatCard
               label={t('analytics.totalTokens')}
               value={fmt.number(summary.totalTokens)}
