@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateModelPriceInput,
   CreateProviderInput,
+  ModelPrice,
   Provider,
   ProviderType,
   UpdateProviderInput,
@@ -536,11 +537,11 @@ function PricingSection() {
                 <tr key={p.id}>
                   <td className="px-4 py-2 text-slate-300">{p.provider}</td>
                   <td className="px-4 py-2 font-mono text-xs text-slate-400">{p.model}</td>
-                  <td className="px-4 py-2 text-right tabular-nums text-slate-300">
-                    ${p.inputPerMtok}
+                  <td className="px-4 py-2 text-right">
+                    <PriceRateEdit price={p} field="inputPerMtok" />
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-slate-300">
-                    ${p.outputPerMtok}
+                  <td className="px-4 py-2 text-right">
+                    <PriceRateEdit price={p} field="outputPerMtok" />
                   </td>
                   <td className="px-4 py-2 text-right">
                     <Button variant="ghost" onClick={() => remove.mutate(p.id)}>
@@ -554,5 +555,50 @@ function PricingSection() {
         </Card>
       )}
     </section>
+  );
+}
+
+/** Inline-editable token rate (USD per 1M); saves on blur/Enter when changed. */
+function PriceRateEdit({
+  price,
+  field,
+}: {
+  price: ModelPrice;
+  field: 'inputPerMtok' | 'outputPerMtok';
+}) {
+  const qc = useQueryClient();
+  const current = price[field];
+  const [value, setValue] = useState(String(current));
+
+  const save = useMutation({
+    mutationFn: (v: number) =>
+      api.updatePrice(
+        price.id,
+        field === 'inputPerMtok' ? { inputPerMtok: v } : { outputPerMtok: v },
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['prices'] }),
+  });
+
+  const commit = () => {
+    const next = Math.max(0, Number(value) || 0);
+    setValue(String(next));
+    if (next !== current) save.mutate(next);
+  };
+
+  return (
+    <input
+      type="number"
+      min={0}
+      step="0.01"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+      }}
+      disabled={save.isPending}
+      aria-label={field}
+      className="w-24 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-right text-sm text-slate-100 outline-none focus:border-concert-500 disabled:opacity-50"
+    />
   );
 }
