@@ -3,6 +3,7 @@ import type {
   AnalyticsSummary,
   ApiKey,
   ApiKeyCreated,
+  ArchiveList,
   CreateApiKeyInput,
   CreateMcpServerInput,
   CreateNodeInput,
@@ -21,6 +22,7 @@ import type {
   NodeWithRuntime,
   OAuthProvider,
   Provider,
+  ProviderBalance,
   PublicOAuthProvider,
   SetToolAllowInput,
   Settings,
@@ -135,6 +137,25 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   return (await res.json()) as T;
 }
 
+/** GET a plain-text endpoint (e.g. archived request/response bodies). */
+async function requestText(path: string): Promise<string> {
+  const tokens = getTokens();
+  const headers: Record<string, string> = {};
+  if (tokens) headers.authorization = `Bearer ${tokens.accessToken}`;
+  let res = await fetch(path, { headers });
+  if (res.status === 401 && tokens?.refreshToken) {
+    const refreshed = await tryRefresh(tokens.refreshToken);
+    if (refreshed) {
+      headers.authorization = `Bearer ${refreshed.accessToken}`;
+      res = await fetch(path, { headers });
+    } else {
+      clearTokens();
+    }
+  }
+  if (!res.ok) throw await toError(res);
+  return res.text();
+}
+
 // --- typed endpoints -------------------------------------------------------
 
 export const api = {
@@ -177,6 +198,14 @@ export const api = {
   updateProvider: (id: string, input: UpdateProviderInput) =>
     request<Provider>(`/admin/providers/${id}`, { method: 'PATCH', body: input }),
   deleteProvider: (id: string) => request<void>(`/admin/providers/${id}`, { method: 'DELETE' }),
+  getProviderBalance: (id: string) => request<ProviderBalance>(`/admin/providers/${id}/balance`),
+  // archived prompts for one provider (newest first)
+  listArchiveByProvider: (provider: string, limit = 100) =>
+    request<ArchiveList>(
+      `/admin/archive?provider=${encodeURIComponent(provider)}&limit=${limit}`,
+    ),
+  archiveBody: (date: string, id: string, kind: 'request' | 'response') =>
+    requestText(`/admin/archive/${encodeURIComponent(date)}/${encodeURIComponent(id)}/${kind}`),
   // xAI subscription (OAuth device flow)
   startXaiDevice: (id: string) =>
     request<DeviceLogin>(`/admin/providers/${id}/xai/device/start`, { method: 'POST' }),

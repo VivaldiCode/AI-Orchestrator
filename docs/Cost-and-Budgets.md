@@ -27,6 +27,24 @@ provider's spend **meets or exceeds** its budget, it is **excluded from cloud-ov
 
 The Providers page shows `spent / budget` per provider (red when over).
 
+## Provider detail page
+
+Click a provider's name on the **Providers** page to open its detail view (`/providers/:id`):
+
+- **Account balance** — fetched **live** from the provider's API where one exists
+  (OpenRouter `/api/v1/credits`, DeepSeek `/user/balance`). Most providers (OpenAI, Anthropic, and
+  xAI's inference/subscription token) do **not** expose a balance endpoint, so it shows
+  _"not available via API"_ for those.
+- **Spend this month** — total cost, requests, tokens, average latency and a per-model breakdown
+  for that provider (from analytics).
+- **Prompts sent here** — the archived request/response exchanges for that provider (newest first),
+  each expandable to view the raw prompt + response. **Playground** calls and OpenAI-compatible
+  cloud requests are now archived too, so everything sent to the provider — including via the
+  Query Playground — appears here and counts toward its tracked spend.
+
+> Spend is attributed by provider **type** (the analytics key), so multiple providers of the same
+> type share these figures.
+
 ## API
 
 | Endpoint                                            | Purpose                                              |
@@ -34,4 +52,6 @@ The Providers page shows `spent / budget` per provider (red when over).
 | `GET/POST/PATCH/DELETE /admin/prices`               | manage model prices (POST upserts by provider+model) |
 | `PATCH /admin/providers/:id` `{ budgetMonthlyUsd }` | set a provider budget                                |
 | `GET /admin/providers`                              | includes `budgetMonthlyUsd` + `spentThisMonthUsd`    |
-| `GET /admin/analytics`                              | includes `totalCostUsd` + `costUsd` per breakdown    |
+| `GET /admin/providers/:id/balance`                  | best-effort live account balance                     |
+| `GET /admin/analytics?provider=<type>`              | spend detail for one provider                        |
+| `GET /admin/archive?provider=<type>`                | archived prompts for one provider                    |

@@ -139,6 +139,40 @@ export class RequestArchive {
     return { date, total: all.length, items: all.slice(opts.offset, opts.offset + opts.limit) };
   }
 
+  /**
+   * Entries for one provider across recent days (newest first, capped). Scans
+   * day index files since the archive is partitioned by date, not provider.
+   */
+  async listByProvider(
+    provider: string,
+    opts: { limit: number; maxDays?: number },
+  ): Promise<{ provider: string; total: number; items: ArchiveEntry[] }> {
+    const dates = await this.listDates();
+    const maxDays = opts.maxDays ?? 120;
+    const items: ArchiveEntry[] = [];
+    for (const date of dates.slice(0, maxDays)) {
+      let txt: string;
+      try {
+        txt = await readFile(join(this.dir, date, 'index.jsonl'), 'utf8');
+      } catch {
+        continue;
+      }
+      const lines = txt.split('\n').filter(Boolean);
+      for (let i = lines.length - 1; i >= 0; i--) {
+        try {
+          const e = JSON.parse(lines[i]) as ArchiveEntry;
+          if (e.provider === provider) {
+            items.push(e);
+            if (items.length >= opts.limit) return { provider, total: items.length, items };
+          }
+        } catch {
+          /* skip malformed line */
+        }
+      }
+    }
+    return { provider, total: items.length, items };
+  }
+
   async readMeta(date: string, id: string): Promise<ArchiveEntry | null> {
     if (!DATE_RE.test(date) || !ID_RE.test(id)) return null;
     try {

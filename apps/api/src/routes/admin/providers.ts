@@ -10,6 +10,7 @@ import { db } from '../../db/client';
 import { modelRoutes, providers, type ProviderRow } from '../../db/schema';
 import { encryptSecret } from '../../lib/crypto';
 import { badRequest, notFound } from '../../lib/errors';
+import { fetchProviderBalance } from '../../providers/balance';
 import { parseWith, pathId } from './util';
 
 function toPublic(
@@ -112,6 +113,14 @@ export function registerProviderRoutes(app: FastifyInstance): void {
     if (rows.length === 0) throw notFound('Provider not found.');
     await app.providers.load();
     return reply.code(204).send();
+  });
+
+  // Live account balance (best-effort; not all providers expose it).
+  app.get('/providers/:id/balance', read, async (req, reply) => {
+    const id = pathId(req.params);
+    const cfg = app.providers.getConfig(id);
+    if (!cfg) throw notFound('Provider not found.');
+    return reply.send(await fetchProviderBalance(cfg, app.providers.baseUrlFor(cfg)));
   });
 
   // --- xAI subscription (OAuth device flow) --------------------------------

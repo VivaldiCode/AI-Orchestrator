@@ -7,6 +7,7 @@ import { AuthScreen } from './pages/AuthScreen';
 import { OverviewPage } from './pages/Overview';
 import { NodesPage } from './pages/Nodes';
 import { ProvidersPage } from './pages/Providers';
+import { ProviderDetailPage } from './pages/ProviderDetail';
 import { PlaygroundPage } from './pages/Playground';
 import { AnalyticsPage } from './pages/Analytics';
 import { ApiKeysPage } from './pages/ApiKeys';
@@ -37,6 +38,7 @@ export function App() {
         <Route index element={<OverviewPage />} />
         <Route path="nodes" element={<NodesPage />} />
         <Route path="providers" element={<ProvidersPage />} />
+        <Route path="providers/:id" element={<ProviderDetailPage />} />
         <Route path="playground" element={<PlaygroundPage />} />
         <Route path="mcp" element={<McpPage />} />
         <Route path="skills" element={<SkillsPage />} />

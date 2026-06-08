@@ -96,6 +96,18 @@ export const deviceLoginSchema = z.object({
 });
 export type DeviceLogin = z.infer<typeof deviceLoginSchema>;
 
+/** Live account balance for a provider (best-effort; not all providers expose it). */
+export const providerBalanceSchema = z.object({
+  available: z.boolean(),
+  balanceUsd: z.number().nullable(),
+  currency: z.string().nullable(),
+  /** Which integration produced the figure (e.g. `openrouter`, `deepseek`). */
+  source: z.string().nullable(),
+  /** Human note (e.g. why it is unavailable). */
+  note: z.string().nullable(),
+});
+export type ProviderBalance = z.infer<typeof providerBalanceSchema>;
+
 /** Public response from polling the device-login flow. */
 export const devicePollSchema = z.object({
   status: z.enum(['pending', 'connected', 'denied', 'expired', 'error']),

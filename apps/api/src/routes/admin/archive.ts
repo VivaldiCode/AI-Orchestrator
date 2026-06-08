@@ -14,9 +14,14 @@ export function registerArchiveRoutes(app: FastifyInstance): void {
   });
 
   // A page of entries for a day (defaults to the most recent), newest first.
+  // With `?provider=`, returns recent entries for that provider across all days.
   app.get('/archive', admin, async (req, reply) => {
     const q = req.query as Record<string, string | undefined>;
     const limit = Math.min(Math.max(Number(q.limit) || 50, 1), 500);
+    if (typeof q.provider === 'string' && q.provider) {
+      const { items } = await app.archive.listByProvider(q.provider, { limit });
+      return reply.send({ date: '', total: items.length, items });
+    }
     const offset = Math.max(Number(q.offset) || 0, 0);
     const date = typeof q.date === 'string' && q.date ? q.date : undefined;
     return reply.send(await app.archive.list({ date, limit, offset }));
