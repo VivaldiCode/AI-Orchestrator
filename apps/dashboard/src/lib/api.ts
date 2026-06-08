@@ -14,6 +14,8 @@ import type {
   DeviceLogin,
   DevicePoll,
   McpServer,
+  PlaygroundRequest,
+  PlaygroundResult,
   ModelPrice,
   NodeWithRuntime,
   OAuthProvider,
@@ -181,6 +183,9 @@ export const api = {
     request<DevicePoll>(`/admin/providers/${id}/xai/device/poll`, { method: 'POST' }),
   disconnectXai: (id: string) =>
     request<{ status: string }>(`/admin/providers/${id}/xai/disconnect`, { method: 'POST' }),
+  // query playground
+  playground: (input: PlaygroundRequest) =>
+    request<PlaygroundResult>('/admin/playground', { method: 'POST', body: input }),
 
   // model prices (cost tracking)
   listPrices: () => request<ModelPrice[]>('/admin/prices'),
