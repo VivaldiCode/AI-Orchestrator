@@ -29,6 +29,7 @@ optionally, across cloud AI providers (Anthropic, OpenAI, xAI, Amazon Bedrock).
 ## Reference
 
 - [API Reference](API-Reference.md)
+- [Admin API (no UI)](Admin-API.md)
 - [Security](Security.md)
 - [Development](Development.md)
 - [Testing](Testing.md)

@@ -10,6 +10,8 @@ import type { AnalyticsRecorder } from '../analytics/recorder';
 import type { RealtimeHub } from '../realtime/hub';
 import type { ProviderManager } from '../providers/manager';
 import { overflowEnabled, pickOverflowProvider, runOverflow } from '../providers/overflow';
+import type { RequestArchive } from '../archive/index';
+import { sanitizeHeaders } from '../archive/index';
 import type { NodeRegistry } from './registry';
 import { selectNode } from './strategies';
 import { nodeBaseUrl, type ManagedNode } from './types';
@@ -18,6 +20,7 @@ import {
   extractOllamaUsage,
   filterRequestHeaders,
   modelMatches,
+  readCappedWeb,
   readTailWeb,
   safeText,
 } from './proxy';
@@ -66,6 +69,7 @@ export class Dispatcher {
     private readonly recorder: AnalyticsRecorder,
     private readonly getSettings: () => Settings,
     private readonly getProviders: () => ProviderManager | null = () => null,
+    private readonly archive?: RequestArchive,
   ) {}
 
   /** Healthy candidate nodes for an inference request (model-aware + context-aware). */
@@ -159,7 +163,13 @@ export class Dispatcher {
       const provider = pm ? pickOverflowProvider(pm, settings) : null;
       if (pm && provider) {
         await runOverflow(
-          { provider, providerManager: pm, hub: this.hub, recorder: this.recorder },
+          {
+            provider,
+            providerManager: pm,
+            hub: this.hub,
+            recorder: this.recorder,
+            archive: this.archive,
+          },
           request,
           reply,
           opts,
@@ -258,7 +268,7 @@ export class Dispatcher {
       return false;
     }
 
-    this.commit(node, reply, upstream, ctrl, timer, id, started, opts);
+    this.commit(node, request, reply, upstream, ctrl, timer, id, started, opts);
     return true;
   }
 
@@ -312,11 +322,12 @@ export class Dispatcher {
     }
 
     if (upstream.status >= 500) this.registry.recordError(node.id);
-    this.commit(node, reply, upstream, ctrl, timer, id, started, opts);
+    this.commit(node, request, reply, upstream, ctrl, timer, id, started, opts);
   }
 
   private commit(
     node: ManagedNode,
+    request: FastifyRequest,
     reply: FastifyReply,
     upstream: Response,
     ctrl: AbortController,
@@ -333,10 +344,25 @@ export class Dispatcher {
     outHeaders['x-orchestrator-node-name'] = node.name;
     res.writeHead(upstream.status, outHeaders);
 
+    const archiveOn = this.archive?.enabled ?? false;
+
     if (!upstream.body) {
       res.end();
       clearTimeout(timer);
       this.complete(id, node.id, opts, upstream.status, started, null, null);
+      if (archiveOn) {
+        void this.archiveExchange(
+          request,
+          node,
+          id,
+          opts,
+          upstream.status,
+          started,
+          '',
+          null,
+          null,
+        );
+      }
       return;
     }
 
@@ -350,8 +376,11 @@ export class Dispatcher {
 
     void (async () => {
       try {
-        const tail = await readTailWeb(toParse);
-        const usage = extractOllamaUsage(tail);
+        // When archiving, read the full (capped) body; otherwise just the tail.
+        const body = archiveOn
+          ? await readCappedWeb(toParse, this.archive!.maxBytes)
+          : await readTailWeb(toParse);
+        const usage = extractOllamaUsage(body);
         this.complete(
           id,
           node.id,
@@ -361,12 +390,61 @@ export class Dispatcher {
           usage.promptTokens,
           usage.completionTokens,
         );
+        if (archiveOn) {
+          void this.archiveExchange(
+            request,
+            node,
+            id,
+            opts,
+            upstream.status,
+            started,
+            body,
+            usage.promptTokens,
+            usage.completionTokens,
+          );
+        }
       } catch {
         this.complete(id, node.id, opts, upstream.status, started, null, null);
       } finally {
         clearTimeout(timer);
       }
     })();
+  }
+
+  /** Persist one node exchange to the request archive (best-effort). */
+  private archiveExchange(
+    request: FastifyRequest,
+    node: ManagedNode | null,
+    id: string,
+    opts: DispatchOptions,
+    status: number,
+    started: number,
+    responseBody: string,
+    promptTokens: number | null,
+    completionTokens: number | null,
+  ): Promise<void> {
+    if (!this.archive) return Promise.resolve();
+    return this.archive.record(
+      {
+        id,
+        at: nowIso(),
+        method: request.method,
+        endpoint: opts.endpoint,
+        model: opts.model,
+        provider: 'ollama',
+        nodeId: node?.id ?? null,
+        nodeName: node?.name ?? null,
+        clientIp: opts.clientIp ?? null,
+        clientKeyId: opts.clientKeyId,
+        status,
+        latencyMs: Math.round(performance.now() - started),
+        promptTokens,
+        completionTokens,
+        requestHeaders: sanitizeHeaders(request.headers),
+      },
+      (request.body as Buffer | undefined) ?? null,
+      responseBody,
+    );
   }
 
   private complete(

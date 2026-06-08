@@ -6,10 +6,12 @@ import { config } from '../config/index';
 import { badGateway } from '../lib/errors';
 import { nowIso, requestId } from '../lib/ids';
 import { logger } from '../lib/logger';
-import { buildResponseHeaders, readTailWeb, safeText } from '../orchestrator/proxy';
+import { buildResponseHeaders, readCappedWeb, readTailWeb, safeText } from '../orchestrator/proxy';
 import type { DispatchOptions } from '../orchestrator/dispatcher';
 import type { AnalyticsRecorder } from '../analytics/recorder';
 import type { RealtimeHub } from '../realtime/hub';
+import type { RequestArchive } from '../archive/index';
+import { sanitizeHeaders } from '../archive/index';
 import type { ProviderManager } from './manager';
 import type { ProviderConfig } from './types';
 import { extractOpenAIUsage } from './util';
@@ -245,6 +247,7 @@ export interface OverflowDeps {
   providerManager: ProviderManager;
   hub: RealtimeHub;
   recorder: AnalyticsRecorder;
+  archive?: RequestArchive;
 }
 
 /**
@@ -330,6 +333,37 @@ export async function runOverflow(
     });
   };
 
+  const archiveOn = deps.archive?.enabled ?? false;
+  const archiveExchange = (
+    status: number,
+    responseBody: string,
+    promptTokens: number | null,
+    completionTokens: number | null,
+  ): void => {
+    if (!deps.archive?.enabled) return;
+    void deps.archive.record(
+      {
+        id,
+        at: nowIso(),
+        method: request.method,
+        endpoint: opts.endpoint,
+        model: reportModel,
+        provider: provider.type,
+        nodeId: null,
+        nodeName: provider.name,
+        clientIp: opts.clientIp ?? null,
+        clientKeyId: opts.clientKeyId,
+        status,
+        latencyMs: Math.round(performance.now() - started),
+        promptTokens,
+        completionTokens,
+        requestHeaders: sanitizeHeaders(request.headers),
+      },
+      (request.body as Buffer | undefined) ?? null,
+      responseBody,
+    );
+  };
+
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), config.requestTimeoutMs);
 
@@ -373,6 +407,7 @@ export async function runOverflow(
       res.end(JSON.stringify({ error: text || `provider returned ${upstream.status}` }));
     }
     await record(upstream.status, null, null, text || `upstream ${upstream.status}`);
+    archiveExchange(upstream.status, text, null, null);
     return;
   }
 
@@ -395,9 +430,12 @@ export async function runOverflow(
     readable.pipe(res);
     void (async () => {
       try {
-        const tail = await readTailWeb(toParse);
-        const usage = extractOpenAIUsage(tail);
+        const text = archiveOn
+          ? await readCappedWeb(toParse, deps.archive!.maxBytes)
+          : await readTailWeb(toParse);
+        const usage = extractOpenAIUsage(text);
         await record(upstream.status, usage.promptTokens, usage.completionTokens, null);
+        archiveExchange(upstream.status, text, usage.promptTokens, usage.completionTokens);
       } catch {
         await record(upstream.status, null, null, null);
       } finally {
@@ -422,8 +460,10 @@ export async function runOverflow(
       'content-type': 'application/json; charset=utf-8',
       'x-orchestrator-overflow': provider.name,
     });
-    res.end(JSON.stringify(out.body));
+    const outText = JSON.stringify(out.body);
+    res.end(outText);
     await record(200, out.promptTokens, out.completionTokens, null);
+    archiveExchange(200, outText, out.promptTokens, out.completionTokens);
     return;
   }
 
@@ -434,6 +474,11 @@ export async function runOverflow(
     'x-orchestrator-overflow': provider.name,
   });
   const translator = new OllamaStreamTranslator(reportModel, isChat);
+  let captured = '';
+  const cap = deps.archive?.maxBytes ?? 0;
+  const keep = (line: string): void => {
+    if (archiveOn && (cap === 0 || captured.length < cap)) captured += line;
+  };
   try {
     if (upstream.body) {
       const reader = upstream.body.getReader();
@@ -442,16 +487,22 @@ export async function runOverflow(
         const { done, value } = await reader.read();
         if (done) break;
         for (const obj of translator.push(decoder.decode(value, { stream: true }))) {
-          res.write(JSON.stringify(obj) + '\n');
+          const line = JSON.stringify(obj) + '\n';
+          res.write(line);
+          keep(line);
         }
       }
     }
-    res.write(JSON.stringify(translator.end()) + '\n');
+    const last = JSON.stringify(translator.end()) + '\n';
+    res.write(last);
+    keep(last);
     res.end();
     await record(200, translator.promptTokens, translator.completionTokens, null);
+    archiveExchange(200, captured, translator.promptTokens, translator.completionTokens);
   } catch (err) {
     res.end();
     await record(200, translator.promptTokens, translator.completionTokens, (err as Error).message);
+    archiveExchange(200, captured, translator.promptTokens, translator.completionTokens);
   } finally {
     clearTimeout(timer);
   }

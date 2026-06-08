@@ -205,6 +205,12 @@ export const pt: Dict = {
   'apiKeys.creatingButton': 'Criando…',
   'apiKeys.noKeys': 'Nenhuma chave de API',
   'apiKeys.noKeysHint': 'A inferência fica aberta até você criar a primeira chave.',
+  'apiKeys.scope': 'Escopo',
+  'apiKeys.scopeInference': 'Inferência (clientes)',
+  'apiKeys.scopeAdmin': 'Admin (API completa)',
+  'apiKeys.adminHint':
+    'Chaves admin podem chamar toda a API /admin sem a UI — envie como Authorization: Bearer <chave>. Mantenha em segredo.',
+  'apiKeys.colScope': 'Escopo',
   'apiKeys.colName': 'Nome',
   'apiKeys.colPrefix': 'Prefixo',
   'apiKeys.colLastUsed': 'Último uso',

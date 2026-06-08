@@ -46,6 +46,13 @@ const envSchema = z.object({
   HEALTHCHECK_TIMEOUT_MS: z.coerce.number().int().min(500).default(3000),
   NODE_FAILOVER_RETRIES: z.coerce.number().int().min(0).max(10).default(2),
   NODE_AGENT_TOKEN: z.string().optional(),
+
+  // Request archive: persist every inference request + response (prompt bodies
+  // to files) for a complete on-disk history. Point ARCHIVE_DIR at a volume.
+  ARCHIVE_ENABLED: boolFromEnv(false),
+  ARCHIVE_DIR: z.string().default('/data/archive'),
+  ARCHIVE_MAX_BODY_BYTES: z.coerce.number().int().min(0).default(5_000_000),
+  ARCHIVE_RETENTION_DAYS: z.coerce.number().int().min(0).default(0),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -102,6 +109,10 @@ export const config = {
   healthcheckTimeoutMs: env.HEALTHCHECK_TIMEOUT_MS,
   failoverRetries: env.NODE_FAILOVER_RETRIES,
   nodeAgentToken: env.NODE_AGENT_TOKEN ?? '',
+  archiveEnabled: env.ARCHIVE_ENABLED,
+  archiveDir: env.ARCHIVE_DIR,
+  archiveMaxBodyBytes: env.ARCHIVE_MAX_BODY_BYTES,
+  archiveRetentionDays: env.ARCHIVE_RETENTION_DAYS,
 } as const;
 
 export type Config = typeof config;
