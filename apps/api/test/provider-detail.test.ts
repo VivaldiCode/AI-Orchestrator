@@ -47,9 +47,21 @@ describe('RequestArchive.listByProvider', () => {
       completionTokens: 1,
       requestHeaders: {},
     };
-    await archive.record({ ...base, id: 'a1', at: '2026-06-01T10:00:00.000Z', provider: 'openai' }, 'q1', 'r1');
-    await archive.record({ ...base, id: 'a2', at: '2026-06-01T11:00:00.000Z', provider: 'xai' }, 'q2', 'r2');
-    await archive.record({ ...base, id: 'a3', at: '2026-06-02T10:00:00.000Z', provider: 'openai' }, 'q3', 'r3');
+    await archive.record(
+      { ...base, id: 'a1', at: '2026-06-01T10:00:00.000Z', provider: 'openai' },
+      'q1',
+      'r1',
+    );
+    await archive.record(
+      { ...base, id: 'a2', at: '2026-06-01T11:00:00.000Z', provider: 'xai' },
+      'q2',
+      'r2',
+    );
+    await archive.record(
+      { ...base, id: 'a3', at: '2026-06-02T10:00:00.000Z', provider: 'openai' },
+      'q3',
+      'r3',
+    );
   });
   afterAll(async () => {
     await rm(dir, { recursive: true, force: true });

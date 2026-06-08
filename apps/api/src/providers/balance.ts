@@ -29,7 +29,10 @@ async function getJson(url: string, headers: Record<string, string>): Promise<un
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(url, { headers: { accept: 'application/json', ...headers }, signal: ctrl.signal });
+    const res = await fetch(url, {
+      headers: { accept: 'application/json', ...headers },
+      signal: ctrl.signal,
+    });
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -74,7 +77,13 @@ export async function fetchProviderBalance(
       })) as any;
       const bal = openRouterBalanceUsd(j);
       if (bal != null) {
-        return { available: true, balanceUsd: bal, currency: 'USD', source: 'openrouter', note: null };
+        return {
+          available: true,
+          balanceUsd: bal,
+          currency: 'USD',
+          source: 'openrouter',
+          note: null,
+        };
       }
       return unavailable('Could not read OpenRouter credits.');
     }
@@ -91,7 +100,8 @@ export async function fetchProviderBalance(
           balanceUsd: parsed.balanceUsd,
           currency: parsed.currency,
           source: 'deepseek',
-          note: (j as any)?.is_available === false ? 'Account marked not available by DeepSeek.' : null,
+          note:
+            (j as any)?.is_available === false ? 'Account marked not available by DeepSeek.' : null,
         };
       }
       return unavailable('Could not read DeepSeek balance.');

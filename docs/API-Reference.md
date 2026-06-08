@@ -42,10 +42,10 @@ Ollama cluster.
 
 The API Claude Code speaks. See **[Using Claude Code](Claude-Code.md)** for the full guide.
 
-| Method | Path                         | Notes                                       |
-| ------ | ---------------------------- | ------------------------------------------- |
-| POST   | `/v1/messages`               | streaming + non-streaming, tools            |
-| POST   | `/v1/messages/count_tokens`  | `{ "input_tokens": N }` estimate            |
+| Method | Path                        | Notes                            |
+| ------ | --------------------------- | -------------------------------- |
+| POST   | `/v1/messages`              | streaming + non-streaming, tools |
+| POST   | `/v1/messages/count_tokens` | `{ "input_tokens": N }` estimate |
 
 Routing: a model mapped to (or matching) an Anthropic provider **passes through** with full
 fidelity; otherwise the request is translated Anthropic⇄OpenAI and dispatched to the local
@@ -60,25 +60,25 @@ cluster (with failover) or cloud overflow — tool calling and streaming include
 
 ## Management API (`/admin/*`)
 
-| Method           | Path                       | Purpose                              |
-| ---------------- | -------------------------- | ------------------------------------ |
-| GET              | `/admin/auth/setup-status` | whether first-run setup is needed    |
-| POST             | `/admin/auth/setup`        | create the first admin               |
-| POST             | `/admin/auth/login`        | obtain tokens                        |
-| POST             | `/admin/auth/refresh`      | refresh tokens                       |
-| GET              | `/admin/auth/me`           | current user                         |
-| GET/POST         | `/admin/nodes`             | list / create nodes                  |
-| GET/PATCH/DELETE | `/admin/nodes/:id`         | read / update / delete               |
-| POST             | `/admin/nodes/:id/test`    | live connectivity test               |
-| GET/POST         | `/admin/providers`         | list / create providers              |
-| PATCH/DELETE     | `/admin/providers/:id`     | update / delete a provider           |
-| POST             | `/admin/providers/:id/xai/device/start` | start xAI subscription device login |
-| POST             | `/admin/providers/:id/xai/device/poll`  | poll the device login for approval |
-| POST             | `/admin/providers/:id/xai/disconnect`   | clear stored subscription tokens |
-| GET/POST/DELETE  | `/admin/model-routes`      | model registry                       |
-| GET/PUT          | `/admin/settings`          | orchestrator settings                |
-| GET              | `/admin/analytics`         | metrics summary + series             |
-| POST             | `/admin/playground`        | replay a test request (openai/anthropic) |
-| GET/POST/DELETE  | `/admin/api-keys`          | inference API keys                   |
-| GET              | `/healthz`                 | liveness probe                       |
-| WS               | `/ws`                      | realtime events (optional `?token=`) |
+| Method           | Path                                    | Purpose                                  |
+| ---------------- | --------------------------------------- | ---------------------------------------- |
+| GET              | `/admin/auth/setup-status`              | whether first-run setup is needed        |
+| POST             | `/admin/auth/setup`                     | create the first admin                   |
+| POST             | `/admin/auth/login`                     | obtain tokens                            |
+| POST             | `/admin/auth/refresh`                   | refresh tokens                           |
+| GET              | `/admin/auth/me`                        | current user                             |
+| GET/POST         | `/admin/nodes`                          | list / create nodes                      |
+| GET/PATCH/DELETE | `/admin/nodes/:id`                      | read / update / delete                   |
+| POST             | `/admin/nodes/:id/test`                 | live connectivity test                   |
+| GET/POST         | `/admin/providers`                      | list / create providers                  |
+| PATCH/DELETE     | `/admin/providers/:id`                  | update / delete a provider               |
+| POST             | `/admin/providers/:id/xai/device/start` | start xAI subscription device login      |
+| POST             | `/admin/providers/:id/xai/device/poll`  | poll the device login for approval       |
+| POST             | `/admin/providers/:id/xai/disconnect`   | clear stored subscription tokens         |
+| GET/POST/DELETE  | `/admin/model-routes`                   | model registry                           |
+| GET/PUT          | `/admin/settings`                       | orchestrator settings                    |
+| GET              | `/admin/analytics`                      | metrics summary + series                 |
+| POST             | `/admin/playground`                     | replay a test request (openai/anthropic) |
+| GET/POST/DELETE  | `/admin/api-keys`                       | inference API keys                       |
+| GET              | `/healthz`                              | liveness probe                           |
+| WS               | `/ws`                                   | realtime events (optional `?token=`)     |

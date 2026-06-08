@@ -433,7 +433,10 @@ function ProviderCard({ provider: p }: { provider: Provider }) {
   return (
     <Card className={p.enabled ? undefined : 'opacity-60'}>
       <div className="flex items-center justify-between gap-2">
-        <Link to={`/providers/${p.id}`} className="font-medium text-slate-100 hover:text-concert-400">
+        <Link
+          to={`/providers/${p.id}`}
+          className="font-medium text-slate-100 hover:text-concert-400"
+        >
           {p.name}
         </Link>
         <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-400">{p.type}</span>
@@ -589,7 +592,9 @@ function XaiSubscriptionPanel({ provider: p }: { provider: Provider }) {
       {device ? (
         <div className="mt-2 space-y-2">
           <p className="text-slate-300">{t('providers.deviceInstructions')}</p>
-          <div className="font-mono text-base tracking-widest text-slate-100">{device.userCode}</div>
+          <div className="font-mono text-base tracking-widest text-slate-100">
+            {device.userCode}
+          </div>
           <a
             className="text-indigo-400 underline"
             href={device.verificationUriComplete ?? device.verificationUri}

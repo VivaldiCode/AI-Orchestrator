@@ -117,7 +117,10 @@ function toolChoiceToOpenAI(tc: Json | undefined): unknown {
 }
 
 /** Anthropic /v1/messages body → OpenAI /v1/chat/completions body. */
-export function anthropicToOpenAI(body: Json, targetModel: string): { payload: Json; stream: boolean } {
+export function anthropicToOpenAI(
+  body: Json,
+  targetModel: string,
+): { payload: Json; stream: boolean } {
   const stream = body.stream === true;
   const payload: Json = {
     model: targetModel,
@@ -133,7 +136,11 @@ export function anthropicToOpenAI(body: Json, targetModel: string): { payload: J
   if (Array.isArray(body.tools) && body.tools.length) {
     payload.tools = body.tools.map((t: Json) => ({
       type: 'function',
-      function: { name: t.name, description: t.description ?? '', parameters: t.input_schema ?? {} },
+      function: {
+        name: t.name,
+        description: t.description ?? '',
+        parameters: t.input_schema ?? {},
+      },
     }));
     const choice = toolChoiceToOpenAI(body.tool_choice);
     if (choice !== undefined) payload.tool_choice = choice;

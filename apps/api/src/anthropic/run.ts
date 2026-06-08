@@ -112,14 +112,7 @@ export async function runAnthropicMessages(
     if (!cfg || !baseUrl || !cfg.credentials.apiKey) {
       throw badRequest(`Provider for "${requested}" is not fully configured.`);
     }
-    await callTarget(
-      app,
-      req,
-      reply,
-      ctx,
-      cloudTarget(cfg, baseUrl, route.targetModel),
-      false,
-    );
+    await callTarget(app, req, reply, ctx, cloudTarget(cfg, baseUrl, route.targetModel), false);
     return;
   }
 
@@ -154,7 +147,14 @@ async function dispatchToCluster(
     if (!provider) return false;
     const baseUrl = app.providers.baseUrlFor(provider);
     if (!baseUrl || !provider.defaultModel) return false;
-    await callTarget(app, req, reply, ctx, cloudTarget(provider, baseUrl, provider.defaultModel), false);
+    await callTarget(
+      app,
+      req,
+      reply,
+      ctx,
+      cloudTarget(provider, baseUrl, provider.defaultModel),
+      false,
+    );
     return true;
   };
 

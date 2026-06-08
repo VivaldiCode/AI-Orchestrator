@@ -64,7 +64,11 @@ describe('anthropic → openai request translation', () => {
     expect(payload.tools).toEqual([
       {
         type: 'function',
-        function: { name: 'get_weather', description: 'Get weather', parameters: { type: 'object' } },
+        function: {
+          name: 'get_weather',
+          description: 'Get weather',
+          parameters: { type: 'object' },
+        },
       },
     ]);
     expect(payload.tool_choice).toEqual({ type: 'function', function: { name: 'get_weather' } });
@@ -72,12 +76,24 @@ describe('anthropic → openai request translation', () => {
 
   it('maps tool_choice any → required and auto → auto', () => {
     const any = anthropicToOpenAI(
-      { model: 'c', max_tokens: 1, tools: [{ name: 't' }], tool_choice: { type: 'any' }, messages: [] },
+      {
+        model: 'c',
+        max_tokens: 1,
+        tools: [{ name: 't' }],
+        tool_choice: { type: 'any' },
+        messages: [],
+      },
       'm',
     );
     expect(any.payload.tool_choice).toBe('required');
     const auto = anthropicToOpenAI(
-      { model: 'c', max_tokens: 1, tools: [{ name: 't' }], tool_choice: { type: 'auto' }, messages: [] },
+      {
+        model: 'c',
+        max_tokens: 1,
+        tools: [{ name: 't' }],
+        tool_choice: { type: 'auto' },
+        messages: [],
+      },
       'm',
     );
     expect(auto.payload.tool_choice).toBe('auto');
@@ -142,7 +158,9 @@ describe('openai → anthropic response translation', () => {
   it('maps text content + usage + stop_reason', () => {
     const msg = openAIToAnthropic(
       {
-        choices: [{ message: { role: 'assistant', content: 'Hello there' }, finish_reason: 'stop' }],
+        choices: [
+          { message: { role: 'assistant', content: 'Hello there' }, finish_reason: 'stop' },
+        ],
         usage: { prompt_tokens: 12, completion_tokens: 5 },
       },
       'claude-x',
@@ -195,7 +213,9 @@ describe('AnthropicStreamTranslator', () => {
     let blob = '';
     blob += t.push('data: {"choices":[{"delta":{"content":"Hel"}}]}\n');
     blob += t.push('data: {"choices":[{"delta":{"content":"lo"}}]}\n');
-    blob += t.push('data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":2}}\n');
+    blob += t.push(
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":2}}\n',
+    );
     blob += t.push('data: [DONE]\n');
     blob += t.end();
     const events = parseSSE(blob);
