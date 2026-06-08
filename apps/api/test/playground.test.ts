@@ -76,6 +76,9 @@ function startNode(): Promise<{ port: number; close: () => Promise<void> }> {
   });
 }
 
+const PROVIDER_ID = '66666666-6666-6666-6666-666666666666';
+const OPENAI_FAMILY = ['openai', 'xai', 'mistral', 'google', 'openai-compatible'];
+
 function buildApp(port: number): FastifyInstance {
   const registry = new NodeRegistry(db);
   const node = registry.upsert(fakeRow(NODE_ID, port));
@@ -84,12 +87,26 @@ function buildApp(port: number): FastifyInstance {
   const hub = new RealtimeHub();
   const recorder = { record: async () => {} } as unknown as AnalyticsRecorder;
   const dispatcher = new Dispatcher(registry, hub, recorder, () => SETTINGS);
+  // A configured OpenAI-compatible provider pointing at the same mock server.
+  const providerCfg = {
+    id: PROVIDER_ID,
+    type: 'openai',
+    name: 'OpenAI',
+    enabled: true,
+    baseUrl: `http://127.0.0.1:${port}`,
+    region: null,
+    defaultModel: 'gpt-x',
+    budgetMonthlyUsd: 0,
+    authMode: 'api-key',
+    credentials: { apiKey: 'sk-test' },
+  };
   return {
     providers: {
       resolve: () => null,
-      list: () => [],
-      isOpenAIFamily: () => false,
-      baseUrlFor: () => null,
+      list: () => [providerCfg],
+      getConfig: (id: string) => (id === PROVIDER_ID ? providerCfg : undefined),
+      isOpenAIFamily: (t: string) => OPENAI_FAMILY.includes(t),
+      baseUrlFor: (c: { baseUrl?: string }) => c.baseUrl ?? null,
       overBudget: () => false,
     },
     orchestrator: { getSettings: () => SETTINGS, dispatcher, registry, hub, recorder },
@@ -135,6 +152,31 @@ describe('runPlayground', () => {
     expect(body.type).toBe('message');
     expect(body.content[0].text).toBe('Hello world');
     expect(result.servedBy.nodeName).toBe('mock-node');
+  });
+
+  it('forces a chosen provider directly via providerId (route override)', async () => {
+    const result = await runPlayground(
+      app,
+      'openai',
+      { model: 'gpt-x', messages: [{ role: 'user', content: 'hi' }], stream: false },
+      { ip: null },
+      PROVIDER_ID,
+    );
+    expect(result.status).toBe(200);
+    const body = result.body as { choices: { message: { content: string } }[] };
+    expect(body.choices[0].message.content).toBe('Hello world');
+    expect(result.servedBy.provider).toBe('openai');
+  });
+
+  it('returns 400 when the chosen provider does not exist', async () => {
+    const result = await runPlayground(
+      app,
+      'openai',
+      { model: 'x', messages: [{ role: 'user', content: 'hi' }], stream: false },
+      { ip: null },
+      'nope-not-a-provider',
+    );
+    expect(result.status).toBe(400);
   });
 
   it('surfaces a clean error when no node can serve the model', async () => {

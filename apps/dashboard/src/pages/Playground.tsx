@@ -100,7 +100,11 @@ export function PlaygroundPage() {
 
   const run = useMutation({
     mutationFn: () =>
-      api.playground({ format, body: buildBody({ format, model, system, user, temperature, maxTokens }) }),
+      api.playground({
+        format,
+        providerId,
+        body: buildBody({ format, model, system, user, temperature, maxTokens }),
+      }),
     onSuccess: (r) => {
       setResult(r);
       setError(null);
