@@ -28,6 +28,7 @@ interface SeriesRow {
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens: number;
+  cost_usd: number;
 }
 
 interface TotalsRow {
@@ -42,6 +43,7 @@ interface TotalsRow {
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens: number;
+  cost_usd: number;
 }
 
 interface BreakdownRow {
@@ -50,6 +52,7 @@ interface BreakdownRow {
   errors: number;
   avg_latency_ms: number | null;
   total_tokens: number;
+  cost_usd: number;
 }
 
 interface NodeSeriesRow {
@@ -67,7 +70,21 @@ function mapBreakdown(rows: BreakdownRow[]): BreakdownItem[] {
     errors: r.errors,
     avgLatencyMs: r.avg_latency_ms,
     totalTokens: r.total_tokens,
+    costUsd: r.cost_usd,
   }));
+}
+
+/** Month-to-date spend (USD) per provider — for budget enforcement. */
+export async function getProviderSpend(monthStartIso: string): Promise<Map<string, number>> {
+  const rows = await sql<{ provider: string; cost: number }[]>`
+    SELECT provider, coalesce(sum(cost_usd), 0)::float AS cost
+    FROM request_events
+    WHERE time >= ${monthStartIso}::timestamptz
+    GROUP BY provider
+  `;
+  const map = new Map<string, number>();
+  for (const r of rows) map.set(r.provider, r.cost);
+  return map;
 }
 
 /**
@@ -178,7 +195,8 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
       percentile_cont(0.99) WITHIN GROUP (ORDER BY latency_ms)::float AS p99,
       coalesce(sum(prompt_tokens), 0)::int AS prompt_tokens,
       coalesce(sum(completion_tokens), 0)::int AS completion_tokens,
-      coalesce(sum(total_tokens), 0)::int AS total_tokens
+      coalesce(sum(total_tokens), 0)::int AS total_tokens,
+      coalesce(sum(cost_usd), 0)::float AS cost_usd
     FROM request_events
     WHERE ${where}
     GROUP BY bucket
@@ -197,7 +215,8 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
       percentile_cont(0.99) WITHIN GROUP (ORDER BY latency_ms)::float AS p99_latency,
       coalesce(sum(prompt_tokens), 0)::int AS prompt_tokens,
       coalesce(sum(completion_tokens), 0)::int AS completion_tokens,
-      coalesce(sum(total_tokens), 0)::int AS total_tokens
+      coalesce(sum(total_tokens), 0)::int AS total_tokens,
+      coalesce(sum(cost_usd), 0)::float AS cost_usd
     FROM request_events
     WHERE ${where}
   `;
@@ -209,7 +228,8 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
           count(*)::int AS requests,
           count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS errors,
           avg(latency_ms)::float AS avg_latency_ms,
-          coalesce(sum(total_tokens), 0)::int AS total_tokens
+          coalesce(sum(total_tokens), 0)::int AS total_tokens,
+          coalesce(sum(cost_usd), 0)::float AS cost_usd
         FROM request_events WHERE ${where}
         GROUP BY key ORDER BY requests DESC LIMIT 50
       `,
@@ -218,7 +238,8 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
           count(*)::int AS requests,
           count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS errors,
           avg(latency_ms)::float AS avg_latency_ms,
-          coalesce(sum(total_tokens), 0)::int AS total_tokens
+          coalesce(sum(total_tokens), 0)::int AS total_tokens,
+          coalesce(sum(cost_usd), 0)::float AS cost_usd
         FROM request_events WHERE ${where}
         GROUP BY key ORDER BY requests DESC LIMIT 50
       `,
@@ -227,7 +248,8 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
           count(*)::int AS requests,
           count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS errors,
           avg(latency_ms)::float AS avg_latency_ms,
-          coalesce(sum(total_tokens), 0)::int AS total_tokens
+          coalesce(sum(total_tokens), 0)::int AS total_tokens,
+          coalesce(sum(cost_usd), 0)::float AS cost_usd
         FROM request_events WHERE ${where}
         GROUP BY key ORDER BY requests DESC LIMIT 50
       `,
@@ -236,7 +258,8 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
           count(*)::int AS requests,
           count(*) FILTER (WHERE status >= 400 OR error IS NOT NULL)::int AS errors,
           avg(latency_ms)::float AS avg_latency_ms,
-          coalesce(sum(total_tokens), 0)::int AS total_tokens
+          coalesce(sum(total_tokens), 0)::int AS total_tokens,
+          coalesce(sum(cost_usd), 0)::float AS cost_usd
         FROM request_events WHERE ${where}
         GROUP BY key ORDER BY requests DESC LIMIT 50
       `,
@@ -269,6 +292,7 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
     promptTokens: r.prompt_tokens,
     completionTokens: r.completion_tokens,
     totalTokens: r.total_tokens,
+    costUsd: r.cost_usd,
   }));
 
   const { points: nodeSeries, keys: nodeKeys } = pivotNodeSeries(nodeSeriesRows);
@@ -288,6 +312,7 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
     completionTokens: totals?.completion_tokens ?? 0,
     totalTokens,
     avgTokensPerRequest: totalRequests > 0 ? totalTokens / totalRequests : 0,
+    totalCostUsd: totals?.cost_usd ?? 0,
     byNode: mapBreakdown(byNodeRows),
     byModel: mapBreakdown(byModelRows),
     byProvider: mapBreakdown(byProviderRows),

@@ -1,6 +1,7 @@
 import type { DB } from '../db/client';
 import { requestEvents } from '../db/schema';
 import { logger } from '../lib/logger';
+import type { PriceBook } from '../cost/pricebook';
 
 export interface RequestEventInput {
   requestId: string;
@@ -21,13 +22,18 @@ export interface RequestEventInput {
  * Recording must never break the request path, so failures are swallowed (logged).
  */
 export class AnalyticsRecorder {
-  constructor(private readonly db: DB) {}
+  constructor(
+    private readonly db: DB,
+    private readonly prices?: PriceBook,
+  ) {}
 
   async record(e: RequestEventInput): Promise<void> {
     const totalTokens =
       e.promptTokens != null || e.completionTokens != null
         ? (e.promptTokens ?? 0) + (e.completionTokens ?? 0)
         : null;
+    const costUsd =
+      this.prices?.costOf(e.provider, e.model, e.promptTokens, e.completionTokens) ?? null;
     try {
       await this.db.insert(requestEvents).values({
         requestId: e.requestId,
@@ -40,6 +46,7 @@ export class AnalyticsRecorder {
         promptTokens: e.promptTokens,
         completionTokens: e.completionTokens,
         totalTokens,
+        costUsd,
         error: e.error,
         clientKeyId: e.clientKeyId,
       });

@@ -34,6 +34,7 @@ function provider(over: Partial<ProviderConfig>): ProviderConfig {
     baseUrl: null,
     region: null,
     defaultModel: 'gpt-4o-mini',
+    budgetMonthlyUsd: 0,
     credentials: { apiKey: 'sk-test' },
     ...over,
   };
@@ -51,6 +52,7 @@ function pmStub(configs: ProviderConfig[]): ProviderManager {
     list: () => configs,
     isOpenAIFamily: (t: string) => OPENAI_FAMILY.includes(t),
     baseUrlFor: (c: ProviderConfig) => c.baseUrl ?? DEFAULT_BASE[c.type] ?? null,
+    overBudget: (c: ProviderConfig) => c.budgetMonthlyUsd > 0,
   } as unknown as ProviderManager;
 }
 
@@ -95,6 +97,11 @@ describe('pickOverflowProvider', () => {
 
   it('returns null when nothing is usable', () => {
     expect(pickOverflowProvider(pmStub([provider({ enabled: false })]), BASE_SETTINGS)).toBeNull();
+  });
+
+  it('skips providers that are over budget (reroutes to the next)', () => {
+    const configs = [provider({ id: 'broke', budgetMonthlyUsd: 50 }), provider({ id: 'ok' })];
+    expect(pickOverflowProvider(pmStub(configs), BASE_SETTINGS)?.id).toBe('ok');
   });
 });
 

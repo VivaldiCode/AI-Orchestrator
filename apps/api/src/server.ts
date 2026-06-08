@@ -10,6 +10,7 @@ import { McpService } from './mcp/service';
 import { Orchestrator } from './orchestrator/index';
 import { ProviderManager } from './providers/manager';
 import { RequestArchive } from './archive/index';
+import { PriceBook } from './cost/pricebook';
 import { registerAuth } from './plugins/auth';
 import { registerSecurity } from './plugins/security';
 import { registerDocs } from './plugins/docs';
@@ -33,7 +34,9 @@ export async function buildServer(): Promise<FastifyInstance> {
     retentionDays: config.archiveRetentionDays,
   });
   app.decorate('archive', archive);
-  app.decorate('orchestrator', new Orchestrator(db, archive));
+  const prices = new PriceBook(db);
+  app.decorate('prices', prices);
+  app.decorate('orchestrator', new Orchestrator(db, archive, prices));
   app.decorate('providers', new ProviderManager(db));
   // Let the dispatcher reach providers for cloud overflow when nodes saturate.
   app.orchestrator.setProviderManager(app.providers);
@@ -81,6 +84,7 @@ export async function buildServer(): Promise<FastifyInstance> {
 
 async function start(): Promise<void> {
   const app = await buildServer();
+  await app.prices.load();
   await app.orchestrator.start();
   await app.providers.load();
   // Prune old archive days on boot, then daily (no-op unless retention is set).

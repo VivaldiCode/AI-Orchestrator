@@ -156,6 +156,19 @@ export const en = {
   'providers.editError': 'Failed to update provider',
   'providers.apiKeyKeep': 'Leave blank to keep the current key',
   'providers.confirmDelete': 'Remove this provider? This cannot be undone.',
+  'providers.budget': 'Monthly budget (USD)',
+  'providers.spend': 'Spent this month',
+  'providers.noBudget': 'no budget',
+  'pricing.title': 'Model pricing',
+  'pricing.subtitle':
+    'USD per 1M tokens, used for cost tracking. Model "*" is a provider-wide default; set local (ollama) rates manually.',
+  'pricing.provider': 'Provider',
+  'pricing.model': 'Model',
+  'pricing.inputRate': 'Input $/1M',
+  'pricing.outputRate': 'Output $/1M',
+  'pricing.save': 'Save price',
+  'pricing.loading': 'Loading prices…',
+  'pricing.empty': 'No prices yet',
 
   // analytics
   'analytics.title': 'Analytics',
@@ -182,6 +195,7 @@ export const en = {
   'analytics.throughput': 'Throughput',
   'analytics.perMinute': 'req/min (avg)',
   'analytics.totalTokens': 'Total tokens',
+  'analytics.totalCost': 'Total cost',
   'analytics.tokensPerReq': '{count}/req avg',
   'analytics.minLatency': 'Min latency',
   'analytics.maxLatency': 'Max latency',
