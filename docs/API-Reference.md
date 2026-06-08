@@ -78,6 +78,7 @@ cluster (with failover) or cloud overflow — tool calling and streaming include
 | GET/POST/DELETE  | `/admin/model-routes`      | model registry                       |
 | GET/PUT          | `/admin/settings`          | orchestrator settings                |
 | GET              | `/admin/analytics`         | metrics summary + series             |
+| POST             | `/admin/playground`        | replay a test request (openai/anthropic) |
 | GET/POST/DELETE  | `/admin/api-keys`          | inference API keys                   |
 | GET              | `/healthz`                 | liveness probe                       |
 | WS               | `/ws`                      | realtime events (optional `?token=`) |

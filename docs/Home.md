@@ -24,6 +24,7 @@ optionally, across cloud AI providers (Anthropic, OpenAI, xAI, Amazon Bedrock).
 - [Using Claude Code](Claude-Code.md)
 - [MCP Servers & Skills](MCP-and-Skills.md)
 - [Dashboard Guide](Dashboard-Guide.md)
+- [Query Playground](Playground.md)
 - [Analytics](Analytics.md)
 - [Users & Roles (RBAC)](Users-and-Roles.md)
 - [Authentication & OAuth/SSO](Authentication-OAuth.md)

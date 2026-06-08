@@ -40,7 +40,11 @@ export function registerOpenAIRoutes(app: FastifyInstance): void {
   app.post('/v1/embeddings', pre, (req, reply) => handle(app, req, reply, '/v1/embeddings'));
 }
 
-async function handle(
+/**
+ * Core OpenAI `/v1` request handler. Exported so the admin playground can replay
+ * a request through the exact production path (routing/providers/overflow).
+ */
+export async function handle(
   app: FastifyInstance,
   req: FastifyRequest,
   reply: FastifyReply,
