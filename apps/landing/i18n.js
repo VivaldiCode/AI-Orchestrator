@@ -154,6 +154,83 @@ const I18N = {
     'footer.source': 'Código',
     'footer.tagline': 'Reja a sua frota de LLMs. 🎻',
   },
+  es: {
+    'meta.title': 'AI Orchestrator — dirige tu flota de LLMs',
+    'meta.description':
+      'Gateway open-source y self-hosted que replica la API de Ollama y balancea la inferencia entre tus Macs y proveedores de IA en la nube.',
+    'nav.features': 'Características',
+    'nav.architecture': 'Arquitectura',
+    'nav.how': 'Cómo funciona',
+    'nav.github': 'GitHub ★',
+    'hero.eyebrow': '100% open source · MIT · self-hosted',
+    'hero.titleLead': 'Dirige tu',
+    'hero.titleAccent': 'flota de LLMs',
+    'hero.titleTail': '.',
+    'hero.subtitle':
+      'Un gateway self-hosted que replica la API de Ollama y balancea la inferencia entre todos tus Macs — y, opcionalmente, entre Anthropic, OpenAI, xAI, Mistral y Amazon Bedrock. Como Vivaldi dirigiendo una orquesta: una batuta, muchos instrumentos, en perfecta sincronía. 🎻',
+    'hero.ctaGithub': 'Conseguir en GitHub',
+    'hero.ctaQuickstart': 'Inicio rápido',
+    'copy.label': 'Copiar',
+    'copy.done': '¡Copiado!',
+    'trust.label': 'Funciona con',
+    'stat.dropinValue': 'Drop-in',
+    'stat.dropinLabel': 'API 100% compatible con Ollama',
+    'stat.realtimeValue': 'Tiempo real',
+    'stat.realtimeLabel': 'dashboard en vivo + analíticas',
+    'stat.smartValue': 'Adaptativo',
+    'stat.smartLabel': 'enruta por la velocidad medida del nodo',
+    'stat.openValue': 'MIT',
+    'stat.openLabel': 'open source, en tu propio hardware',
+    'features.title': 'Todo lo que necesitas para gestionar tu propia flota de IA',
+    'features.subtitle':
+      'Un único endpoint frente a cada Mac y modelo en la nube — balanceado, observable y privado.',
+    'f.mirror.title': 'Drop-in: Ollama, OpenAI y Claude Code',
+    'f.mirror.desc':
+      'Todos los endpoints de Ollama, con streaming — además de una capa compatible con OpenAI (/v1) y la Anthropic Messages API. Apunta Claude Code al orquestador y también enruta por tu flota. Cambia la URL base y listo.',
+    'f.lb.title': 'Balanceo según rendimiento',
+    'f.lb.desc':
+      'Enruta por la velocidad medida de cada máquina en 24h (tokens/s, ms/token) y la carga actual — los prompts grandes van al nodo más rápido. También round-robin, least-connections, latencia y por peso, con failover automático.',
+    'f.multi.title': 'Multi-proveedor + overflow a la nube',
+    'f.multi.desc':
+      'Añade OpenAI, Anthropic, xAI, Mistral o Bedrock. Cuando todos los nodos están saturados, las solicitudes se desvían a la nube automáticamente — credenciales cifradas en reposo.',
+    'f.dashboard.title': 'Dashboard en tiempo real',
+    'f.dashboard.desc':
+      'Observa la carga por Mac, las solicitudes en curso y un feed en vivo (hora, IP del cliente, tokens). Añade nodos, gestiona proveedores y cambia de estrategia al vuelo.',
+    'f.analytics.title': 'Analíticas en profundidad',
+    'f.analytics.desc':
+      'Rendimiento, latencia media/mín/máx/p50/p95/p99, uso de tokens a lo largo del tiempo y asignación por máquina — con TimescaleDB.',
+    'f.security.title': 'Seguridad y privacidad',
+    'f.security.desc':
+      'JWT + SSO OIDC, claves de API con hash, rate limiting, dependencias auditadas — además de un modo privacidad que mantiene los prompts elegidos 100% locales, sin tocar la nube.',
+    'arch.title': 'Una batuta, muchos instrumentos',
+    'arch.subtitle': 'Los clientes hablan con un único endpoint; el orquestador dirige la flota.',
+    'arch.clients': 'Clientes',
+    'arch.coreA': 'balanceo de carga',
+    'arch.coreB': 'salud · failover',
+    'arch.coreC': 'analíticas · auth',
+    'arch.cloud': '☁️ Nube (overflow)',
+    'arch.caption':
+      'PostgreSQL + TimescaleDB guarda la configuración y cada evento de solicitud para las analíticas.',
+    'how.title': 'Cómo funciona',
+    'how.s1.title': 'Levanta el stack',
+    'how.s1.desc': 'Un docker compose up levanta el orquestador, el dashboard y la base de datos.',
+    'how.s2.title': 'Añade tus Macs',
+    'how.s2.desc':
+      'Registra cada nodo (host + puerto) desde el dashboard. Los health checks empiezan al instante.',
+    'how.s3.title': 'Apunta tus clientes',
+    'how.s3.desc':
+      'Envía solicitudes de Ollama, OpenAI o Claude Code (Anthropic) — la orquesta toca en perfecto equilibrio.',
+    'quickstart.title': 'Inicio rápido',
+    'quickstart.subtitle': 'En marcha en menos de un minuto con Docker.',
+    'os.title': 'Libre y open source, para siempre',
+    'os.desc':
+      'AI Orchestrator tiene licencia MIT. Las contribuciones son bienvenidas — issues, ideas y pull requests ayudan a que la orquesta crezca.',
+    'os.cta': 'Dar una estrella en GitHub ★',
+    'footer.builtBy': 'Hecho por',
+    'footer.license': 'Licencia MIT',
+    'footer.source': 'Código',
+    'footer.tagline': 'Dirige tu flota de LLMs. 🎻',
+  },
 };
 
 const STORAGE_KEY = 'aio.lang';
@@ -161,11 +238,14 @@ const STORAGE_KEY = 'aio.lang';
 function detectLang() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'en' || stored === 'pt') return stored;
+    if (stored === 'en' || stored === 'pt' || stored === 'es') return stored;
   } catch {
     /* ignore */
   }
-  return (navigator.language || 'en').toLowerCase().startsWith('pt') ? 'pt' : 'en';
+  const lang = (navigator.language || 'en').toLowerCase();
+  if (lang.startsWith('pt')) return 'pt';
+  if (lang.startsWith('es')) return 'es';
+  return 'en';
 }
 
 function applyLang(lang) {
@@ -204,8 +284,7 @@ function initCopyButtons() {
       const span = btn.querySelector('span');
       if (!code || !navigator.clipboard) return;
       void navigator.clipboard.writeText(code.textContent || '').then(() => {
-        const lang = document.documentElement.lang === 'pt' ? 'pt' : 'en';
-        const dict = I18N[lang] || I18N.en;
+        const dict = I18N[document.documentElement.lang] || I18N.en;
         if (span) span.textContent = dict['copy.done'];
         btn.classList.add('done');
         setTimeout(() => {

@@ -3,12 +3,7 @@ import type { DB } from '../db/client';
 import { modelRoutes as routesTable, providers as providersTable } from '../db/schema';
 import { decryptSecret } from '../lib/crypto';
 import { logger } from '../lib/logger';
-import type {
-  ProviderAuthMode,
-  ProviderConfig,
-  ProviderCredentials,
-  ResolvedRoute,
-} from './types';
+import type { ProviderAuthMode, ProviderConfig, ProviderCredentials, ResolvedRoute } from './types';
 
 const OPENAI_FAMILY: ProviderType[] = ['openai', 'xai', 'openai-compatible', 'mistral', 'google'];
 

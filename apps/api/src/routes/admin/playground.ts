@@ -31,7 +31,8 @@ class CapturingRaw extends Writable {
 
   writeHead(status: number, headers?: Record<string, string>): this {
     this.statusCode = status;
-    if (headers) for (const [k, v] of Object.entries(headers)) this.headers[k.toLowerCase()] = String(v);
+    if (headers)
+      for (const [k, v] of Object.entries(headers)) this.headers[k.toLowerCase()] = String(v);
     return this;
   }
   setHeader(k: string, v: string | number): void {
@@ -82,7 +83,11 @@ function capturingReply(): { reply: FastifyReply; raw: CapturingRaw; done: Promi
 }
 
 /** Build a synthetic buffered request the production handlers understand. */
-function syntheticRequest(url: string, body: Record<string, unknown>, ip: string | null): FastifyRequest {
+function syntheticRequest(
+  url: string,
+  body: Record<string, unknown>,
+  ip: string | null,
+): FastifyRequest {
   return {
     method: 'POST',
     url,
@@ -181,7 +186,9 @@ async function fetchProviderModels(app: FastifyInstance, p: ProviderConfig): Pro
   const key = p.credentials.apiKey;
   if (!key || p.type === 'bedrock') return [];
   const isAnthropic = p.type === 'anthropic';
-  const baseUrl = isAnthropic ? p.baseUrl || 'https://api.anthropic.com' : app.providers.baseUrlFor(p);
+  const baseUrl = isAnthropic
+    ? p.baseUrl || 'https://api.anthropic.com'
+    : app.providers.baseUrlFor(p);
   if (!baseUrl) return [];
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), MODELS_TIMEOUT_MS);
@@ -205,7 +212,13 @@ export function registerPlaygroundRoutes(app: FastifyInstance): void {
 
   app.post('/playground', read, async (req, reply) => {
     const input = parseWith(playgroundRequestSchema, req.body);
-    const result = await runPlayground(app, input.format, input.body, { ip: req.ip ?? null }, input.providerId);
+    const result = await runPlayground(
+      app,
+      input.format,
+      input.body,
+      { ip: req.ip ?? null },
+      input.providerId,
+    );
     return reply.send(result);
   });
 

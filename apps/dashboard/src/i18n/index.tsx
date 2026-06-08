@@ -2,14 +2,16 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { formatLatency, formatNumber, formatPercent, formatRelativeTime } from '../lib/format';
 import { en, type Dict, type TranslationKey } from './en';
 import { pt } from './pt';
+import { es } from './es';
 
-export type Lang = 'en' | 'pt';
+export type Lang = 'en' | 'pt' | 'es';
 
-const DICTS: Record<Lang, Dict> = { en, pt };
+const DICTS: Record<Lang, Dict> = { en, pt, es };
 
 export const LOCALES: { code: Lang; label: string }[] = [
   { code: 'en', label: 'English' },
   { code: 'pt', label: 'Português' },
+  { code: 'es', label: 'Español' },
 ];
 
 const STORAGE_KEY = 'aio.lang';
@@ -17,11 +19,14 @@ const STORAGE_KEY = 'aio.lang';
 function detectLang(): Lang {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'en' || stored === 'pt') return stored;
+    if (stored === 'en' || stored === 'pt' || stored === 'es') return stored;
   } catch {
     /* localStorage unavailable */
   }
-  return navigator.language?.toLowerCase().startsWith('pt') ? 'pt' : 'en';
+  const lang = navigator.language?.toLowerCase() ?? '';
+  if (lang.startsWith('pt')) return 'pt';
+  if (lang.startsWith('es')) return 'es';
+  return 'en';
 }
 
 type TParams = Record<string, string | number>;

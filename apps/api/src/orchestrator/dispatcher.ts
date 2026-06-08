@@ -117,11 +117,7 @@ export class Dispatcher {
    * fail over to a different node on a subsequent attempt. Advances the
    * round-robin counter so it composes with the rest of the dispatcher.
    */
-  pickNode(
-    model: string | null,
-    estimatedTokens = 0,
-    exclude?: Set<string>,
-  ): ManagedNode | null {
+  pickNode(model: string | null, estimatedTokens = 0, exclude?: Set<string>): ManagedNode | null {
     let pool = this.candidates(model, estimatedTokens);
     if (exclude && exclude.size) pool = pool.filter((n) => !exclude.has(n.id));
     return selectNode(this.getSettings().strategy, pool, this.rrCounter++, estimatedTokens);

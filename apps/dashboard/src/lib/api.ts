@@ -201,9 +201,7 @@ export const api = {
   getProviderBalance: (id: string) => request<ProviderBalance>(`/admin/providers/${id}/balance`),
   // archived prompts for one provider (newest first)
   listArchiveByProvider: (provider: string, limit = 100) =>
-    request<ArchiveList>(
-      `/admin/archive?provider=${encodeURIComponent(provider)}&limit=${limit}`,
-    ),
+    request<ArchiveList>(`/admin/archive?provider=${encodeURIComponent(provider)}&limit=${limit}`),
   archiveBody: (date: string, id: string, kind: 'request' | 'response') =>
     requestText(`/admin/archive/${encodeURIComponent(date)}/${encodeURIComponent(id)}/${kind}`),
   // xAI subscription (OAuth device flow)

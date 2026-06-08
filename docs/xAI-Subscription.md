@@ -50,11 +50,11 @@ recorded.
 
 All overridable via environment, with sensible defaults baked in:
 
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `XAI_OAUTH_ISSUER` | `https://auth.x.ai` | OIDC issuer (discovery) |
-| `XAI_OAUTH_CLIENT_ID` | xAI Grok-CLI public client | OAuth client id |
-| `XAI_OAUTH_SCOPE` | `openid profile email offline_access grok-cli:access api:access` | requested scopes (`offline_access` is required for refresh) |
+| Variable              | Default                                                          | Purpose                                                     |
+| --------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------- |
+| `XAI_OAUTH_ISSUER`    | `https://auth.x.ai`                                              | OIDC issuer (discovery)                                     |
+| `XAI_OAUTH_CLIENT_ID` | xAI Grok-CLI public client                                       | OAuth client id                                             |
+| `XAI_OAUTH_SCOPE`     | `openid profile email offline_access grok-cli:access api:access` | requested scopes (`offline_access` is required for refresh) |
 
 ## Troubleshooting
 

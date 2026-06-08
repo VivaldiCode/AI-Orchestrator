@@ -61,7 +61,11 @@ function startNode(): Promise<{ port: number; close: () => Promise<void> }> {
           id: 'chatcmpl-x',
           object: 'chat.completion',
           choices: [
-            { index: 0, message: { role: 'assistant', content: 'Hello world' }, finish_reason: 'stop' },
+            {
+              index: 0,
+              message: { role: 'assistant', content: 'Hello world' },
+              finish_reason: 'stop',
+            },
           ],
           usage: { prompt_tokens: 4, completion_tokens: 2 },
         }),

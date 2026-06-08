@@ -84,7 +84,10 @@ export function PlaygroundPage() {
   const [result, setResult] = useState<PlaygroundResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const optionsQuery = useQuery({ queryKey: ['playground-options'], queryFn: api.playgroundOptions });
+  const optionsQuery = useQuery({
+    queryKey: ['playground-options'],
+    queryFn: api.playgroundOptions,
+  });
   const groups = optionsQuery.data?.groups ?? [];
   const currentModels = groups.find((g) => g.id === providerId)?.models ?? [];
 
@@ -109,7 +112,8 @@ export function PlaygroundPage() {
       setResult(r);
       setError(null);
     },
-    onError: (e: unknown) => setError(e instanceof Error ? e.message : t('playground.requestError')),
+    onError: (e: unknown) =>
+      setError(e instanceof Error ? e.message : t('playground.requestError')),
   });
 
   const submit = (e: FormEvent) => {
@@ -125,8 +129,7 @@ export function PlaygroundPage() {
 
   const text = result ? extractText(result.body) : '';
   const usage = result ? extractUsage(result.body) : null;
-  const served =
-    result?.servedBy.nodeName ?? result?.servedBy.provider ?? (result ? '—' : '');
+  const served = result?.servedBy.nodeName ?? result?.servedBy.provider ?? (result ? '—' : '');
   const isError = !!result && result.status >= 400;
 
   return (
