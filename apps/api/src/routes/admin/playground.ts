@@ -3,10 +3,13 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import {
   playgroundRequestSchema,
   type PlaygroundFormat,
+  type PlaygroundModelGroup,
   type PlaygroundResult,
 } from '@ai-orchestrator/shared';
 import { runAnthropicMessages } from '../../anthropic/run';
 import { config } from '../../config/index';
+import { db } from '../../db/client';
+import { modelRoutes } from '../../db/schema';
 import { AppError } from '../../lib/errors';
 import { handle as handleOpenAI } from '../openai/index';
 import { parseWith } from './util';
@@ -151,13 +154,41 @@ export async function runPlayground(
 }
 
 export function registerPlaygroundRoutes(app: FastifyInstance): void {
-  app.post(
-    '/playground',
-    { preHandler: app.requirePermission('providers:read') },
-    async (req, reply) => {
-      const input = parseWith(playgroundRequestSchema, req.body);
-      const result = await runPlayground(app, input.format, input.body, { ip: req.ip ?? null });
-      return reply.send(result);
-    },
-  );
+  const read = { preHandler: app.requirePermission('providers:read') };
+
+  app.post('/playground', read, async (req, reply) => {
+    const input = parseWith(playgroundRequestSchema, req.body);
+    const result = await runPlayground(app, input.format, input.body, { ip: req.ip ?? null });
+    return reply.send(result);
+  });
+
+  // Provider + model choices for the playground pickers: local node models and
+  // each provider's routed aliases (+ default model). The model name returned is
+  // exactly what to put in the request `model` field.
+  app.get('/playground/options', read, async (_req, reply) => {
+    const nodeModels = new Set<string>();
+    for (const n of app.orchestrator.registry.list()) {
+      for (const m of n.runtime.models) nodeModels.add(m);
+    }
+    const routes = (await db.select().from(modelRoutes)).filter((r) => r.enabled);
+    const groups: PlaygroundModelGroup[] = [];
+
+    const ollamaAliases = routes.filter((r) => r.providerType === 'ollama').map((r) => r.alias);
+    groups.push({
+      id: 'ollama',
+      label: 'Local (Ollama)',
+      providerType: 'ollama',
+      models: [...new Set([...nodeModels, ...ollamaAliases])].sort(),
+    });
+
+    for (const p of app.providers.list()) {
+      const aliases = routes
+        .filter((r) => r.providerId === p.id || (r.providerId == null && r.providerType === p.type))
+        .map((r) => r.alias);
+      const models = [...new Set([...aliases, ...(p.defaultModel ? [p.defaultModel] : [])])].sort();
+      groups.push({ id: p.id, label: p.name, providerType: p.type, models });
+    }
+
+    return reply.send({ groups });
+  });
 }

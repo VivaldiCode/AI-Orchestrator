@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useEffect, useState, type FormEvent } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type { PlaygroundFormat, PlaygroundResult } from '@ai-orchestrator/shared';
 import { api } from '../lib/api';
 import { useI18n } from '../i18n';
@@ -75,6 +75,7 @@ function extractUsage(body: unknown): { input: number; output: number } | null {
 export function PlaygroundPage() {
   const { t } = useI18n();
   const [format, setFormat] = useState<PlaygroundFormat>('openai');
+  const [providerId, setProviderId] = useState('');
   const [model, setModel] = useState('');
   const [system, setSystem] = useState('');
   const [user, setUser] = useState('');
@@ -82,6 +83,20 @@ export function PlaygroundPage() {
   const [maxTokens, setMaxTokens] = useState('');
   const [result, setResult] = useState<PlaygroundResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const optionsQuery = useQuery({ queryKey: ['playground-options'], queryFn: api.playgroundOptions });
+  const groups = optionsQuery.data?.groups ?? [];
+  const currentModels = groups.find((g) => g.id === providerId)?.models ?? [];
+
+  // Default to the first provider that has models once options load.
+  useEffect(() => {
+    if (providerId || groups.length === 0) return;
+    const first = groups.find((g) => g.models.length > 0) ?? groups[0];
+    if (first) {
+      setProviderId(first.id);
+      setModel(first.models[0] ?? '');
+    }
+  }, [groups, providerId]);
 
   const run = useMutation({
     mutationFn: () =>
@@ -120,7 +135,7 @@ export function PlaygroundPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <form onSubmit={submit} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-3">
               <Field label={t('playground.format')}>
                 <Select
                   value={format}
@@ -130,13 +145,40 @@ export function PlaygroundPage() {
                   <option value="anthropic">Anthropic (/v1/messages)</option>
                 </Select>
               </Field>
+              <Field label={t('playground.provider')}>
+                <Select
+                  value={providerId}
+                  disabled={groups.length === 0}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setProviderId(id);
+                    setModel(groups.find((g) => g.id === id)?.models[0] ?? '');
+                  }}
+                >
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id} disabled={g.models.length === 0}>
+                      {g.label}
+                      {g.models.length === 0 ? ' (—)' : ''}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
               <Field label={t('playground.model')}>
-                <Input
+                <Select
                   value={model}
+                  disabled={currentModels.length === 0}
                   onChange={(e) => setModel(e.target.value)}
-                  placeholder={t('playground.modelPlaceholder')}
-                  required
-                />
+                >
+                  {currentModels.length === 0 ? (
+                    <option value="">{t('playground.noModels')}</option>
+                  ) : (
+                    currentModels.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))
+                  )}
+                </Select>
               </Field>
             </div>
 

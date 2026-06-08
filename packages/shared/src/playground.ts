@@ -23,6 +23,21 @@ export interface PlaygroundServedBy {
   provider: string | null;
 }
 
+/** A selectable provider (or the local cluster) and the models you can send to it. */
+export interface PlaygroundModelGroup {
+  /** Provider id, or `ollama` for the local cluster. */
+  id: string;
+  label: string;
+  providerType: string;
+  /** Public model names / aliases to put in the request `model` field. */
+  models: string[];
+}
+
+/** Options for the playground's provider + model pickers. */
+export interface PlaygroundOptions {
+  groups: PlaygroundModelGroup[];
+}
+
 /** Result of a playground call. */
 export interface PlaygroundResult {
   status: number;

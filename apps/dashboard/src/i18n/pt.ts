@@ -183,7 +183,9 @@ export const pt: Dict = {
   'playground.subtitle':
     'Envia um pedido de teste aos teus provedores no formato OpenAI ou Anthropic — roteado pelo orquestrador.',
   'playground.format': 'Formato',
+  'playground.provider': 'Provedor',
   'playground.model': 'Modelo',
+  'playground.noModels': 'Sem modelos disponíveis',
   'playground.modelPlaceholder': 'ex.: llama3.1 ou um alias mapeado',
   'playground.system': 'System prompt (opcional)',
   'playground.systemPlaceholder': 'És um assistente útil.',
