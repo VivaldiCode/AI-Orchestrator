@@ -71,7 +71,10 @@ cluster (with failover) or cloud overflow — tool calling and streaming include
 | GET/PATCH/DELETE | `/admin/nodes/:id`         | read / update / delete               |
 | POST             | `/admin/nodes/:id/test`    | live connectivity test               |
 | GET/POST         | `/admin/providers`         | list / create providers              |
-| DELETE           | `/admin/providers/:id`     | delete a provider                    |
+| PATCH/DELETE     | `/admin/providers/:id`     | update / delete a provider           |
+| POST             | `/admin/providers/:id/xai/device/start` | start xAI subscription device login |
+| POST             | `/admin/providers/:id/xai/device/poll`  | poll the device login for approval |
+| POST             | `/admin/providers/:id/xai/disconnect`   | clear stored subscription tokens |
 | GET/POST/DELETE  | `/admin/model-routes`      | model registry                       |
 | GET/PUT          | `/admin/settings`          | orchestrator settings                |
 | GET              | `/admin/analytics`         | metrics summary + series             |

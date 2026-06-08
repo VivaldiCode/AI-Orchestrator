@@ -11,6 +11,8 @@ import type {
   CreateProviderInput,
   CreateSkillInput,
   CreateUserInput,
+  DeviceLogin,
+  DevicePoll,
   McpServer,
   ModelPrice,
   NodeWithRuntime,
@@ -172,6 +174,13 @@ export const api = {
   updateProvider: (id: string, input: UpdateProviderInput) =>
     request<Provider>(`/admin/providers/${id}`, { method: 'PATCH', body: input }),
   deleteProvider: (id: string) => request<void>(`/admin/providers/${id}`, { method: 'DELETE' }),
+  // xAI subscription (OAuth device flow)
+  startXaiDevice: (id: string) =>
+    request<DeviceLogin>(`/admin/providers/${id}/xai/device/start`, { method: 'POST' }),
+  pollXaiDevice: (id: string) =>
+    request<DevicePoll>(`/admin/providers/${id}/xai/device/poll`, { method: 'POST' }),
+  disconnectXai: (id: string) =>
+    request<{ status: string }>(`/admin/providers/${id}/xai/disconnect`, { method: 'POST' }),
 
   // model prices (cost tracking)
   listPrices: () => request<ModelPrice[]>('/admin/prices'),

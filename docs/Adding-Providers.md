@@ -10,7 +10,7 @@ returned by the API.
 | ------------------- | ------------------ | ---------------- | ------------------------------- |
 | `ollama`            | local nodes        | ✅               | the default; no provider needed |
 | `openai`            | OpenAI `/v1`       | ✅               | proxied with your key           |
-| `xai`               | xAI `/v1`          | ✅               | OpenAI-compatible               |
+| `xai`               | xAI `/v1`          | ✅               | API key **or** [subscription login](xAI-Subscription.md) |
 | `mistral`           | Mistral `/v1`      | ✅               | OpenAI-compatible               |
 | `openai-compatible` | custom `baseUrl`   | ✅               | any compatible endpoint         |
 | `anthropic`         | Messages API (SDK) | ⏳ non-streaming | translated to OpenAI shape      |
