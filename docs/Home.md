@@ -20,6 +20,7 @@ optionally, across cloud AI providers (Anthropic, OpenAI, xAI, Amazon Bedrock).
 - [Native Agents (.deb / .app / .exe)](Native-Agents.md)
 - [Load-Balancing Strategies](Load-Balancing-Strategies.md)
 - [Adding Providers](Adding-Providers.md)
+- [Using Claude Code](Claude-Code.md)
 - [MCP Servers & Skills](MCP-and-Skills.md)
 - [Dashboard Guide](Dashboard-Guide.md)
 - [Analytics](Analytics.md)

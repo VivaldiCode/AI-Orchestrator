@@ -31,9 +31,9 @@ const I18N = {
     'features.title': 'Everything you need to run your own AI fleet',
     'features.subtitle':
       'One endpoint in front of every Mac and cloud model — balanced, observable and private.',
-    'f.mirror.title': 'Drop-in Ollama mirror',
+    'f.mirror.title': 'Drop-in: Ollama, OpenAI & Claude Code',
     'f.mirror.desc':
-      "Every Ollama endpoint, proxied with streaming. Change the base URL and you're done — an OpenAI-compatible /v1 surface is included too.",
+      "Every Ollama endpoint, proxied with streaming — plus an OpenAI-compatible /v1 layer and the Anthropic Messages API. Point Claude Code at the orchestrator and it routes across your fleet too. Change the base URL and you're done.",
     'f.lb.title': 'Performance-aware balancing',
     'f.lb.desc':
       "Routes by each machine's measured 24h speed (tokens/s, ms/token) and live load — big prompts go to the fastest node. Round-robin, least-connections, latency and weighted too, with automatic failover.",
@@ -64,7 +64,8 @@ const I18N = {
     'how.s2.desc':
       'Register each node (host + port) from the dashboard. Health checks start instantly.',
     'how.s3.title': 'Point your clients',
-    'how.s3.desc': 'Send Ollama or OpenAI-style requests — the orchestra plays in perfect balance.',
+    'how.s3.desc':
+      'Send Ollama, OpenAI or Claude Code (Anthropic) requests — the orchestra plays in perfect balance.',
     'quickstart.title': 'Quick start',
     'quickstart.subtitle': 'Up and running in under a minute with Docker.',
     'os.title': 'Free and open source, forever',
@@ -106,9 +107,9 @@ const I18N = {
     'features.title': 'Tudo o que você precisa para rodar sua própria frota de IA',
     'features.subtitle':
       'Um único endpoint à frente de cada Mac e modelo na nuvem — equilibrado, observável e privado.',
-    'f.mirror.title': 'Espelho do Ollama (drop-in)',
+    'f.mirror.title': 'Drop-in: Ollama, OpenAI e Claude Code',
     'f.mirror.desc':
-      'Todos os endpoints do Ollama, com streaming. Troque a URL base e pronto — uma camada compatível com OpenAI (/v1) também está incluída.',
+      'Todos os endpoints do Ollama, com streaming — além de uma camada compatível com OpenAI (/v1) e da Anthropic Messages API. Aponte o Claude Code para o orquestrador e ele também roteia pela sua frota. Troque a URL base e pronto.',
     'f.lb.title': 'Balanceamento por desempenho',
     'f.lb.desc':
       'Roteia pela velocidade medida de cada máquina nas últimas 24h (tokens/s, ms/token) e pela carga atual — prompts grandes vão para o nó mais rápido. Também round-robin, least-connections, latência e peso, com failover automático.',
@@ -141,7 +142,7 @@ const I18N = {
       'Cadastre cada nó (host + porta) pelo dashboard. Os health checks começam na hora.',
     'how.s3.title': 'Aponte seus clientes',
     'how.s3.desc':
-      'Envie requisições no estilo Ollama ou OpenAI — a orquestra toca em perfeito equilíbrio.',
+      'Envie requisições no estilo Ollama, OpenAI ou Claude Code (Anthropic) — a orquestra toca em perfeito equilíbrio.',
     'quickstart.title': 'Início rápido',
     'quickstart.subtitle': 'No ar em menos de um minuto com Docker.',
     'os.title': 'Livre e open source, para sempre',

@@ -111,6 +111,23 @@ export class Dispatcher {
   }
 
   /**
+   * Pick a single node via the configured strategy (model- + context-aware).
+   * Used by surfaces that dispatch themselves rather than proxying verbatim —
+   * e.g. the Anthropic `/v1/messages` translate path. `exclude` lets the caller
+   * fail over to a different node on a subsequent attempt. Advances the
+   * round-robin counter so it composes with the rest of the dispatcher.
+   */
+  pickNode(
+    model: string | null,
+    estimatedTokens = 0,
+    exclude?: Set<string>,
+  ): ManagedNode | null {
+    let pool = this.candidates(model, estimatedTokens);
+    if (exclude && exclude.size) pool = pool.filter((n) => !exclude.has(n.id));
+    return selectNode(this.getSettings().strategy, pool, this.rrCounter++, estimatedTokens);
+  }
+
+  /**
    * Non-streaming single `/api/chat` call to a selected node. Used by the triage
    * agent loop, which needs the full response to inspect/execute tool calls.
    */
