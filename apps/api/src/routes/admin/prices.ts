@@ -28,7 +28,12 @@ export function registerPriceRoutes(app: FastifyInstance): void {
   const write = { preHandler: app.requirePermission('providers:write') };
 
   app.get('/prices', read, async (_req, reply) => {
-    const rows = await db.select().from(modelPrices);
+    // Stable order so inline edits don't reshuffle the list (an UPDATE would
+    // otherwise change the heap order the DB returns).
+    const rows = await db
+      .select()
+      .from(modelPrices)
+      .orderBy(modelPrices.provider, modelPrices.model);
     return reply.send(rows.map(toPublic));
   });
 
