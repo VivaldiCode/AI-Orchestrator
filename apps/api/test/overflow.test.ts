@@ -35,6 +35,7 @@ function provider(over: Partial<ProviderConfig>): ProviderConfig {
     region: null,
     defaultModel: 'gpt-4o-mini',
     budgetMonthlyUsd: 0,
+    authMode: 'api-key',
     credentials: { apiKey: 'sk-test' },
     ...over,
   };

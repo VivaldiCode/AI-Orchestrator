@@ -1,10 +1,26 @@
 import type { ProviderType } from '@ai-orchestrator/shared';
 
+/** OAuth tokens for a `subscription`-mode provider (e.g. xAI device flow). */
+export interface OAuthTokens {
+  accessToken: string;
+  refreshToken?: string;
+  /** Absolute expiry, epoch milliseconds. */
+  expiresAt?: number;
+  scope?: string;
+  tokenType?: string;
+  /** Best-effort account label (e.g. email) from userinfo, for display. */
+  account?: string;
+}
+
 export interface ProviderCredentials {
   apiKey?: string;
   accessKeyId?: string;
   secretAccessKey?: string;
+  /** Present only for `subscription` providers. Never returned by the API. */
+  oauth?: OAuthTokens;
 }
+
+export type ProviderAuthMode = 'api-key' | 'subscription';
 
 /** Decrypted, in-memory provider configuration. */
 export interface ProviderConfig {
@@ -17,6 +33,8 @@ export interface ProviderConfig {
   defaultModel: string | null;
   /** Monthly spend cap (USD). 0 = no budget. */
   budgetMonthlyUsd: number;
+  /** How the provider authenticates. */
+  authMode: ProviderAuthMode;
   credentials: ProviderCredentials;
 }
 

@@ -63,7 +63,10 @@ export const providers = pgTable('providers', {
   defaultModel: text('default_model'),
   // Monthly spend cap (USD). 0 = no budget. Over budget → routing skips it.
   budgetMonthlyUsd: doublePrecision('budget_monthly_usd').notNull().default(0),
-  // AES-256-GCM ciphertext (v1:iv:tag:ct). Never returned by the API.
+  // 'api-key' (static key) or 'subscription' (OAuth device flow, e.g. xAI).
+  authMode: text('auth_mode').notNull().default('api-key'),
+  // AES-256-GCM ciphertext (v1:iv:tag:ct). Never returned by the API. For
+  // subscription providers this also holds the OAuth tokens (access/refresh).
   credentialsEncrypted: text('credentials_encrypted'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
