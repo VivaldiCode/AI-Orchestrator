@@ -9,10 +9,14 @@ import {
 import { db } from '../../db/client';
 import { modelRoutes, providers, type ProviderRow } from '../../db/schema';
 import { encryptSecret } from '../../lib/crypto';
-import { notFound } from '../../lib/errors';
+import { badRequest, notFound } from '../../lib/errors';
 import { parseWith, pathId } from './util';
 
-function toPublic(row: ProviderRow, spentThisMonthUsd: number): Provider {
+function toPublic(
+  row: ProviderRow,
+  spentThisMonthUsd: number,
+  subscription: Provider['subscription'],
+): Provider {
   return {
     id: row.id,
     type: row.type as Provider['type'],
@@ -24,6 +28,8 @@ function toPublic(row: ProviderRow, spentThisMonthUsd: number): Provider {
     hasCredentials: row.credentialsEncrypted != null,
     budgetMonthlyUsd: row.budgetMonthlyUsd ?? 0,
     spentThisMonthUsd,
+    authMode: (row.authMode as Provider['authMode']) ?? 'api-key',
+    subscription,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -48,9 +54,12 @@ export function registerProviderRoutes(app: FastifyInstance): void {
   const read = { preHandler: app.requirePermission('providers:read') };
   const write = { preHandler: app.requirePermission('providers:write') };
 
+  const pub = (row: ProviderRow): Provider =>
+    toPublic(row, app.providers.spentForType(row.type), app.providers.subscriptionStatus(row.id));
+
   app.get('/providers', read, async (_req, reply) => {
     const rows = await db.select().from(providers);
-    return reply.send(rows.map((r) => toPublic(r, app.providers.spentForType(r.type))));
+    return reply.send(rows.map(pub));
   });
 
   app.post('/providers', write, async (req, reply) => {
@@ -65,11 +74,12 @@ export function registerProviderRoutes(app: FastifyInstance): void {
         region: input.region ?? null,
         defaultModel: input.defaultModel ?? null,
         budgetMonthlyUsd: input.budgetMonthlyUsd ?? 0,
+        authMode: input.authMode ?? 'api-key',
         credentialsEncrypted: buildCreds(input),
       })
       .returning();
     await app.providers.load();
-    return reply.code(201).send(toPublic(row, app.providers.spentForType(row.type)));
+    return reply.code(201).send(pub(row));
   });
 
   app.patch('/providers/:id', write, async (req, reply) => {
@@ -83,13 +93,14 @@ export function registerProviderRoutes(app: FastifyInstance): void {
     if (input.region !== undefined) update.region = input.region;
     if (input.defaultModel !== undefined) update.defaultModel = input.defaultModel;
     if (input.budgetMonthlyUsd !== undefined) update.budgetMonthlyUsd = input.budgetMonthlyUsd;
+    if (input.authMode !== undefined) update.authMode = input.authMode;
     const newCreds = buildCreds(input);
     if (newCreds) update.credentialsEncrypted = newCreds;
 
     const [row] = await db.update(providers).set(update).where(eq(providers.id, id)).returning();
     if (!row) throw notFound('Provider not found.');
     await app.providers.load();
-    return reply.send(toPublic(row, app.providers.spentForType(row.type)));
+    return reply.send(pub(row));
   });
 
   app.delete('/providers/:id', write, async (req, reply) => {
@@ -101,6 +112,40 @@ export function registerProviderRoutes(app: FastifyInstance): void {
     if (rows.length === 0) throw notFound('Provider not found.');
     await app.providers.load();
     return reply.code(204).send();
+  });
+
+  // --- xAI subscription (OAuth device flow) --------------------------------
+  // Connect a SuperGrok / X Premium subscription without an API key: start the
+  // device flow, show the user the code+URL, poll until approved. Tokens are
+  // stored encrypted and auto-refreshed; inference then uses the access token.
+  const requireXai = (id: string): void => {
+    const cfg = app.providers.getConfig(id);
+    if (!cfg) throw notFound('Provider not found.');
+    if (cfg.type !== 'xai') {
+      throw badRequest('Subscription login is only available for xAI providers.');
+    }
+  };
+
+  app.post('/providers/:id/xai/device/start', write, async (req, reply) => {
+    const id = pathId(req.params);
+    requireXai(id);
+    return reply.send(await app.xaiSubscription.start(id));
+  });
+
+  app.post('/providers/:id/xai/device/poll', write, async (req, reply) => {
+    const id = pathId(req.params);
+    requireXai(id);
+    const res = await app.xaiSubscription.poll(id);
+    if (res.status === 'connected') await app.providers.load();
+    return reply.send(res);
+  });
+
+  app.post('/providers/:id/xai/disconnect', write, async (req, reply) => {
+    const id = pathId(req.params);
+    requireXai(id);
+    await app.xaiSubscription.disconnect(id);
+    await app.providers.load();
+    return reply.send({ status: 'disconnected' });
   });
 
   // --- model registry ------------------------------------------------------

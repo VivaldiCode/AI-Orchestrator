@@ -3,7 +3,12 @@ import type { DB } from '../db/client';
 import { modelRoutes as routesTable, providers as providersTable } from '../db/schema';
 import { decryptSecret } from '../lib/crypto';
 import { logger } from '../lib/logger';
-import type { ProviderConfig, ProviderCredentials, ResolvedRoute } from './types';
+import type {
+  ProviderAuthMode,
+  ProviderConfig,
+  ProviderCredentials,
+  ResolvedRoute,
+} from './types';
 
 const OPENAI_FAMILY: ProviderType[] = ['openai', 'xai', 'openai-compatible', 'mistral', 'google'];
 
@@ -35,17 +40,28 @@ export class ProviderManager {
       this.db.select().from(providersTable),
       this.db.select().from(routesTable),
     ]);
-    this.configs = providerRows.map((r) => ({
-      id: r.id,
-      type: r.type as ProviderType,
-      name: r.name,
-      enabled: r.enabled,
-      baseUrl: r.baseUrl,
-      region: r.region,
-      defaultModel: r.defaultModel,
-      budgetMonthlyUsd: r.budgetMonthlyUsd ?? 0,
-      credentials: this.decrypt(r.credentialsEncrypted),
-    }));
+    this.configs = providerRows.map((r) => {
+      const credentials = this.decrypt(r.credentialsEncrypted);
+      const authMode = (r.authMode as ProviderAuthMode) ?? 'api-key';
+      // Subscription providers authenticate with the OAuth access token; surface
+      // it as the bearer so the dispatch hot path (which reads credentials.apiKey)
+      // is unchanged.
+      if (authMode === 'subscription' && credentials.oauth?.accessToken) {
+        credentials.apiKey = credentials.oauth.accessToken;
+      }
+      return {
+        id: r.id,
+        type: r.type as ProviderType,
+        name: r.name,
+        enabled: r.enabled,
+        baseUrl: r.baseUrl,
+        region: r.region,
+        defaultModel: r.defaultModel,
+        budgetMonthlyUsd: r.budgetMonthlyUsd ?? 0,
+        authMode,
+        credentials,
+      };
+    });
     this.routes = routeRows.map((r) => ({
       alias: r.alias,
       providerId: r.providerId,
@@ -71,6 +87,29 @@ export class ProviderManager {
 
   getConfig(id: string): ProviderConfig | undefined {
     return this.configs.find((c) => c.id === id);
+  }
+
+  /** All subscription-mode providers (e.g. xAI) — used by the refresh loop. */
+  subscriptionProviders(): ProviderConfig[] {
+    return this.configs.filter((c) => c.authMode === 'subscription');
+  }
+
+  /** Public OAuth connection status for a provider (never exposes tokens). */
+  subscriptionStatus(id: string): {
+    connected: boolean;
+    expiresAt: string | null;
+    scope: string | null;
+    account: string | null;
+  } | null {
+    const c = this.getConfig(id);
+    if (!c || c.authMode !== 'subscription') return null;
+    const o = c.credentials.oauth;
+    return {
+      connected: !!o?.accessToken,
+      expiresAt: o?.expiresAt ? new Date(o.expiresAt).toISOString() : null,
+      scope: o?.scope ?? null,
+      account: o?.account ?? null,
+    };
   }
 
   isOpenAIFamily(type: ProviderType): boolean {

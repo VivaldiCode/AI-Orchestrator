@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateModelPriceInput,
   CreateProviderInput,
+  DeviceLogin,
   ModelPrice,
   Provider,
   ProviderType,
@@ -44,6 +45,7 @@ interface ProviderForm {
   accessKeyId: string;
   secretAccessKey: string;
   budgetMonthlyUsd: string;
+  authMode: 'api-key' | 'subscription';
 }
 
 const EMPTY: ProviderForm = {
@@ -56,6 +58,7 @@ const EMPTY: ProviderForm = {
   accessKeyId: '',
   secretAccessKey: '',
   budgetMonthlyUsd: '',
+  authMode: 'api-key',
 };
 
 export function ProvidersPage() {
@@ -73,6 +76,7 @@ export function ProvidersPage() {
         type: form.type,
         name: form.name,
         enabled: true,
+        authMode: form.authMode,
         ...(form.baseUrl ? { baseUrl: form.baseUrl } : {}),
         ...(form.region ? { region: form.region } : {}),
         ...(form.defaultModel ? { defaultModel: form.defaultModel } : {}),
@@ -110,7 +114,10 @@ export function ProvidersPage() {
           <Field label={t('providers.type')}>
             <Select
               value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value as ProviderType })}
+              onChange={(e) => {
+                const type = e.target.value as ProviderType;
+                setForm({ ...form, type, authMode: type === 'xai' ? form.authMode : 'api-key' });
+              }}
             >
               {PROVIDER_TYPES.map((type) => (
                 <option key={type} value={type}>
@@ -163,13 +170,32 @@ export function ProvidersPage() {
                   placeholder={baseUrlHint(form.type)}
                 />
               </Field>
-              <Field label={t('providers.apiKey')}>
-                <Input
-                  type="password"
-                  value={form.apiKey}
-                  onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
-                />
-              </Field>
+              {form.type === 'xai' ? (
+                <Field label={t('providers.authMode')}>
+                  <Select
+                    value={form.authMode}
+                    onChange={(e) =>
+                      setForm({ ...form, authMode: e.target.value as ProviderForm['authMode'] })
+                    }
+                  >
+                    <option value="api-key">{t('providers.authApiKey')}</option>
+                    <option value="subscription">{t('providers.authSubscription')}</option>
+                  </Select>
+                </Field>
+              ) : null}
+              {form.authMode === 'subscription' ? (
+                <Field label={t('providers.apiKey')}>
+                  <p className="text-xs text-slate-400">{t('providers.subscriptionCreateHint')}</p>
+                </Field>
+              ) : (
+                <Field label={t('providers.apiKey')}>
+                  <Input
+                    type="password"
+                    value={form.apiKey}
+                    onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
+                  />
+                </Field>
+              )}
             </>
           )}
           <Field label={t('providers.budget')}>
@@ -403,6 +429,10 @@ function ProviderCard({ provider: p }: { provider: Provider }) {
             : ` (${t('providers.noBudget')})`}
         </div>
       </div>
+
+      {p.authMode === 'subscription' && p.type === 'xai' ? (
+        <XaiSubscriptionPanel provider={p} />
+      ) : null}
       <div className="mt-4 flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={() => toggle.mutate()} disabled={toggle.isPending}>
           {p.enabled ? t('providers.disable') : t('providers.enable')}
@@ -434,6 +464,130 @@ const EMPTY_PRICE: PriceForm = {
 };
 
 /** Per-model token pricing (USD per 1M tokens) used for cost tracking. */
+/**
+ * xAI subscription (OAuth device flow) panel shown on a subscription-mode xAI
+ * provider card: connection status, a Connect button that starts the device
+ * flow (showing a user code + verification link and auto-polling for approval),
+ * and Disconnect.
+ */
+function XaiSubscriptionPanel({ provider: p }: { provider: Provider }) {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const sub = p.subscription;
+  const [device, setDevice] = useState<DeviceLogin | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  };
+  useEffect(() => stopPolling, []);
+
+  const start = useMutation({
+    mutationFn: () => api.startXaiDevice(p.id),
+    onSuccess: (d) => {
+      setError(null);
+      setDevice(d);
+      stopPolling();
+      pollRef.current = setInterval(
+        () => {
+          void api
+            .pollXaiDevice(p.id)
+            .then((r) => {
+              if (r.status === 'pending') return;
+              stopPolling();
+              setDevice(null);
+              if (r.status === 'connected') {
+                void qc.invalidateQueries({ queryKey: ['providers'] });
+              } else {
+                setError(r.message ?? r.status);
+              }
+            })
+            .catch((e: unknown) => {
+              stopPolling();
+              setDevice(null);
+              setError(e instanceof Error ? e.message : 'poll failed');
+            });
+        },
+        Math.max(2, d.intervalSeconds) * 1000,
+      );
+    },
+    onError: (e: unknown) =>
+      setError(e instanceof Error ? e.message : t('providers.subscriptionError')),
+  });
+
+  const disconnect = useMutation({
+    mutationFn: () => api.disconnectXai(p.id),
+    onSuccess: () => {
+      setDevice(null);
+      void qc.invalidateQueries({ queryKey: ['providers'] });
+    },
+    onError: (e: unknown) =>
+      setError(e instanceof Error ? e.message : t('providers.subscriptionError')),
+  });
+
+  return (
+    <div className="mt-3 rounded-md border border-slate-700/60 bg-slate-800/30 p-3 text-xs">
+      <div className="mb-2 font-medium text-slate-300">{t('providers.subscription')}</div>
+      {sub?.connected ? (
+        <div className="space-y-1 text-slate-400">
+          <div className="text-emerald-400">
+            ● {t('providers.connected')}
+            {sub.account ? ` — ${sub.account}` : ''}
+          </div>
+          {sub.expiresAt ? (
+            <div>
+              {t('providers.expiresLabel')}: {new Date(sub.expiresAt).toLocaleString()}
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="text-slate-400">{t('providers.notConnected')}</div>
+      )}
+
+      {device ? (
+        <div className="mt-2 space-y-2">
+          <p className="text-slate-300">{t('providers.deviceInstructions')}</p>
+          <div className="font-mono text-base tracking-widest text-slate-100">{device.userCode}</div>
+          <a
+            className="text-indigo-400 underline"
+            href={device.verificationUriComplete ?? device.verificationUri}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {t('providers.openLink')}
+          </a>
+          <p className="text-slate-500">{t('providers.deviceWaiting')}</p>
+        </div>
+      ) : (
+        <div className="mt-2 flex gap-2">
+          <Button type="button" onClick={() => start.mutate()} disabled={start.isPending}>
+            {start.isPending
+              ? t('providers.connecting')
+              : sub?.connected
+                ? t('providers.reconnect')
+                : t('providers.connect')}
+          </Button>
+          {sub?.connected ? (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => disconnect.mutate()}
+              disabled={disconnect.isPending}
+            >
+              {t('providers.disconnect')}
+            </Button>
+          ) : null}
+        </div>
+      )}
+      {error ? <p className="mt-2 text-rose-400">{error}</p> : null}
+    </div>
+  );
+}
+
 function PricingSection() {
   const { t } = useI18n();
   const qc = useQueryClient();
