@@ -3,9 +3,11 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { config } from '../config/index';
 import { badGateway } from '../lib/errors';
 import { nowIso, requestId } from '../lib/ids';
-import { buildResponseHeaders, readTailWeb } from '../orchestrator/proxy';
+import { buildResponseHeaders, readCappedWeb, readTailWeb } from '../orchestrator/proxy';
 import type { AnalyticsRecorder } from '../analytics/recorder';
 import type { RealtimeHub } from '../realtime/hub';
+import type { RequestArchive } from '../archive/index';
+import { sanitizeHeaders } from '../archive/index';
 import { extractOpenAIUsage } from './util';
 
 export interface OpenAIProxyTarget {
@@ -30,6 +32,7 @@ export async function proxyOpenAI(
   target: OpenAIProxyTarget,
   hub: RealtimeHub,
   recorder: AnalyticsRecorder,
+  archive?: RequestArchive,
 ): Promise<void> {
   const url = `${target.baseUrl}${request.url}`;
   const bodyBuf = request.body as Buffer | undefined;
@@ -134,6 +137,7 @@ export async function proxyOpenAI(
     return;
   }
 
+  const archiveOn = archive?.enabled ?? false;
   const [toClient, toParse] = upstream.body.tee();
   const readable = Readable.fromWeb(toClient as unknown as Parameters<typeof Readable.fromWeb>[0]);
   readable.on('error', () => res.end());
@@ -142,14 +146,40 @@ export async function proxyOpenAI(
 
   void (async () => {
     try {
-      const tail = await readTailWeb(toParse);
-      const usage = extractOpenAIUsage(tail);
+      // Read the full (capped) body when archiving, otherwise just the tail.
+      const text = archiveOn
+        ? await readCappedWeb(toParse, archive!.maxBytes)
+        : await readTailWeb(toParse);
+      const usage = extractOpenAIUsage(text);
       await record(
         upstream.status,
         usage.promptTokens,
         usage.completionTokens,
         upstream.status >= 400 ? `upstream ${upstream.status}` : null,
       );
+      if (archiveOn) {
+        void archive!.record(
+          {
+            id,
+            at: nowIso(),
+            method: request.method,
+            endpoint: target.endpoint,
+            model: target.originalModel,
+            provider: target.providerName,
+            nodeId: null,
+            nodeName: null,
+            clientIp: target.clientIp ?? null,
+            clientKeyId: target.clientKeyId,
+            status: upstream.status,
+            latencyMs: Math.round(performance.now() - started),
+            promptTokens: usage.promptTokens,
+            completionTokens: usage.completionTokens,
+            requestHeaders: sanitizeHeaders(request.headers),
+          },
+          (request.body as Buffer | undefined) ?? null,
+          text,
+        );
+      }
     } catch {
       await record(upstream.status, null, null, null);
     } finally {

@@ -107,6 +107,7 @@ export async function handle(
       },
       app.orchestrator.hub,
       app.orchestrator.recorder,
+      app.archive,
     );
     return;
   }
