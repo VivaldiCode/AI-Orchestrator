@@ -4,6 +4,7 @@ import { nowIso, requestId } from '../../lib/ids';
 import { AnthropicAdapter } from '../../providers/anthropic';
 import { BedrockAdapter } from '../../providers/bedrock';
 import { proxyOpenAI } from '../../providers/openaiProxy';
+import type { ResolvedRoute } from '../../providers/types';
 import { triageChat } from '../../orchestrator/triage';
 import {
   clientIpOf,
@@ -49,11 +50,14 @@ export async function handle(
   req: FastifyRequest,
   reply: FastifyReply,
   endpoint: string,
+  routeOverride?: ResolvedRoute,
 ): Promise<void> {
   const requested = parseModel(req) ?? '';
   const localOnly = consumeLocalOnly(req);
   const privacy = localOnly || app.orchestrator.getSettings().privacyMode;
-  const route = app.providers.resolve(requested);
+  // An explicit override (e.g. the playground targeting a chosen provider) skips
+  // the alias registry.
+  const route = routeOverride ?? app.providers.resolve(requested);
   const keyId = clientKeyId(req);
   const ip = clientIpOf(req);
 

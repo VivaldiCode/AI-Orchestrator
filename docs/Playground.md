@@ -14,9 +14,13 @@ text, plus the raw JSON.
 
 1. Pick a **format** — OpenAI (`/v1/chat/completions`) or Anthropic
    (`/v1/messages`).
-2. Enter a **model**. This is the public name your model registry resolves:
-   a local model your nodes have (e.g. `llama3.1`), or a mapped alias that routes
-   to a cloud provider / xAI subscription / Anthropic.
+2. Pick a **provider** and a **model** from the dropdowns. The lists are built
+   from what's actually available: *Local (Ollama)* shows the union of your
+   nodes' models, and each configured provider shows its **live model catalog**
+   (fetched from its `/v1/models`) plus any routed aliases and its default model.
+   - Choosing a specific provider **targets it directly** (it bypasses the alias
+     registry), so you can test any configured provider — not only models that
+     have a route. *Local (Ollama)* uses normal routing.
 3. Optionally set a **system prompt**, then type a **user message**.
 4. Tune **temperature** / **max tokens** if you like (Anthropic requires
    max tokens — it defaults to 1024).

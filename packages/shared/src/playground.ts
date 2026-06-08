@@ -12,6 +12,11 @@ export type PlaygroundFormat = z.infer<typeof playgroundFormatSchema>;
  */
 export const playgroundRequestSchema = z.object({
   format: playgroundFormatSchema,
+  /**
+   * Which provider to target: a provider id forces that provider directly
+   * (bypassing the alias registry); `ollama` or omitted uses normal routing.
+   */
+  providerId: z.string().optional(),
   body: z.record(z.string(), z.unknown()),
 });
 export type PlaygroundRequest = z.infer<typeof playgroundRequestSchema>;
