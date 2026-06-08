@@ -5,6 +5,7 @@ import type { ProviderManager } from '../providers/manager';
 import type { AuthService } from '../auth/service';
 import type { OAuthService } from '../auth/oauth';
 import type { McpService } from '../mcp/service';
+import type { RequestArchive } from '../archive/index';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -13,6 +14,7 @@ declare module 'fastify' {
     auth: AuthService;
     oauth: OAuthService;
     mcp: McpService;
+    archive: RequestArchive;
     requireAdmin: preHandlerHookHandler;
     requireUser: preHandlerHookHandler;
     requireApiKey: preHandlerHookHandler;

@@ -8,4 +8,5 @@ export * from './auth';
 export * from './oauth';
 export * from './mcp';
 export * from './analytics';
+export * from './archive';
 export * from './realtime';

@@ -9,6 +9,7 @@ import { OAuthService } from './auth/oauth';
 import { McpService } from './mcp/service';
 import { Orchestrator } from './orchestrator/index';
 import { ProviderManager } from './providers/manager';
+import { RequestArchive } from './archive/index';
 import { registerAuth } from './plugins/auth';
 import { registerSecurity } from './plugins/security';
 import { registerDocs } from './plugins/docs';
@@ -25,7 +26,14 @@ export async function buildServer(): Promise<FastifyInstance> {
     bodyLimit: 100 * 1024 * 1024, // up to 100 MB (model blob pushes)
   });
 
-  app.decorate('orchestrator', new Orchestrator(db));
+  const archive = new RequestArchive({
+    enabled: config.archiveEnabled,
+    dir: config.archiveDir,
+    maxBytes: config.archiveMaxBodyBytes,
+    retentionDays: config.archiveRetentionDays,
+  });
+  app.decorate('archive', archive);
+  app.decorate('orchestrator', new Orchestrator(db, archive));
   app.decorate('providers', new ProviderManager(db));
   // Let the dispatcher reach providers for cloud overflow when nodes saturate.
   app.orchestrator.setProviderManager(app.providers);
@@ -75,6 +83,9 @@ async function start(): Promise<void> {
   const app = await buildServer();
   await app.orchestrator.start();
   await app.providers.load();
+  // Prune old archive days on boot, then daily (no-op unless retention is set).
+  void app.archive.prune();
+  setInterval(() => void app.archive.prune(), 24 * 60 * 60 * 1000).unref?.();
   await app.listen({ host: config.host, port: config.port });
   logger.info(`AI Orchestrator listening on http://${config.host}:${config.port}`);
 

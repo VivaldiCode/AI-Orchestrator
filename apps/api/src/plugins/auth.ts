@@ -13,10 +13,27 @@ import { forbidden, unauthorized } from '../lib/errors';
 export async function registerAuth(app: FastifyInstance): Promise<void> {
   await app.register(fastifyJwt, { secret: config.jwtSecret });
 
+  /**
+   * No-UI admin access: a Bearer **API key carrying the `admin` scope** may be
+   * used in place of a dashboard JWT on `/admin/*`. Lets operators script the
+   * full admin API without logging in. Returns true (and sets `adminUser`) when
+   * a valid admin key is presented.
+   */
+  async function tryAdminApiKey(request: FastifyRequest): Promise<boolean> {
+    const header = request.headers.authorization;
+    const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
+    if (!token) return false;
+    const row = await app.auth.verifyApiKey(token);
+    if (!row || !(row.scopes ?? []).includes('admin')) return false;
+    request.adminUser = { sub: row.id, username: `apikey:${row.name}`, role: 'admin' };
+    return true;
+  }
+
   app.decorate('requireAdmin', async function (request: FastifyRequest, _reply: FastifyReply) {
     try {
       await request.jwtVerify();
     } catch {
+      if (await tryAdminApiKey(request)) return;
       throw unauthorized('Authentication required.');
     }
     const payload = request.user;
@@ -30,6 +47,7 @@ export async function registerAuth(app: FastifyInstance): Promise<void> {
     try {
       await request.jwtVerify();
     } catch {
+      if (await tryAdminApiKey(request)) return;
       throw unauthorized('Authentication required.');
     }
     const payload = request.user;
@@ -44,6 +62,8 @@ export async function registerAuth(app: FastifyInstance): Promise<void> {
       try {
         await request.jwtVerify();
       } catch {
+        // An admin-scoped API key grants every permission.
+        if (await tryAdminApiKey(request)) return;
         throw unauthorized('Authentication required.');
       }
       const payload = request.user;
