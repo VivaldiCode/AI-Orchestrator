@@ -1,6 +1,10 @@
 import type { ProviderType } from '@ai-orchestrator/shared';
 import type { DB } from '../db/client';
-import { modelRoutes as routesTable, providers as providersTable } from '../db/schema';
+import {
+  modelEquivalents as equivalentsTable,
+  modelRoutes as routesTable,
+  providers as providersTable,
+} from '../db/schema';
 import { decryptSecret } from '../lib/crypto';
 import { logger } from '../lib/logger';
 import type { ProviderAuthMode, ProviderConfig, ProviderCredentials, ResolvedRoute } from './types';
@@ -21,19 +25,36 @@ interface RouteEntry {
   enabled: boolean;
 }
 
+interface EquivalentEntry {
+  groupId: string;
+  providerType: ProviderType;
+  providerId: string | null;
+  model: string;
+  position: number;
+}
+
+/** One ordered member of a resolved equivalence chain. */
+export interface ChainMember {
+  providerType: ProviderType;
+  providerId: string | null;
+  model: string;
+}
+
 /** Loads provider configs + the model registry, decrypts credentials, resolves models. */
 export class ProviderManager {
   private configs: ProviderConfig[] = [];
   private routes: RouteEntry[] = [];
+  private equivalents: EquivalentEntry[] = [];
   /** Month-to-date spend (USD) per provider type, refreshed from analytics. */
   private spendByType = new Map<string, number>();
 
   constructor(private readonly db: DB) {}
 
   async load(): Promise<void> {
-    const [providerRows, routeRows] = await Promise.all([
+    const [providerRows, routeRows, equivRows] = await Promise.all([
       this.db.select().from(providersTable),
       this.db.select().from(routesTable),
+      this.db.select().from(equivalentsTable),
     ]);
     this.configs = providerRows.map((r) => {
       const credentials = this.decrypt(r.credentialsEncrypted);
@@ -63,6 +84,13 @@ export class ProviderManager {
       providerType: r.providerType as ProviderType,
       targetModel: r.targetModel,
       enabled: r.enabled,
+    }));
+    this.equivalents = equivRows.map((r) => ({
+      groupId: r.groupId,
+      providerType: r.providerType as ProviderType,
+      providerId: r.providerId,
+      model: r.model,
+      position: r.position,
     }));
   }
 
@@ -144,5 +172,23 @@ export class ProviderManager {
     }
     const provider = route.providerId ? (this.getConfig(route.providerId) ?? null) : null;
     return { providerType: route.providerType, targetModel: route.targetModel, provider };
+  }
+
+  /**
+   * Ordered equivalence chain for a model: the group's members sorted by
+   * proximity (`position`), with the requested model first. Empty when the
+   * model is not part of any equivalence group.
+   */
+  resolveChain(model: string): ChainMember[] {
+    const seed = this.equivalents.find((e) => e.model === model);
+    if (!seed) return [];
+    const members = this.equivalents
+      .filter((e) => e.groupId === seed.groupId)
+      .sort((a, b) => a.position - b.position)
+      .map((e) => ({ providerType: e.providerType, providerId: e.providerId, model: e.model }));
+    // Honour the explicit request: try the asked-for model first (stable sort
+    // keeps the rest in proximity order).
+    members.sort((a, b) => (a.model === model ? -1 : 0) - (b.model === model ? -1 : 0));
+    return members;
   }
 }

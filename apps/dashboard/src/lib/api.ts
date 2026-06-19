@@ -15,9 +15,11 @@ import type {
   DeviceLogin,
   DevicePoll,
   McpServer,
+  ModelEquivalentGroup,
   PlaygroundOptions,
   PlaygroundRequest,
   PlaygroundResult,
+  UpsertModelEquivalentGroupInput,
   ModelPrice,
   NodeWithRuntime,
   OAuthProvider,
@@ -215,6 +217,14 @@ export const api = {
   playground: (input: PlaygroundRequest) =>
     request<PlaygroundResult>('/admin/playground', { method: 'POST', body: input }),
   playgroundOptions: () => request<PlaygroundOptions>('/admin/playground/options'),
+  // model equivalence groups
+  listModelEquivalents: () => request<ModelEquivalentGroup[]>('/admin/model-equivalents'),
+  createModelEquivalentGroup: (input: UpsertModelEquivalentGroupInput) =>
+    request<{ id: string }>('/admin/model-equivalents', { method: 'POST', body: input }),
+  updateModelEquivalentGroup: (id: string, input: UpsertModelEquivalentGroupInput) =>
+    request<{ id: string }>(`/admin/model-equivalents/${id}`, { method: 'PUT', body: input }),
+  deleteModelEquivalentGroup: (id: string) =>
+    request<void>(`/admin/model-equivalents/${id}`, { method: 'DELETE' }),
 
   // model prices (cost tracking)
   listPrices: () => request<ModelPrice[]>('/admin/prices'),
