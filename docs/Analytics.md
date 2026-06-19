@@ -42,10 +42,17 @@ The dashboard **Overview** shows your active **providers** next to the nodes —
 
 The dashboard **Debug** page lists recent requests newest-first, with an **Errors only** toggle. Each
 row shows the endpoint, model, provider/node, status and latency; failed rows also show the **error
-reason** — for a cloud provider that's the **upstream error text** (e.g. `upstream 404: the model
-"gemma4:26b" does not exist`), which usually pinpoints a wrong substitute-model name, a bad API key,
-or an over-budget/expired provider. Expand a row to see the raw **request and response bodies** (when
-the request archive is enabled). Backed by `GET /admin/debug/events?errors=1`.
+reason** — for a cloud provider that's the **upstream error text** (e.g. `the model "gemma4:26b" does
+not exist`), which usually pinpoints a wrong substitute-model name, a bad API key, or an
+over-budget/expired provider. Expand a row to see the raw **request and response bodies** (when the
+request archive is enabled). Backed by `GET /admin/debug/events?errors=1`.
+
+When an equivalence chain redirects a request, the row shows the **substitute model actually sent**
+next to the asked-for one — `gemma4:26b → grok-2-latest` — so you can tell at a glance whether the
+substitution happened. The **model** column always reflects what the client asked for; if you see
+`The model \`gemma4:26b\` does not exist` reaching a cloud provider, that member is misconfigured with
+the local model name instead of the provider's own (see
+[equivalence chains](Load-Balancing-Strategies.md#model-equivalence-chains)).
 
 ## Performance
 

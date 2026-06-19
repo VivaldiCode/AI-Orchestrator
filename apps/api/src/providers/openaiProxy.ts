@@ -92,6 +92,11 @@ export async function proxyOpenAI(
       nodeId: null,
       provider: target.providerName,
       model: target.originalModel,
+      // The provider-side model actually called, when it differs from the asked one.
+      targetModel:
+        target.targetModel && target.targetModel !== target.originalModel
+          ? target.targetModel
+          : null,
       endpoint: target.endpoint,
       status,
       latencyMs,
@@ -155,7 +160,9 @@ export async function proxyOpenAI(
         upstream.status,
         usage.promptTokens,
         usage.completionTokens,
-        upstream.status >= 400 ? `upstream ${upstream.status}` : null,
+        // Surface the provider's actual error body (e.g. `model_not_found`) so the
+        // Debug view shows why it failed, not just the status code.
+        upstream.status >= 400 ? text || `upstream ${upstream.status}` : null,
       );
       if (archiveOn) {
         void archive!.record(

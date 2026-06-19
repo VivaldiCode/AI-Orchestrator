@@ -86,6 +86,14 @@ function DebugRow({ event: e }: { event: DebugEvent }) {
         <span className="flex min-w-0 items-center gap-2 truncate">
           <span className="font-mono text-xs text-slate-400">{e.endpoint}</span>
           <span className="truncate text-slate-200">{e.model || '—'}</span>
+          {e.targetModel && e.targetModel !== e.model ? (
+            <span
+              className="shrink-0 font-mono text-xs text-concert-300"
+              title={t('debug.sentToProvider')}
+            >
+              → {e.targetModel}
+            </span>
+          ) : null}
           <span className="shrink-0 text-xs text-slate-600">{e.provider}</span>
           {isError && e.error ? (
             <span className="truncate text-xs text-rose-400">{e.error}</span>

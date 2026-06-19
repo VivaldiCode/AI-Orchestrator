@@ -216,6 +216,9 @@ export const requestEvents = pgTable(
     nodeId: uuid('node_id'),
     provider: text('provider').notNull().default('ollama'),
     model: text('model').notNull().default(''),
+    /** The substitute model actually sent upstream when it differs from `model`
+     * (e.g. an equivalence-chain target like `grok-2-latest`); null otherwise. */
+    targetModel: text('target_model'),
     endpoint: text('endpoint').notNull(),
     status: integer('status').notNull(),
     latencyMs: doublePrecision('latency_ms'),

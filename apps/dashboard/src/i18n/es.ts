@@ -52,6 +52,7 @@ export const es: Dict = {
   'debug.errorsOnly': 'Solo errores',
   'debug.noEvents': 'Aún no hay peticiones registradas.',
   'debug.bodiesUnavailable': 'Cuerpos no disponibles (activa el archive de peticiones para capturarlos).',
+  'debug.sentToProvider': 'Modelo realmente enviado al proveedor',
   'nav.apiKeys': 'Claves de API',
   'nav.users': 'Usuarios',
   'nav.auth': 'Autenticación',
@@ -204,6 +205,8 @@ export const es: Dict = {
     'Ordena los miembros por proximidad — el más cercano primero. Usa ollama para el clúster local.',
   'providers.equivProvider': 'Proveedor',
   'providers.equivModel': 'Modelo',
+  'providers.equivModelHint':
+    'Usa el nombre del modelo del propio proveedor (p. ej. grok-2-latest, gpt-4o) — no el nombre del modelo local.',
   'providers.equivAddMember': '+ miembro',
   'providers.equivAddGroup': 'Nuevo grupo',
   'providers.equivEmpty': 'Aún no hay grupos de equivalencia.',

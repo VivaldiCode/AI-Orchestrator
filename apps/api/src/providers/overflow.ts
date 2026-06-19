@@ -330,6 +330,8 @@ export async function runOverflow(
       nodeId: null,
       provider: provider.type,
       model: reportModel,
+      // The cloud model actually called, when it differs from what the client asked.
+      targetModel: targetModel !== reportModel ? targetModel : null,
       endpoint: opts.endpoint,
       status,
       latencyMs,

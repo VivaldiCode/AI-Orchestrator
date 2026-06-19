@@ -50,6 +50,7 @@ export const en = {
   'debug.errorsOnly': 'Errors only',
   'debug.noEvents': 'No requests recorded yet.',
   'debug.bodiesUnavailable': 'Bodies unavailable (enable the request archive to capture them).',
+  'debug.sentToProvider': 'Model actually sent to the provider',
   'nav.apiKeys': 'API Keys',
   'nav.users': 'Users',
   'nav.auth': 'Authentication',
@@ -200,6 +201,8 @@ export const en = {
     'Order members by proximity — closest first. Use ollama for the local cluster.',
   'providers.equivProvider': 'Provider',
   'providers.equivModel': 'Model',
+  'providers.equivModelHint':
+    "Use the provider's own model name (e.g. grok-2-latest, gpt-4o) — not the local model name.",
   'providers.equivAddMember': '+ member',
   'providers.equivAddGroup': 'New group',
   'providers.equivEmpty': 'No equivalence groups yet.',

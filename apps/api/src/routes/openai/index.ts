@@ -159,6 +159,7 @@ export async function handle(
     nodeId: null,
     provider: route.providerType,
     model: requested,
+    targetModel: route.targetModel !== requested ? route.targetModel : null,
     endpoint,
     status: result.status,
     latencyMs,

@@ -95,6 +95,14 @@ provider's equivalent and falling through on provider errors until one responds.
 disabled, missing credentials, or over budget are skipped. With no group for the model, overflow
 falls back to the single pinned/first provider + its default model (the previous behaviour).
 
+> **Use each provider's _own_ model name.** A cloud member's model must be a model that provider
+> actually serves (e.g. `grok-2-latest` for xAI, `gpt-4o` for OpenAI) — **not** the local Ollama
+> name. If you leave a cloud member set to the local name (`gemma2:27b`), the provider rejects it
+> with `model_not_found` and that hop fails. The group editor offers each member a **picker of the
+> provider's live `/v1/models` catalog** to make this hard to get wrong; the **Debug** page shows
+> the substitute model actually sent (`gemma2:27b → grok-2-latest`) so a leaked local name is
+> obvious. Spend is attributed to the substitute model the provider billed, not the local alias.
+
 Applies to `/api/chat`, `/api/generate` and `/v1/chat/completions` (cloud members must be
 OpenAI-compatible). Privacy mode / a per-request `x-local-only` disables it.
 
