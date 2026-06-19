@@ -2,6 +2,7 @@ import type {
   AnalyticsQuery,
   AnalyticsSummary,
   BreakdownItem,
+  DebugEvent,
   NodePerf,
   NodeSeriesPoint,
   TimeseriesPoint,
@@ -158,6 +159,51 @@ export async function getNodePerformance(windowHours = 24): Promise<Map<string, 
     });
   }
   return map;
+}
+
+/** Recent request rows for the Debug view (newest first). */
+export async function getRecentEvents(opts: {
+  limit: number;
+  onlyErrors?: boolean;
+  provider?: string;
+}): Promise<DebugEvent[]> {
+  const rows = await sql<
+    {
+      request_id: string;
+      time: Date;
+      endpoint: string;
+      model: string;
+      provider: string;
+      node_id: string | null;
+      status: number;
+      latency_ms: number | null;
+      prompt_tokens: number | null;
+      completion_tokens: number | null;
+      error: string | null;
+    }[]
+  >`
+    SELECT request_id, time, endpoint, model, provider, node_id::text AS node_id,
+           status, latency_ms, prompt_tokens, completion_tokens, error
+    FROM request_events
+    WHERE TRUE
+      ${opts.onlyErrors ? sql`AND (status >= 400 OR error IS NOT NULL)` : sql``}
+      ${opts.provider ? sql`AND provider = ${opts.provider}` : sql``}
+    ORDER BY time DESC
+    LIMIT ${Math.min(Math.max(opts.limit, 1), 500)}
+  `;
+  return rows.map((r) => ({
+    requestId: r.request_id,
+    at: new Date(r.time).toISOString(),
+    endpoint: r.endpoint,
+    model: r.model,
+    provider: r.provider,
+    nodeId: r.node_id,
+    status: r.status,
+    latencyMs: r.latency_ms,
+    promptTokens: r.prompt_tokens,
+    completionTokens: r.completion_tokens,
+    error: r.error,
+  }));
 }
 
 export interface ProviderPerf {
