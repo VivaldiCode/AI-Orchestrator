@@ -173,6 +173,7 @@ export async function getRecentEvents(opts: {
       time: Date;
       endpoint: string;
       model: string;
+      target_model: string | null;
       provider: string;
       node_id: string | null;
       status: number;
@@ -182,7 +183,7 @@ export async function getRecentEvents(opts: {
       error: string | null;
     }[]
   >`
-    SELECT request_id, time, endpoint, model, provider, node_id::text AS node_id,
+    SELECT request_id, time, endpoint, model, target_model, provider, node_id::text AS node_id,
            status, latency_ms, prompt_tokens, completion_tokens, error
     FROM request_events
     WHERE TRUE
@@ -196,6 +197,7 @@ export async function getRecentEvents(opts: {
     at: new Date(r.time).toISOString(),
     endpoint: r.endpoint,
     model: r.model,
+    targetModel: r.target_model,
     provider: r.provider,
     nodeId: r.node_id,
     status: r.status,

@@ -84,7 +84,11 @@ export interface DebugEvent {
   requestId: string;
   at: string;
   endpoint: string;
+  /** The model the client asked for. */
   model: string;
+  /** The substitute model actually sent upstream (equivalence-chain target), or
+   * null when the request ran as-asked. Lets you spot a leaked local name. */
+  targetModel: string | null;
   provider: string;
   nodeId: string | null;
   status: number;
