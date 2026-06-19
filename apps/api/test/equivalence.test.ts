@@ -1,23 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { Settings } from '@ai-orchestrator/shared';
 import { db } from '../src/db/client';
 import { ProviderManager } from '../src/providers/manager';
-import { resolveOverflowChain } from '../src/providers/overflow';
+import { resolveEquivalenceChain } from '../src/providers/overflow';
 import type { ProviderConfig } from '../src/providers/types';
-
-const SETTINGS: Settings = {
-  strategy: 'least-connections',
-  modelAware: true,
-  contextAware: true,
-  autoPull: false,
-  failoverRetries: 2,
-  triageEnabled: false,
-  triageModel: '',
-  maxToolCalls: 5,
-  cloudOverflow: true,
-  cloudOverflowProviderId: '',
-  privacyMode: false,
-};
 
 function provider(over: Partial<ProviderConfig>): ProviderConfig {
   return {
@@ -57,7 +42,7 @@ describe('ProviderManager.resolveChain', () => {
   });
 });
 
-describe('resolveOverflowChain', () => {
+describe('resolveEquivalenceChain', () => {
   const xai = provider({ id: 'x1', type: 'xai', name: 'xAI', baseUrl: 'https://api.x.ai' });
   const openai = provider({ id: 'o1', type: 'openai', name: 'OpenAI' });
 
@@ -79,7 +64,7 @@ describe('resolveOverflowChain', () => {
   }
 
   it('maps the equivalence chain to usable cloud providers, in order, skipping ollama', () => {
-    const chain = resolveOverflowChain(pmStub(), SETTINGS, 'gemma2:27b');
+    const chain = resolveEquivalenceChain(pmStub(), 'gemma2:27b');
     expect(chain.map((c) => [c.provider.type, c.model])).toEqual([
       ['xai', 'grok-2'],
       ['openai', 'gpt-4o-mini'],
@@ -87,17 +72,14 @@ describe('resolveOverflowChain', () => {
   });
 
   it('skips a member that is over budget', () => {
-    const chain = resolveOverflowChain(
+    const chain = resolveEquivalenceChain(
       pmStub({ overBudget: (c: ProviderConfig) => c.id === 'x1' }),
-      SETTINGS,
       'gemma2:27b',
     );
     expect(chain.map((c) => c.model)).toEqual(['gpt-4o-mini']);
   });
 
-  it('falls back to the pinned/first overflow provider when no group applies', () => {
-    const chain = resolveOverflowChain(pmStub({ resolveChain: () => [] }), SETTINGS, 'whatever');
-    expect(chain).toHaveLength(1);
-    expect(chain[0].model).toBe('gpt-4o-mini'); // openai defaultModel (first usable)
+  it('is empty when the model has no equivalence group (fallback is the caller’s job)', () => {
+    expect(resolveEquivalenceChain(pmStub({ resolveChain: () => [] }), 'whatever')).toHaveLength(0);
   });
 });
