@@ -5,6 +5,7 @@ import type {
   CreateModelPriceInput,
   CreateProviderInput,
   DeviceLogin,
+  ModelEquivalentGroup,
   ModelPrice,
   Provider,
   ProviderType,
@@ -266,6 +267,8 @@ export function ProvidersPage() {
       )}
 
       <PricingSection />
+
+      <ModelEquivalenceSection />
     </div>
   );
 }
@@ -628,6 +631,172 @@ function XaiSubscriptionPanel({ provider: p }: { provider: Provider }) {
       )}
       {error ? <p className="mt-2 text-rose-400">{error}</p> : null}
     </div>
+  );
+}
+
+const EQUIV_PROVIDER_TYPES: ProviderType[] = ['ollama', ...PROVIDER_TYPES];
+
+/**
+ * Manage model equivalence groups: ordered sets of "similar" models across
+ * providers. When the local cluster can't serve a model, the request is
+ * redirected to the closest model on another provider (top of the list first).
+ */
+function ModelEquivalenceSection() {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const groupsQuery = useQuery({
+    queryKey: ['model-equivalents'],
+    queryFn: api.listModelEquivalents,
+  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [label, setLabel] = useState('');
+  const [members, setMembers] = useState<{ providerType: ProviderType; model: string }[]>([
+    { providerType: 'ollama', model: '' },
+  ]);
+  const [error, setError] = useState<string | null>(null);
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['model-equivalents'] });
+  const reset = () => {
+    setEditingId(null);
+    setLabel('');
+    setMembers([{ providerType: 'ollama', model: '' }]);
+    setError(null);
+  };
+
+  const save = useMutation({
+    mutationFn: () => {
+      const payload = {
+        label: label.trim(),
+        members: members
+          .filter((m) => m.model.trim())
+          .map((m) => ({ providerType: m.providerType, model: m.model.trim() })),
+      };
+      return editingId
+        ? api.updateModelEquivalentGroup(editingId, payload)
+        : api.createModelEquivalentGroup(payload);
+    },
+    onSuccess: () => {
+      reset();
+      invalidate();
+    },
+    onError: (e: unknown) => setError(e instanceof Error ? e.message : t('providers.editError')),
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => api.deleteModelEquivalentGroup(id),
+    onSuccess: invalidate,
+  });
+
+  const edit = (g: ModelEquivalentGroup) => {
+    setEditingId(g.id);
+    setLabel(g.label);
+    setMembers(g.members.map((m) => ({ providerType: m.providerType, model: m.model })));
+    setError(null);
+  };
+
+  const groups = groupsQuery.data ?? [];
+  const canSave = label.trim().length > 0 && members.some((m) => m.model.trim());
+
+  return (
+    <Card>
+      <h2 className="text-lg font-medium text-slate-100">{t('providers.equivTitle')}</h2>
+      <p className="mt-1 text-sm text-slate-400">{t('providers.equivSubtitle')}</p>
+
+      {groups.length === 0 ? (
+        <p className="mt-3 text-sm text-slate-500">{t('providers.equivEmpty')}</p>
+      ) : (
+        <div className="mt-3 space-y-2">
+          {groups.map((g) => (
+            <div
+              key={g.id}
+              className="flex items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm"
+            >
+              <div className="min-w-0">
+                <div className="font-medium text-slate-200">{g.label}</div>
+                <div className="truncate font-mono text-xs text-slate-500">
+                  {g.members.map((m) => `${m.providerType}/${m.model}`).join('  →  ')}
+                </div>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button variant="ghost" onClick={() => edit(g)}>
+                  {t('providers.edit')}
+                </Button>
+                <Button variant="danger" onClick={() => remove.mutate(g.id)}>
+                  {t('providers.delete')}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 space-y-3 border-t border-slate-800 pt-4">
+        <Field label={t('providers.equivGroupName')}>
+          <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="≈27B class" />
+        </Field>
+        <p className="text-xs text-slate-500">{t('providers.equivProximityHint')}</p>
+        <div className="space-y-2">
+          {members.map((m, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="w-5 shrink-0 text-xs text-slate-600">{i + 1}.</span>
+              <Select
+                value={m.providerType}
+                className="w-44"
+                onChange={(e) =>
+                  setMembers((ms) =>
+                    ms.map((x, j) =>
+                      j === i ? { ...x, providerType: e.target.value as ProviderType } : x,
+                    ),
+                  )
+                }
+              >
+                {EQUIV_PROVIDER_TYPES.map((pt) => (
+                  <option key={pt} value={pt}>
+                    {pt}
+                  </option>
+                ))}
+              </Select>
+              <Input
+                value={m.model}
+                placeholder={t('providers.equivModel')}
+                onChange={(e) =>
+                  setMembers((ms) => ms.map((x, j) => (j === i ? { ...x, model: e.target.value } : x)))
+                }
+              />
+              <button
+                type="button"
+                aria-label="remove"
+                onClick={() => setMembers((ms) => (ms.length > 1 ? ms.filter((_, j) => j !== i) : ms))}
+                className="shrink-0 text-slate-500 hover:text-rose-400"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => setMembers((ms) => [...ms, { providerType: 'openai', model: '' }])}
+          >
+            {t('providers.equivAddMember')}
+          </Button>
+          <div className="flex-1" />
+          {editingId ? (
+            <Button variant="ghost" onClick={reset}>
+              {t('providers.cancel')}
+            </Button>
+          ) : null}
+          <Button onClick={() => save.mutate()} disabled={!canSave || save.isPending}>
+            {save.isPending
+              ? t('providers.saving')
+              : editingId
+                ? t('providers.save')
+                : t('providers.equivAddGroup')}
+          </Button>
+        </div>
+        {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+      </div>
+    </Card>
   );
 }
 

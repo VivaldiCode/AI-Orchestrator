@@ -136,3 +136,29 @@ export const createModelRouteSchema = z.object({
   enabled: z.boolean().default(true),
 });
 export type CreateModelRouteInput = z.infer<typeof createModelRouteSchema>;
+
+/**
+ * A member of a model-equivalence group: the model name on a given provider
+ * (`ollama` = the local cluster). Order in the group = proximity.
+ */
+export const modelEquivalentMemberSchema = z.object({
+  providerType: providerTypeSchema,
+  /** Specific provider instance; null = the local cluster or any of the type. */
+  providerId: z.uuid().nullable().optional(),
+  model: z.string().min(1).max(200),
+});
+export type ModelEquivalentMember = z.infer<typeof modelEquivalentMemberSchema>;
+
+/** A group of equivalent models across providers, ordered by proximity. */
+export const modelEquivalentGroupSchema = z.object({
+  id: z.uuid(),
+  label: z.string().min(1).max(100),
+  members: z.array(modelEquivalentMemberSchema),
+});
+export type ModelEquivalentGroup = z.infer<typeof modelEquivalentGroupSchema>;
+
+export const upsertModelEquivalentGroupSchema = z.object({
+  label: z.string().min(1).max(100),
+  members: z.array(modelEquivalentMemberSchema).min(1).max(20),
+});
+export type UpsertModelEquivalentGroupInput = z.infer<typeof upsertModelEquivalentGroupSchema>;

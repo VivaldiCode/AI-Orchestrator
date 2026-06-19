@@ -96,6 +96,29 @@ export const modelRoutes = pgTable('model_routes', {
   enabled: boolean('enabled').notNull().default(true),
 });
 
+/**
+ * Model equivalence groups: members of one `group_id` are "similar" models
+ * across providers, ordered by `position` (proximity). Used to redirect a
+ * request to the closest model on another provider when the local cluster
+ * can't serve it.
+ */
+export const modelEquivalents = pgTable(
+  'model_equivalents',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    groupId: uuid('group_id').notNull(),
+    label: text('label').notNull(),
+    providerId: uuid('provider_id').references(() => providers.id, { onDelete: 'set null' }),
+    providerType: text('provider_type').notNull(),
+    model: text('model').notNull(),
+    position: integer('position').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('model_equivalents_group_idx').on(t.groupId)],
+);
+export type ModelEquivalentRow = typeof modelEquivalents.$inferSelect;
+
 export const oauthProviders = pgTable('oauth_providers', {
   id: uuid('id').primaryKey().defaultRandom(),
   type: text('type').notNull(),

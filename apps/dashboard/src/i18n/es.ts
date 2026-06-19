@@ -188,6 +188,17 @@ export const es: Dict = {
   'providers.pricingTitle': 'Precios (USD / 1M tokens)',
   'providers.noPricing': 'Sin precios definidos — añade tarifas en Precios por modelo abajo.',
   'providers.perMtokNote': 'USD por 1M tokens (entrada / salida)',
+  'providers.equivTitle': 'Equivalencia de modelos',
+  'providers.equivSubtitle':
+    'Grupos de modelos similares entre proveedores. Cuando el clúster local no puede servir un modelo, la petición se redirige al modelo más cercano en otro proveedor.',
+  'providers.equivGroupName': 'Nombre del grupo',
+  'providers.equivProximityHint':
+    'Ordena los miembros por proximidad — el más cercano primero. Usa ollama para el clúster local.',
+  'providers.equivProvider': 'Proveedor',
+  'providers.equivModel': 'Modelo',
+  'providers.equivAddMember': '+ miembro',
+  'providers.equivAddGroup': 'Nuevo grupo',
+  'providers.equivEmpty': 'Aún no hay grupos de equivalencia.',
   'providers.authMode': 'Autenticación',
   'providers.authApiKey': 'Clave de API',
   'providers.authSubscription': 'Suscripción (login de Grok)',

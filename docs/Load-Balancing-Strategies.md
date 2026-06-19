@@ -74,6 +74,32 @@ the request is sent to a configured cloud provider instead of queueing on busy n
 overflow off, behaviour is unchanged (requests still queue on the nodes). See
 [Adding Providers → Cloud overflow](Adding-Providers.md).
 
+## Model equivalence chains
+
+When the local cluster can't serve a model — every node saturated **or** no node has the model
+at all — the orchestrator can redirect the request to the **closest equivalent model on another
+provider** instead of failing or using a single fixed overflow model.
+
+Define **equivalence groups** on the **Providers** page (Model equivalence section): an ordered
+list of "similar" models across providers, closest first. For example:
+
+| Position | Provider | Model |
+| -------- | -------- | ----- |
+| 1 | `ollama` | `gemma2:27b` |
+| 2 | `xai` | `grok-2` |
+| 3 | `openai` | `gpt-4o-mini` |
+
+A request for `gemma2:27b` is tried locally first; if the cluster can't serve it, the orchestrator
+descends the chain — `xai/grok-2`, then `openai/gpt-4o-mini` — **substituting the model** for each
+provider's equivalent and falling through on provider errors until one responds. Members that are
+disabled, missing credentials, or over budget are skipped. With no group for the model, overflow
+falls back to the single pinned/first provider + its default model (the previous behaviour).
+
+Applies to `/api/chat`, `/api/generate` and `/v1/chat/completions` (cloud members must be
+OpenAI-compatible). Privacy mode / a per-request `x-local-only` disables it.
+
+Manage groups via `GET/POST/PUT/DELETE /admin/model-equivalents`.
+
 ## Health & status
 
 Each node is pinged every `HEALTHCHECK_INTERVAL_MS` (`GET /api/version` + `/api/tags`):
