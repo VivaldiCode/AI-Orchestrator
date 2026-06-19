@@ -15,8 +15,10 @@ export function SettingsPage() {
   const [saved, setSaved] = useState(false);
 
   const OPENAI_FAMILY = ['openai', 'xai', 'openai-compatible', 'mistral', 'google'];
+  // Any usable OpenAI-compatible provider — the overflow model is set separately,
+  // so a provider-level default model is no longer required.
   const overflowEligible = (providersQuery.data ?? []).filter(
-    (p) => p.enabled && OPENAI_FAMILY.includes(p.type) && p.hasCredentials && p.defaultModel,
+    (p) => p.enabled && OPENAI_FAMILY.includes(p.type) && p.hasCredentials,
   );
   // Embedding overflow only needs credentials (the embed model is named separately).
   const embedEligible = (providersQuery.data ?? []).filter(
@@ -172,6 +174,13 @@ export function SettingsPage() {
                     </option>
                   ))}
                 </Select>
+              </Field>
+              <Field label={t('settings.cloudOverflowModel')}>
+                <Input
+                  value={form.cloudOverflowModel}
+                  placeholder="gpt-4o"
+                  onChange={(e) => setForm({ ...form, cloudOverflowModel: e.target.value })}
+                />
               </Field>
               <p className="text-xs text-slate-500">{t('settings.cloudOverflowHint')}</p>
             </div>

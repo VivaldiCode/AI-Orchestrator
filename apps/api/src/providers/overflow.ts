@@ -63,6 +63,37 @@ export function pickOverflowProvider(
   return usable[0] ?? null;
 }
 
+/**
+ * Resolve the no-equivalence-chain cloud overflow target: the pinned (or first
+ * usable) OpenAI-compatible provider, plus a model — `settings.cloudOverflowModel`
+ * when set, else the provider's own default model. Unlike pickOverflowProvider it
+ * does NOT require the provider to have a default model (the model can come from
+ * settings), so overflow works with just a provider + an overflow model set.
+ * Returns null when there's no usable provider or no model to send.
+ */
+export function resolveCloudOverflow(
+  pm: ProviderManager,
+  settings: Settings,
+): { provider: ProviderConfig; model: string } | null {
+  const usable = pm
+    .list()
+    .filter(
+      (c) =>
+        c.enabled &&
+        pm.isOpenAIFamily(c.type) &&
+        !!c.credentials.apiKey &&
+        !!pm.baseUrlFor(c) &&
+        !pm.overBudget(c),
+    );
+  const provider = settings.cloudOverflowProviderId
+    ? usable.find((c) => c.id === settings.cloudOverflowProviderId)
+    : usable[0];
+  if (!provider) return null;
+  const model = settings.cloudOverflowModel.trim() || provider.defaultModel || '';
+  if (!model) return null;
+  return { provider, model };
+}
+
 type Format = 'openai' | 'ollama-chat' | 'ollama-generate';
 
 interface OllamaOptions {

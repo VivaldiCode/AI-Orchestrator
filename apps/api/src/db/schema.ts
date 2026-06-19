@@ -166,6 +166,7 @@ export const settings = pgTable('settings', {
   requestLogMax: integer('request_log_max').notNull().default(0),
   cloudOverflow: boolean('cloud_overflow').notNull().default(false),
   cloudOverflowProviderId: text('cloud_overflow_provider_id').notNull().default(''),
+  cloudOverflowModel: text('cloud_overflow_model').notNull().default(''),
   embedOverflow: boolean('embed_overflow').notNull().default(false),
   embedOverflowProviderId: text('embed_overflow_provider_id').notNull().default(''),
   embedOverflowModel: text('embed_overflow_model').notNull().default(''),

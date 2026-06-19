@@ -477,8 +477,9 @@ export const en = {
     'Cloud overflow: when every node is busy (in-flight ≥ max concurrency), spill requests to a cloud provider',
   'settings.cloudOverflowProvider': 'Overflow provider',
   'settings.cloudOverflowAuto': 'Auto (first eligible provider)',
+  'settings.cloudOverflowModel': 'Overflow model',
   'settings.cloudOverflowHint':
-    'Only OpenAI-compatible providers with an API key and a default model are eligible. The default model is used for spilled requests.',
+    'Pick any OpenAI-compatible provider (with an API key) and the model to send (e.g. gpt-4o). Requests the local cluster cannot serve overflow here when no equivalence group matches. No provider default model needed.',
   'settings.embedOverflow':
     'Embedding overflow: when no local node can serve /api/embed, spill to a cloud provider (sends your content to the cloud)',
   'settings.embedOverflowProvider': 'Embedding provider',
