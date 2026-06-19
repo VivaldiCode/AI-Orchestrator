@@ -21,4 +21,6 @@ COPY apps/landing /usr/share/nginx/html/landing
 # Ensure nginx can read context-copied files (exFAT sources may drop read bits).
 RUN chmod -R a+rX /usr/share/nginx/html
 EXPOSE 80
-HEALTHCHECK --interval=10s --timeout=5s --retries=5 CMD wget -qO- http://localhost/ || exit 1
+# Use 127.0.0.1 (not localhost) so the probe targets IPv4 — busybox resolves
+# `localhost` to ::1 first, which nginx (IPv4) refuses → false "unhealthy".
+HEALTHCHECK --interval=10s --timeout=5s --retries=5 CMD wget -qO- http://127.0.0.1/ || exit 1
