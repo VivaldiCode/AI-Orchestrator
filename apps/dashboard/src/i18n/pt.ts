@@ -73,6 +73,8 @@ export const pt: Dict = {
   'overview.liveEvents': 'Eventos ao vivo',
   'overview.liveEventsHint': 'últimos 100',
   'overview.nodes': 'Nós',
+  'overview.providers': 'Provedores',
+  'overview.cardReq24h': 'req 24h',
   'overview.noNodes': 'Nenhum nó ainda',
   'overview.noNodesHint': 'Adicione seus Macs na página Nós.',
   'overview.liveRequests': 'Requisições ao vivo',

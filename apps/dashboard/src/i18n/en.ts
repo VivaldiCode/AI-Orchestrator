@@ -71,6 +71,8 @@ export const en = {
   'overview.liveEvents': 'Live events',
   'overview.liveEventsHint': 'last 100',
   'overview.nodes': 'Nodes',
+  'overview.providers': 'Providers',
+  'overview.cardReq24h': '24h req',
   'overview.noNodes': 'No nodes yet',
   'overview.noNodesHint': 'Add your Macs on the Nodes page.',
   'overview.liveRequests': 'Live requests',

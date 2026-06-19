@@ -13,9 +13,16 @@ export interface RealtimeClient {
 export class RealtimeHub {
   private readonly clients = new Set<RealtimeClient>();
   private snapshotProvider: (() => RealtimeEvent) | null = null;
+  /** Live in-flight request count per provider, derived from start/end events. */
+  private readonly inFlight = new Map<string, number>();
 
   setSnapshotProvider(fn: () => RealtimeEvent): void {
     this.snapshotProvider = fn;
+  }
+
+  /** Current in-flight request count for a provider (e.g. `openai`, `xai`). */
+  inFlightFor(provider: string): number {
+    return this.inFlight.get(provider) ?? 0;
   }
 
   add(client: RealtimeClient): void {
@@ -34,6 +41,12 @@ export class RealtimeHub {
   }
 
   broadcast(event: RealtimeEvent): void {
+    // Track per-provider in-flight: every dispatch path emits start/end here.
+    if (event.type === 'request:start' && event.provider) {
+      this.inFlight.set(event.provider, this.inFlightFor(event.provider) + 1);
+    } else if (event.type === 'request:end' && event.provider) {
+      this.inFlight.set(event.provider, Math.max(0, this.inFlightFor(event.provider) - 1));
+    }
     const data = JSON.stringify(event);
     for (const c of this.clients) {
       if (c.closed) {

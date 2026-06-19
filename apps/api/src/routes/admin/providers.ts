@@ -8,7 +8,9 @@ import {
   upsertModelEquivalentGroupSchema,
   type ModelEquivalentGroup,
   type Provider,
+  type ProviderMetrics,
 } from '@ai-orchestrator/shared';
+import { getProviderPerformance } from '../../analytics/queries';
 import { db } from '../../db/client';
 import { modelEquivalents, modelRoutes, providers, type ProviderRow } from '../../db/schema';
 import { encryptSecret } from '../../lib/crypto';
@@ -64,6 +66,30 @@ export function registerProviderRoutes(app: FastifyInstance): void {
   app.get('/providers', read, async (_req, reply) => {
     const rows = await db.select().from(providers);
     return reply.send(rows.map(pub));
+  });
+
+  // Live + 24h metrics for active providers (for the Overview providers panel).
+  app.get('/providers/metrics', read, async (_req, reply) => {
+    const perf = await getProviderPerformance(24);
+    const hub = app.orchestrator.hub;
+    const out: ProviderMetrics[] = app.providers
+      .list()
+      .filter((c) => c.enabled)
+      .map((c) => {
+        const p = perf.get(c.type);
+        return {
+          id: c.id,
+          name: c.name,
+          type: c.type,
+          enabled: c.enabled,
+          inFlight: hub.inFlightFor(c.type),
+          requests24h: p?.requests ?? 0,
+          avgLatencyMs: p?.avgLatencyMs ?? null,
+          tokensPerSecond: p?.tokensPerSecond ?? null,
+          models24h: p?.models ?? 0,
+        };
+      });
+    return reply.send(out);
   });
 
   app.post('/providers', write, async (req, reply) => {
