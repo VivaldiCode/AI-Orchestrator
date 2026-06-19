@@ -243,10 +243,26 @@ export const api = {
     request<Settings>('/admin/settings', { method: 'PUT', body: input }),
 
   // debug
-  debugEvents: (opts: { errors?: boolean; provider?: string; limit?: number } = {}) => {
+  debugEvents: (
+    opts: {
+      errors?: boolean;
+      provider?: string;
+      ip?: string;
+      endpoint?: string;
+      model?: string;
+      nodeId?: string;
+      status?: number;
+      limit?: number;
+    } = {},
+  ) => {
     const p = new URLSearchParams();
     if (opts.errors) p.set('errors', '1');
     if (opts.provider) p.set('provider', opts.provider);
+    if (opts.ip) p.set('ip', opts.ip);
+    if (opts.endpoint) p.set('endpoint', opts.endpoint);
+    if (opts.model) p.set('model', opts.model);
+    if (opts.nodeId) p.set('nodeId', opts.nodeId);
+    if (opts.status) p.set('status', String(opts.status));
     if (opts.limit) p.set('limit', String(opts.limit));
     const qs = p.toString();
     return request<DebugEvent[]>(`/admin/debug/events${qs ? `?${qs}` : ''}`);

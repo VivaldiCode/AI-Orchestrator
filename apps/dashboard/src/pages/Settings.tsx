@@ -103,6 +103,18 @@ export function SettingsPage() {
           />
         </Field>
 
+        <Field label={t('settings.requestLogMax')}>
+          <input
+            type="number"
+            min={0}
+            step={10000}
+            value={form.requestLogMax}
+            onChange={(e) => setForm({ ...form, requestLogMax: Number(e.target.value) })}
+            className="w-40 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-concert-500"
+          />
+          <p className="mt-1 text-xs text-slate-500">{t('settings.requestLogMaxHint')}</p>
+        </Field>
+
         <div className="border-t border-slate-800 pt-5">
           <label className="flex items-center gap-3 text-sm text-slate-200">
             <input

@@ -7,7 +7,7 @@ import { settings as settingsTable } from '../db/schema';
 import { nowIso } from '../lib/ids';
 import { logger } from '../lib/logger';
 import { AnalyticsRecorder } from '../analytics/recorder';
-import { getNodePerformance, getProviderSpend } from '../analytics/queries';
+import { getNodePerformance, getProviderSpend, trimRequestEvents } from '../analytics/queries';
 import { RealtimeHub } from '../realtime/hub';
 import type { PriceBook } from '../cost/pricebook';
 import { Dispatcher } from './dispatcher';
@@ -48,6 +48,7 @@ export class Orchestrator {
       triageEnabled: false,
       triageModel: '',
       maxToolCalls: 5,
+      requestLogMax: 0,
       cloudOverflow: false,
       cloudOverflowProviderId: '',
       embedOverflow: false,
@@ -120,6 +121,8 @@ export class Orchestrator {
     try {
       const perf = await getNodePerformance(PERF_WINDOW_HOURS);
       this.registry.setPerformance(perf);
+      // Cyclic retention of the request log (oldest trimmed) when configured.
+      if (this.settings.requestLogMax > 0) await trimRequestEvents(this.settings.requestLogMax);
     } catch (err) {
       logger.warn({ err }, 'failed to refresh node performance stats');
     }
@@ -162,6 +165,7 @@ export class Orchestrator {
           triageEnabled: row.triageEnabled,
           triageModel: row.triageModel,
           maxToolCalls: row.maxToolCalls,
+          requestLogMax: row.requestLogMax,
           cloudOverflow: row.cloudOverflow,
           cloudOverflowProviderId: row.cloudOverflowProviderId,
           embedOverflow: row.embedOverflow,
