@@ -5,7 +5,7 @@ import type { Settings } from '@ai-orchestrator/shared';
 import type { AnalyticsRecorder } from '../src/analytics/recorder';
 import { db } from '../src/db/client';
 import type { NodeRow } from '../src/db/schema';
-import { Dispatcher } from '../src/orchestrator/dispatcher';
+import { Dispatcher, parseEmbedRequest } from '../src/orchestrator/dispatcher';
 import { NodeRegistry } from '../src/orchestrator/registry';
 import { RealtimeHub } from '../src/realtime/hub';
 import { startMockOllama, type MockOllama } from './helpers/mockOllama';
@@ -35,10 +35,10 @@ function mockReply(): { reply: FastifyReply; raw: MockRaw; done: Promise<void> }
   return { reply, raw, done };
 }
 
-function mockRequest(body: unknown): FastifyRequest {
+function mockRequest(body: unknown, url = '/api/chat'): FastifyRequest {
   return {
     method: 'POST',
-    url: '/api/chat',
+    url,
     headers: { 'content-type': 'application/json' },
     body: Buffer.from(JSON.stringify(body)),
     // Mirror real Fastify: once the body is parsed into a buffer the request's
@@ -151,6 +151,21 @@ describe('Dispatcher (integration with mock Ollama)', () => {
     registry.remove(ID_DEAD);
   });
 
+  it('falls back /api/embed → /api/embeddings when the node 404s (legacy Ollama)', async () => {
+    const { reply, raw, done } = mockReply();
+    await dispatcher.proxyOllama(
+      mockRequest({ model: 'llama3.2', input: 'hello' }, '/api/embed'),
+      reply,
+      { endpoint: '/api/embed', model: 'llama3.2', clientKeyId: null },
+    );
+    await done;
+    // The mock 404s /api/embed but serves /api/embeddings; the dispatcher
+    // translates and returns an /api/embed-shaped 200.
+    expect(raw.statusCode).toBe(200);
+    const body = JSON.parse(raw.body()) as { embeddings: number[][] };
+    expect(body.embeddings).toEqual([[0.1, 0.2, 0.3]]);
+  });
+
   it('throws when no healthy nodes are available', async () => {
     const empty = new Dispatcher(new NodeRegistry(db), new RealtimeHub(), recorder, () => settings);
     const { reply } = mockReply();
@@ -207,5 +222,28 @@ describe('Dispatcher hard concurrency cap', () => {
     expect(node.runtime.inFlight).toBe(0); // every reserved slot released
     for (const r of replies) expect(r.raw.statusCode).toBe(200);
     await slow.close();
+  });
+});
+
+describe('parseEmbedRequest', () => {
+  const buf = (o: unknown): Buffer => Buffer.from(JSON.stringify(o));
+  it('normalizes a string input to a one-item list', () => {
+    expect(parseEmbedRequest(buf({ model: 'm', input: 'hi' }))).toEqual({
+      model: 'm',
+      inputs: ['hi'],
+    });
+  });
+  it('keeps an array input', () => {
+    expect(parseEmbedRequest(buf({ model: 'm', input: ['a', 'b'] }))).toEqual({
+      model: 'm',
+      inputs: ['a', 'b'],
+    });
+  });
+  it('returns null when unusable', () => {
+    expect(parseEmbedRequest(buf({ input: 'hi' }))).toBeNull(); // no model
+    expect(parseEmbedRequest(buf({ model: 'm' }))).toBeNull(); // no input
+    expect(parseEmbedRequest(buf({ model: 'm', input: [] }))).toBeNull(); // empty
+    expect(parseEmbedRequest(undefined)).toBeNull();
+    expect(parseEmbedRequest(Buffer.from('not json'))).toBeNull();
   });
 });
