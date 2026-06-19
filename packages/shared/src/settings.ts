@@ -51,6 +51,11 @@ export const settingsSchema = z.object({
    */
   cloudOverflowProviderId: z.string().max(100).default(''),
   /**
+   * Model to request on cloud overflow. Empty = the chosen provider's default
+   * model. Set this to overflow without configuring a provider default model.
+   */
+  cloudOverflowModel: z.string().max(200).default(''),
+  /**
    * Spill EMBEDDINGS (`/api/embed`, `/api/embeddings`) to a cloud provider's
    * `/v1/embeddings` when no local node can serve them. Off by default —
    * embeddings encode your content, so this sends it to the cloud.

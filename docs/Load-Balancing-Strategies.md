@@ -105,6 +105,17 @@ the request is sent to a configured cloud provider instead of waiting for a node
 (and no equivalence chain), the request **queues** for a local slot instead. See
 [Adding Providers → Cloud overflow](Adding-Providers.md).
 
+In **Settings → Cloud overflow**, pick a provider and an **overflow model** (e.g. `gpt-4o`) — that's
+the model saturated requests are sent with. No provider-level default model is required. This is the
+catch-all when a request's model has no [equivalence group](#model-equivalence-chains).
+
+> **Nothing reaching the providers?** It's almost always that the overflow has no target. Ask the
+> orchestrator directly: `GET /admin/overflow/diagnose?model=<model>` returns the exact decision —
+> candidate nodes, whether the local cluster is saturated, the equivalence chain, the cloud fallback,
+> and a **verdict** (`local` / `overflow` / `queue`) with reasons. A `queue` verdict means no overflow
+> target is configured: either add the local model as a member of an equivalence group, or enable
+> Cloud overflow with a provider + overflow model.
+
 ## Model equivalence chains
 
 When the local cluster can't serve a model — every node saturated **or** no node has the model

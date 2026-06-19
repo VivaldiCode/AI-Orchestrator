@@ -22,6 +22,7 @@ const SETTINGS: Settings = {
   requestLogMax: 0,
   cloudOverflow: false,
   cloudOverflowProviderId: '',
+  cloudOverflowModel: '',
   embedOverflow: false,
   embedOverflowProviderId: '',
   embedOverflowModel: '',
