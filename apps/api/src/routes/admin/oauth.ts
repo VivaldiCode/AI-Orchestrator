@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { createOAuthProviderSchema, updateOAuthProviderSchema } from '@ai-orchestrator/shared';
 import { config } from '../../config/index';
-import { badRequest, notFound, unauthorized } from '../../lib/errors';
+import { badGateway, badRequest, notFound, unauthorized } from '../../lib/errors';
 import {
   buildAuthUrl,
   discover,
@@ -68,7 +68,16 @@ export function registerOAuthRoutes(app: FastifyInstance): void {
     const provider = await app.oauth.getProviderRow(pathId(req.params));
     if (!provider || !provider.enabled) throw notFound('Unknown or disabled provider.');
 
-    const cfg = await discover(provider.issuer);
+    // Surface OIDC discovery failures (provider unreachable, wrong issuer URL,
+    // timeout, TLS, incomplete document) instead of a generic 500.
+    let cfg;
+    try {
+      cfg = await discover(provider.issuer);
+    } catch (err) {
+      throw badGateway(
+        `SSO discovery failed for ${provider.issuer}/.well-known/openid-configuration — ${(err as Error).message}. Check the issuer URL and that the orchestrator can reach the provider.`,
+      );
+    }
     const pkce = generatePkce();
     const state = randomToken(24);
     const nonce = randomToken(24);
@@ -107,22 +116,33 @@ export function registerOAuthRoutes(app: FastifyInstance): void {
     const provider = await app.oauth.getProviderRow(id);
     if (!provider || !provider.enabled) throw notFound('Unknown or disabled provider.');
 
-    const cfg = await discover(provider.issuer);
-    const tokenRes = await exchangeCode(cfg, {
-      code: q.code,
-      redirectUri: redirectUriFor(provider.id),
-      clientId: provider.clientId,
-      clientSecret: app.oauth.clientSecret(provider),
-      verifier: sealed.verifier,
-    });
+    let cfg;
+    let tokenRes;
+    try {
+      cfg = await discover(provider.issuer);
+      tokenRes = await exchangeCode(cfg, {
+        code: q.code,
+        redirectUri: redirectUriFor(provider.id),
+        clientId: provider.clientId,
+        clientSecret: app.oauth.clientSecret(provider),
+        verifier: sealed.verifier,
+      });
+    } catch (err) {
+      throw badGateway(`SSO token exchange failed: ${(err as Error).message}`);
+    }
     if (!tokenRes.id_token) throw badRequest('Provider did not return an id_token.');
 
-    const claims = await verifyIdToken(tokenRes.id_token, {
-      jwksUri: cfg.jwksUri,
-      issuer: cfg.issuer,
-      audience: provider.clientId,
-      nonce: sealed.nonce,
-    });
+    let claims;
+    try {
+      claims = await verifyIdToken(tokenRes.id_token, {
+        jwksUri: cfg.jwksUri,
+        issuer: cfg.issuer,
+        audience: provider.clientId,
+        nonce: sealed.nonce,
+      });
+    } catch (err) {
+      throw unauthorized(`SSO id_token verification failed: ${(err as Error).message}`);
+    }
 
     const userRow = await app.oauth.findOrProvisionUser(provider, claims);
     const tokens = issueTokens(app, app.auth.toUser(userRow));
