@@ -45,4 +45,44 @@ describe('RealtimeHub', () => {
     hub.broadcast({ type: 'node:metrics', nodes: [], at: '2026-01-01T00:00:00Z' });
     expect(hub.size).toBe(0);
   });
+
+  it('tracks in-flight per provider from start/end events', () => {
+    const hub = new RealtimeHub();
+    const start = (provider: string) =>
+      hub.broadcast({
+        type: 'request:start',
+        id: 'r',
+        nodeId: null,
+        provider,
+        model: 'm',
+        endpoint: '/v1/chat/completions',
+        clientIp: null,
+        at: '2026-01-01T00:00:00Z',
+      });
+    const end = (provider: string) =>
+      hub.broadcast({
+        type: 'request:end',
+        id: 'r',
+        nodeId: null,
+        provider,
+        model: 'm',
+        endpoint: '/v1/chat/completions',
+        status: 200,
+        latencyMs: 10,
+        promptTokens: null,
+        completionTokens: null,
+        clientIp: null,
+        at: '2026-01-01T00:00:00Z',
+      });
+    start('openai');
+    start('openai');
+    start('xai');
+    expect(hub.inFlightFor('openai')).toBe(2);
+    expect(hub.inFlightFor('xai')).toBe(1);
+    end('openai');
+    expect(hub.inFlightFor('openai')).toBe(1);
+    end('openai');
+    end('openai'); // never goes negative
+    expect(hub.inFlightFor('openai')).toBe(0);
+  });
 });

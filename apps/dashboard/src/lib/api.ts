@@ -16,6 +16,7 @@ import type {
   DevicePoll,
   McpServer,
   ModelEquivalentGroup,
+  ProviderMetrics,
   PlaygroundOptions,
   PlaygroundRequest,
   PlaygroundResult,
@@ -201,6 +202,7 @@ export const api = {
     request<Provider>(`/admin/providers/${id}`, { method: 'PATCH', body: input }),
   deleteProvider: (id: string) => request<void>(`/admin/providers/${id}`, { method: 'DELETE' }),
   getProviderBalance: (id: string) => request<ProviderBalance>(`/admin/providers/${id}/balance`),
+  providerMetrics: () => request<ProviderMetrics[]>('/admin/providers/metrics'),
   // archived prompts for one provider (newest first)
   listArchiveByProvider: (provider: string, limit = 100) =>
     request<ArchiveList>(`/admin/archive?provider=${encodeURIComponent(provider)}&limit=${limit}`),
