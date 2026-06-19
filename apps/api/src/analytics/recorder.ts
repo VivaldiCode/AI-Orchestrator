@@ -17,6 +17,8 @@ export interface RequestEventInput {
   completionTokens: number | null;
   error: string | null;
   clientKeyId: string | null;
+  /** Originating client IP, for the Debug view + per-IP filtering. */
+  clientIp?: string | null;
 }
 
 /**
@@ -59,6 +61,7 @@ export class AnalyticsRecorder {
         costUsd,
         error: e.error,
         clientKeyId: e.clientKeyId,
+        clientIp: e.clientIp ?? null,
       });
     } catch (err) {
       logger.warn({ err }, 'failed to record request event');

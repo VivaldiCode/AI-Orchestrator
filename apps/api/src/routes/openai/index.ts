@@ -167,6 +167,7 @@ export async function handle(
     completionTokens: result.completionTokens,
     error: null,
     clientKeyId: keyId,
+    clientIp: ip,
   });
   await reply.send(result.body);
 }

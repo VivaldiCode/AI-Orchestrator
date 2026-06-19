@@ -166,6 +166,11 @@ export async function getRecentEvents(opts: {
   limit: number;
   onlyErrors?: boolean;
   provider?: string;
+  ip?: string;
+  endpoint?: string;
+  model?: string;
+  nodeId?: string;
+  status?: number;
 }): Promise<DebugEvent[]> {
   const rows = await sql<
     {
@@ -177,6 +182,7 @@ export async function getRecentEvents(opts: {
       provider: string;
       node_id: string | null;
       node_name: string | null;
+      client_ip: string | null;
       status: number;
       latency_ms: number | null;
       prompt_tokens: number | null;
@@ -185,13 +191,18 @@ export async function getRecentEvents(opts: {
     }[]
   >`
     SELECT re.request_id, re.time, re.endpoint, re.model, re.target_model, re.provider,
-           re.node_id::text AS node_id, n.name AS node_name,
+           re.node_id::text AS node_id, n.name AS node_name, re.client_ip,
            re.status, re.latency_ms, re.prompt_tokens, re.completion_tokens, re.error
     FROM request_events re
     LEFT JOIN nodes n ON n.id = re.node_id
     WHERE TRUE
       ${opts.onlyErrors ? sql`AND (re.status >= 400 OR re.error IS NOT NULL)` : sql``}
       ${opts.provider ? sql`AND re.provider = ${opts.provider}` : sql``}
+      ${opts.ip ? sql`AND re.client_ip = ${opts.ip}` : sql``}
+      ${opts.endpoint ? sql`AND re.endpoint = ${opts.endpoint}` : sql``}
+      ${opts.model ? sql`AND re.model = ${opts.model}` : sql``}
+      ${opts.nodeId ? sql`AND re.node_id = ${opts.nodeId}::uuid` : sql``}
+      ${opts.status != null ? sql`AND re.status = ${opts.status}` : sql``}
     ORDER BY re.time DESC
     LIMIT ${Math.min(Math.max(opts.limit, 1), 500)}
   `;
@@ -204,6 +215,7 @@ export async function getRecentEvents(opts: {
     provider: r.provider,
     nodeId: r.node_id,
     nodeName: r.node_name,
+    clientIp: r.client_ip,
     status: r.status,
     latencyMs: r.latency_ms,
     promptTokens: r.prompt_tokens,
@@ -415,4 +427,17 @@ export async function getAnalytics(query: AnalyticsQuery): Promise<AnalyticsSumm
     nodeSeries,
     nodeKeys,
   };
+}
+
+/**
+ * Cyclic retention: keep only the newest `max` rows in `request_events`,
+ * deleting older ones. No-op when `max` is 0 or there are fewer rows than `max`
+ * (the cutoff subquery returns NULL → nothing matches `time < NULL`).
+ */
+export async function trimRequestEvents(max: number): Promise<void> {
+  if (!max || max <= 0) return;
+  await sql`
+    DELETE FROM request_events
+    WHERE time < (SELECT time FROM request_events ORDER BY time DESC OFFSET ${max} LIMIT 1)
+  `;
 }

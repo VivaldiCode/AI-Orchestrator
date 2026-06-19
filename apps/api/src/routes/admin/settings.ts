@@ -31,6 +31,7 @@ export function registerSettingsRoutes(app: FastifyInstance): void {
           triageEnabled: next.triageEnabled,
           triageModel: next.triageModel,
           maxToolCalls: next.maxToolCalls,
+          requestLogMax: next.requestLogMax,
           cloudOverflow: next.cloudOverflow,
           cloudOverflowProviderId: next.cloudOverflowProviderId,
           embedOverflow: next.embedOverflow,

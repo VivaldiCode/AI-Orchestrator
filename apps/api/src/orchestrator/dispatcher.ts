@@ -681,6 +681,7 @@ export class Dispatcher {
       completionTokens,
       error,
       clientKeyId: opts.clientKeyId,
+      clientIp: opts.clientIp ?? null,
     });
   }
 
