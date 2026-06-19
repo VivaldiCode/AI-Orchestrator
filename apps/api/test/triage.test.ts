@@ -15,6 +15,9 @@ const BASE: Settings = {
   maxToolCalls: 5,
   cloudOverflow: false,
   cloudOverflowProviderId: '',
+  embedOverflow: false,
+  embedOverflowProviderId: '',
+  embedOverflowModel: '',
   privacyMode: false,
 };
 

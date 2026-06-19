@@ -50,6 +50,9 @@ export class Orchestrator {
       maxToolCalls: 5,
       cloudOverflow: false,
       cloudOverflowProviderId: '',
+      embedOverflow: false,
+      embedOverflowProviderId: '',
+      embedOverflowModel: '',
       privacyMode: false,
     };
     this.dispatcher = new Dispatcher(
@@ -161,6 +164,9 @@ export class Orchestrator {
           maxToolCalls: row.maxToolCalls,
           cloudOverflow: row.cloudOverflow,
           cloudOverflowProviderId: row.cloudOverflowProviderId,
+          embedOverflow: row.embedOverflow,
+          embedOverflowProviderId: row.embedOverflowProviderId,
+          embedOverflowModel: row.embedOverflowModel,
           privacyMode: row.privacyMode,
         };
       }

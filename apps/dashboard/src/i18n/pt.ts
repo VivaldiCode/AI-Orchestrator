@@ -469,6 +469,13 @@ export const pt: Dict = {
   'settings.cloudOverflowAuto': 'Automático (1º provedor elegível)',
   'settings.cloudOverflowHint':
     'Apenas provedores compatíveis com OpenAI, com chave de API e um modelo padrão, são elegíveis. O modelo padrão é usado nas requisições encaminhadas.',
+  'settings.embedOverflow':
+    'Overflow de embeddings: quando nenhum nó local consegue servir /api/embed, encaminha para um provedor de nuvem (envia o seu conteúdo para a nuvem)',
+  'settings.embedOverflowProvider': 'Provedor de embeddings',
+  'settings.embedOverflowSelect': 'Selecione um provedor',
+  'settings.embedOverflowModel': 'Modelo de embedding',
+  'settings.embedOverflowHint':
+    'Desligado por padrão — embeddings carregam o seu conteúdo. Escolha um provedor compatível com OpenAI e o modelo de embedding dele (ex.: text-embedding-3-small).',
   'settings.privacyMode':
     'Modo privacidade: manter toda a inferência local (nunca usar provedores de nuvem nem overflow)',
   'settings.privacyModeHint':

@@ -165,6 +165,9 @@ export const settings = pgTable('settings', {
   maxToolCalls: integer('max_tool_calls').notNull().default(5),
   cloudOverflow: boolean('cloud_overflow').notNull().default(false),
   cloudOverflowProviderId: text('cloud_overflow_provider_id').notNull().default(''),
+  embedOverflow: boolean('embed_overflow').notNull().default(false),
+  embedOverflowProviderId: text('embed_overflow_provider_id').notNull().default(''),
+  embedOverflowModel: text('embed_overflow_model').notNull().default(''),
   privacyMode: boolean('privacy_mode').notNull().default(false),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

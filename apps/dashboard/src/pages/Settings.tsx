@@ -18,6 +18,10 @@ export function SettingsPage() {
   const overflowEligible = (providersQuery.data ?? []).filter(
     (p) => p.enabled && OPENAI_FAMILY.includes(p.type) && p.hasCredentials && p.defaultModel,
   );
+  // Embedding overflow only needs credentials (the embed model is named separately).
+  const embedEligible = (providersQuery.data ?? []).filter(
+    (p) => p.enabled && OPENAI_FAMILY.includes(p.type) && p.hasCredentials,
+  );
 
   useEffect(() => {
     if (settingsQuery.data) setForm(settingsQuery.data);
@@ -158,6 +162,43 @@ export function SettingsPage() {
                 </Select>
               </Field>
               <p className="text-xs text-slate-500">{t('settings.cloudOverflowHint')}</p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="border-t border-slate-800 pt-5">
+          <label className="flex items-start gap-3 text-sm text-slate-200">
+            <input
+              type="checkbox"
+              checked={form.embedOverflow}
+              onChange={(e) => setForm({ ...form, embedOverflow: e.target.checked })}
+              className="mt-0.5 h-4 w-4 accent-concert-500"
+            />
+            {t('settings.embedOverflow')}
+          </label>
+          {form.embedOverflow ? (
+            <div className="mt-4 space-y-2">
+              <Field label={t('settings.embedOverflowProvider')}>
+                <Select
+                  value={form.embedOverflowProviderId}
+                  onChange={(e) => setForm({ ...form, embedOverflowProviderId: e.target.value })}
+                >
+                  <option value="">{t('settings.embedOverflowSelect')}</option>
+                  {embedEligible.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.type})
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={t('settings.embedOverflowModel')}>
+                <Input
+                  value={form.embedOverflowModel}
+                  placeholder="text-embedding-3-small"
+                  onChange={(e) => setForm({ ...form, embedOverflowModel: e.target.value })}
+                />
+              </Field>
+              <p className="text-xs text-slate-500">{t('settings.embedOverflowHint')}</p>
             </div>
           ) : null}
         </div>

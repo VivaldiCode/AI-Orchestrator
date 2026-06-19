@@ -465,6 +465,13 @@ export const en = {
   'settings.cloudOverflowAuto': 'Auto (first eligible provider)',
   'settings.cloudOverflowHint':
     'Only OpenAI-compatible providers with an API key and a default model are eligible. The default model is used for spilled requests.',
+  'settings.embedOverflow':
+    'Embedding overflow: when no local node can serve /api/embed, spill to a cloud provider (sends your content to the cloud)',
+  'settings.embedOverflowProvider': 'Embedding provider',
+  'settings.embedOverflowSelect': 'Select a provider',
+  'settings.embedOverflowModel': 'Embedding model',
+  'settings.embedOverflowHint':
+    'Off by default — embeddings encode your content. Pick an OpenAI-compatible provider and its embedding model (e.g. text-embedding-3-small).',
   'settings.privacyMode':
     'Privacy mode: keep all inference local (never use cloud providers or overflow)',
   'settings.privacyModeHint':
