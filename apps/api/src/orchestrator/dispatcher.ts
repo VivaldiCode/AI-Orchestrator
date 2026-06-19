@@ -204,21 +204,60 @@ export class Dispatcher {
     }
     const maxAttempts = Math.min(pool.length, settings.failoverRetries + 1);
     const tried = new Set<string>();
+    const deadline = performance.now() + config.requestTimeoutMs;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const remaining = pool.filter((n) => !tried.has(n.id));
-      const node = selectNode(
-        settings.strategy,
-        remaining,
-        this.rrCounter++,
-        opts.estimatedTokens ?? 0,
-      );
+      // Reserve a slot on an under-cap node, waiting for one to free rather than
+      // overloading a node past its maxConcurrency.
+      const node = await this.acquireSlot(pool, tried, opts.estimatedTokens ?? 0, deadline, request);
       if (!node) break;
       tried.add(node.id);
       const committed = await this.attempt(node, request, reply, opts);
       if (committed) return;
     }
+    if (tried.size === 0) {
+      throw serviceUnavailable(
+        'All nodes are at their concurrency limit; timed out waiting for a free slot.',
+      );
+    }
     throw badGateway('All candidate nodes failed to handle the request.', { tried: [...tried] });
+  }
+
+  /**
+   * Reserve a concurrency slot on the best available candidate, treating each
+   * node's `maxConcurrency` as a HARD cap. Among under-cap candidates it picks
+   * via the configured strategy; when every untried candidate is at capacity it
+   * waits for a slot to free (up to `deadline`) instead of overloading a node.
+   * Returns null when no untried candidate remains, the deadline passes, or the
+   * client disconnected. The returned node has one slot reserved — the caller's
+   * attempt() owns the matching release.
+   */
+  private async acquireSlot(
+    pool: ManagedNode[],
+    tried: Set<string>,
+    estimatedTokens: number,
+    deadline: number,
+    request: FastifyRequest,
+  ): Promise<ManagedNode | null> {
+    for (;;) {
+      const remaining = pool.filter((n) => !tried.has(n.id));
+      if (remaining.length === 0) return null;
+      const avail = remaining.filter((n) => n.runtime.inFlight < n.maxConcurrency);
+      if (avail.length > 0) {
+        const node = selectNode(
+          this.getSettings().strategy,
+          avail,
+          this.rrCounter++,
+          estimatedTokens,
+        );
+        // tryReserve may lose a race to a concurrent request — retry (avail shrinks).
+        if (node && this.registry.tryReserve(node.id)) return node;
+        continue;
+      }
+      const left = deadline - performance.now();
+      if (left <= 0 || request.raw?.destroyed) return null;
+      await this.registry.waitForSlot(Math.min(left, 1000));
+    }
   }
 
   /** Returns true when the response was committed to the client (2xx–4xx). */
@@ -230,7 +269,8 @@ export class Dispatcher {
   ): Promise<boolean> {
     const id = requestId();
     const started = performance.now();
-    this.registry.incInFlight(node.id);
+    // The concurrency slot was already reserved by acquireSlot() — attempt() owns
+    // the matching decInFlight on every exit path (failover, 5xx, or completion).
     this.broadcastStart(id, node.id, opts);
 
     const ctrl = new AbortController();

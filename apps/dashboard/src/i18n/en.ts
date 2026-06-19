@@ -198,7 +198,7 @@ export const en = {
     "Groups of similar models across providers. When the local cluster can't serve a model, the request is redirected to the closest model on another provider.",
   'providers.equivGroupName': 'Group name',
   'providers.equivProximityHint':
-    'Order members by proximity — closest first. Use ollama for the local cluster.',
+    'Order members by proximity — closest first. The model you want to redirect must be a member itself (e.g. ollama/gemma:27b as #1) — the group name is only a label.',
   'providers.equivProvider': 'Provider',
   'providers.equivModel': 'Model',
   'providers.equivModelPick': 'Select a model',
