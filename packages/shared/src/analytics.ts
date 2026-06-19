@@ -91,6 +91,8 @@ export interface DebugEvent {
   targetModel: string | null;
   provider: string;
   nodeId: string | null;
+  /** Name of the node that served it (the Mac), when served locally; null for cloud. */
+  nodeName: string | null;
   status: number;
   latencyMs: number | null;
   promptTokens: number | null;

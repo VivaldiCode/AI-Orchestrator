@@ -94,7 +94,9 @@ function DebugRow({ event: e }: { event: DebugEvent }) {
               → {e.targetModel}
             </span>
           ) : null}
-          <span className="shrink-0 text-xs text-slate-600">{e.provider}</span>
+          <span className="shrink-0 text-xs text-slate-600" title={e.nodeName ? 'node' : 'provider'}>
+            {e.nodeName ?? e.provider}
+          </span>
           {isError && e.error ? (
             <span className="truncate text-xs text-rose-400">{e.error}</span>
           ) : null}

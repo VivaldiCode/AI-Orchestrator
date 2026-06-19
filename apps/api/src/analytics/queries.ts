@@ -176,6 +176,7 @@ export async function getRecentEvents(opts: {
       target_model: string | null;
       provider: string;
       node_id: string | null;
+      node_name: string | null;
       status: number;
       latency_ms: number | null;
       prompt_tokens: number | null;
@@ -183,13 +184,15 @@ export async function getRecentEvents(opts: {
       error: string | null;
     }[]
   >`
-    SELECT request_id, time, endpoint, model, target_model, provider, node_id::text AS node_id,
-           status, latency_ms, prompt_tokens, completion_tokens, error
-    FROM request_events
+    SELECT re.request_id, re.time, re.endpoint, re.model, re.target_model, re.provider,
+           re.node_id::text AS node_id, n.name AS node_name,
+           re.status, re.latency_ms, re.prompt_tokens, re.completion_tokens, re.error
+    FROM request_events re
+    LEFT JOIN nodes n ON n.id = re.node_id
     WHERE TRUE
-      ${opts.onlyErrors ? sql`AND (status >= 400 OR error IS NOT NULL)` : sql``}
-      ${opts.provider ? sql`AND provider = ${opts.provider}` : sql``}
-    ORDER BY time DESC
+      ${opts.onlyErrors ? sql`AND (re.status >= 400 OR re.error IS NOT NULL)` : sql``}
+      ${opts.provider ? sql`AND re.provider = ${opts.provider}` : sql``}
+    ORDER BY re.time DESC
     LIMIT ${Math.min(Math.max(opts.limit, 1), 500)}
   `;
   return rows.map((r) => ({
@@ -200,6 +203,7 @@ export async function getRecentEvents(opts: {
     targetModel: r.target_model,
     provider: r.provider,
     nodeId: r.node_id,
+    nodeName: r.node_name,
     status: r.status,
     latencyMs: r.latency_ms,
     promptTokens: r.prompt_tokens,

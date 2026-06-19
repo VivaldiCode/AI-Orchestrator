@@ -61,6 +61,32 @@ function contextFor(node: ManagedNode, model: string): number | null {
 }
 
 /**
+ * Parse an Ollama `/api/embed` body into a model + normalized input list (its
+ * `input` field may be a string or string[]). Returns null when unusable — used
+ * by the legacy `/api/embeddings` fallback for older nodes.
+ */
+export function parseEmbedRequest(
+  buf: Buffer | undefined,
+): { model: string; inputs: string[] } | null {
+  if (!buf || buf.length === 0) return null;
+  let body: { model?: unknown; input?: unknown };
+  try {
+    body = JSON.parse(buf.toString('utf8')) as { model?: unknown; input?: unknown };
+  } catch {
+    return null;
+  }
+  const model = typeof body.model === 'string' ? body.model : '';
+  if (!model) return null;
+  const inputs = Array.isArray(body.input)
+    ? body.input.filter((x): x is string => typeof x === 'string')
+    : typeof body.input === 'string'
+      ? [body.input]
+      : [];
+  if (inputs.length === 0) return null;
+  return { model, inputs };
+}
+
+/**
  * Routes Ollama requests to nodes: selects a candidate via the configured
  * strategy, proxies with streaming passthrough, fails over on connection/5xx
  * errors, and records realtime + analytics events.
@@ -310,6 +336,17 @@ export class Dispatcher {
       return false;
     }
 
+    // Legacy-Ollama fallback: older nodes 404 on the newer /api/embed endpoint.
+    // Retry the same node's /api/embeddings (translating the shapes) — stays
+    // local. If that also fails, the original 404 is surfaced below.
+    if (upstream.status === 404 && opts.endpoint === '/api/embed') {
+      const fb = await this.embedFallback(node, request, ctrl.signal).catch(() => null);
+      if (fb) {
+        logger.info({ nodeId: node.id }, '/api/embed 404 → fell back to /api/embeddings');
+        upstream = fb;
+      }
+    }
+
     if (upstream.status >= 500) {
       clearTimeout(timer);
       this.registry.decInFlight(node.id);
@@ -334,6 +371,39 @@ export class Dispatcher {
 
     this.commit(node, request, reply, upstream, ctrl, timer, id, started, opts);
     return true;
+  }
+
+  /**
+   * Translate a 404'd `/api/embed` into the node's legacy `/api/embeddings` (one
+   * call per input) and rebuild an `/api/embed`-shaped response. Returns null if
+   * it can't, so the caller surfaces the original 404. Only used as a fallback
+   * for older Ollama versions that lack the newer `/api/embed` endpoint.
+   */
+  private async embedFallback(
+    node: ManagedNode,
+    request: FastifyRequest,
+    signal: AbortSignal,
+  ): Promise<Response | null> {
+    const parsed = parseEmbedRequest(request.body as Buffer | undefined);
+    if (!parsed) return null;
+    const base = nodeBaseUrl(node);
+    const embeddings: number[][] = [];
+    for (const prompt of parsed.inputs) {
+      const res = await fetch(`${base}/api/embeddings`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ model: parsed.model, prompt }),
+        signal,
+      });
+      if (!res.ok) return null;
+      const json = (await res.json()) as { embedding?: unknown };
+      if (!Array.isArray(json.embedding) || json.embedding.length === 0) return null;
+      embeddings.push(json.embedding as number[]);
+    }
+    return new Response(JSON.stringify({ model: parsed.model, embeddings }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
   }
 
   /** Proxy to a single (optionally specified) node, e.g. model-management ops. */
