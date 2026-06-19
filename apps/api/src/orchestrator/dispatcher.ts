@@ -9,7 +9,12 @@ import { badGateway, notFound, serviceUnavailable } from '../lib/errors';
 import type { AnalyticsRecorder } from '../analytics/recorder';
 import type { RealtimeHub } from '../realtime/hub';
 import type { ProviderManager } from '../providers/manager';
-import { overflowEnabled, resolveOverflowChain, runOverflowChain } from '../providers/overflow';
+import {
+  overflowSupports,
+  pickOverflowProvider,
+  resolveEquivalenceChain,
+  runOverflowChain,
+} from '../providers/overflow';
 import type { RequestArchive } from '../archive/index';
 import { sanitizeHeaders } from '../archive/index';
 import type { NodeRegistry } from './registry';
@@ -170,18 +175,27 @@ export class Dispatcher {
     const localOnly = opts.localOnly === true || settings.privacyMode;
     const localUnavailable =
       pool.length === 0 || !pool.some((n) => n.runtime.inFlight < n.maxConcurrency);
-    if (!localOnly && overflowEnabled(settings, opts.endpoint) && localUnavailable) {
+    if (!localOnly && overflowSupports(opts.endpoint) && localUnavailable) {
       const pm = this.getProviders();
-      const chain = pm ? resolveOverflowChain(pm, settings, opts.model ?? '') : [];
-      if (pm && chain.length > 0) {
-        await runOverflowChain(
-          { providerManager: pm, hub: this.hub, recorder: this.recorder, archive: this.archive },
-          request,
-          reply,
-          opts,
-          chain,
-        );
-        return;
+      if (pm) {
+        // An equivalence group is its own opt-in — it redirects regardless of the
+        // cloud-overflow toggle. Without a group, fall back to the pinned/first
+        // overflow provider's default model only when cloud overflow is enabled.
+        let chain = resolveEquivalenceChain(pm, opts.model ?? '');
+        if (chain.length === 0 && settings.cloudOverflow) {
+          const p = pickOverflowProvider(pm, settings);
+          if (p?.defaultModel) chain = [{ provider: p, model: p.defaultModel }];
+        }
+        if (chain.length > 0) {
+          await runOverflowChain(
+            { providerManager: pm, hub: this.hub, recorder: this.recorder, archive: this.archive },
+            request,
+            reply,
+            opts,
+            chain,
+          );
+          return;
+        }
       }
     }
 
