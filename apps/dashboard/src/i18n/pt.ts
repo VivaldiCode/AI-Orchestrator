@@ -481,8 +481,9 @@ export const pt: Dict = {
     'Overflow para a nuvem: quando todos os nós estão ocupados (em curso ≥ concorrência máx.), encaminha as requisições para um provedor de nuvem',
   'settings.cloudOverflowProvider': 'Provedor de overflow',
   'settings.cloudOverflowAuto': 'Automático (1º provedor elegível)',
+  'settings.cloudOverflowModel': 'Modelo de overflow',
   'settings.cloudOverflowHint':
-    'Apenas provedores compatíveis com OpenAI, com chave de API e um modelo padrão, são elegíveis. O modelo padrão é usado nas requisições encaminhadas.',
+    'Escolha qualquer provedor compatível com OpenAI (com chave de API) e o modelo a enviar (ex.: gpt-4o). Requisições que o cluster local não consegue servir transbordam para cá quando nenhum grupo de equivalência casa. Não precisa de modelo padrão no provedor.',
   'settings.embedOverflow':
     'Overflow de embeddings: quando nenhum nó local consegue servir /api/embed, encaminha para um provedor de nuvem (envia o seu conteúdo para a nuvem)',
   'settings.embedOverflowProvider': 'Provedor de embeddings',

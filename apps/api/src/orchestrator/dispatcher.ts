@@ -13,7 +13,7 @@ import {
   isEmbedEndpoint,
   overflowSupports,
   pickEmbedProvider,
-  pickOverflowProvider,
+  resolveCloudOverflow,
   resolveEquivalenceChain,
   runEmbedOverflow,
   runOverflowChain,
@@ -212,8 +212,8 @@ export class Dispatcher {
         // overflow provider's default model only when cloud overflow is enabled.
         let chain = resolveEquivalenceChain(pm, opts.model ?? '');
         if (chain.length === 0 && settings.cloudOverflow) {
-          const p = pickOverflowProvider(pm, settings);
-          if (p?.defaultModel) chain = [{ provider: p, model: p.defaultModel }];
+          const cloud = resolveCloudOverflow(pm, settings);
+          if (cloud) chain = [cloud];
         }
         if (chain.length > 0) {
           await runOverflowChain(

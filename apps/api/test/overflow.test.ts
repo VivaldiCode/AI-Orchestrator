@@ -9,6 +9,7 @@ import {
   parseEmbedInput,
   pickEmbedProvider,
   pickOverflowProvider,
+  resolveCloudOverflow,
   toOpenAIRequest,
 } from '../src/providers/overflow';
 import type { ProviderManager } from '../src/providers/manager';
@@ -26,6 +27,7 @@ const BASE_SETTINGS: Settings = {
   requestLogMax: 0,
   cloudOverflow: true,
   cloudOverflowProviderId: '',
+  cloudOverflowModel: '',
   embedOverflow: false,
   embedOverflowProviderId: '',
   embedOverflowModel: '',
@@ -111,6 +113,41 @@ describe('pickOverflowProvider', () => {
   it('skips providers that are over budget (reroutes to the next)', () => {
     const configs = [provider({ id: 'broke', budgetMonthlyUsd: 50 }), provider({ id: 'ok' })];
     expect(pickOverflowProvider(pmStub(configs), BASE_SETTINGS)?.id).toBe('ok');
+  });
+});
+
+describe('resolveCloudOverflow', () => {
+  it('prefers the settings overflow model over the provider default', () => {
+    const r = resolveCloudOverflow(pmStub([provider({ id: 'a', defaultModel: 'gpt-4o-mini' })]), {
+      ...BASE_SETTINGS,
+      cloudOverflowProviderId: 'a',
+      cloudOverflowModel: 'gpt-4o',
+    });
+    expect(r?.model).toBe('gpt-4o');
+    expect(r?.provider.id).toBe('a');
+  });
+
+  it('falls back to the provider default model when no overflow model is set', () => {
+    const r = resolveCloudOverflow(pmStub([provider({ id: 'a', defaultModel: 'gpt-4o-mini' })]), {
+      ...BASE_SETTINGS,
+      cloudOverflowProviderId: 'a',
+    });
+    expect(r?.model).toBe('gpt-4o-mini');
+  });
+
+  it('works with NO provider default model when an overflow model is set', () => {
+    const r = resolveCloudOverflow(pmStub([provider({ id: 'a', defaultModel: null })]), {
+      ...BASE_SETTINGS,
+      cloudOverflowModel: 'grok-2-latest',
+    });
+    expect(r?.model).toBe('grok-2-latest');
+  });
+
+  it('returns null without a usable provider or any model to send', () => {
+    expect(resolveCloudOverflow(pmStub([]), { ...BASE_SETTINGS, cloudOverflowModel: 'x' })).toBeNull();
+    expect(
+      resolveCloudOverflow(pmStub([provider({ id: 'a', defaultModel: null })]), BASE_SETTINGS),
+    ).toBeNull();
   });
 });
 
