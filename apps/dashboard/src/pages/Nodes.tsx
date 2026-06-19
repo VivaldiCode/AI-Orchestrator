@@ -192,8 +192,8 @@ export function NodesPage() {
                     <td className="px-4 py-3">
                       <div className="font-medium text-slate-100">{n.name}</div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-400">
-                      {n.protocol}://{n.host}:{n.port}
+                    <td className="px-4 py-3">
+                      <NodeEndpointEdit node={n} />
                     </td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center gap-2">
@@ -328,6 +328,107 @@ function NodeNumberEdit({
       aria-label={label}
       className="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-sm text-slate-100 outline-none focus:border-concert-500 disabled:opacity-50"
     />
+  );
+}
+
+/** Inline editor for a node's endpoint (protocol + host + port). Edit on click,
+ *  explicit Save/Cancel so the three fields change atomically. */
+function NodeEndpointEdit({ node }: { node: NodeWithRuntime }) {
+  const { t } = useI18n();
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [protocol, setProtocol] = useState<'http' | 'https'>(node.protocol);
+  const [host, setHost] = useState(node.host);
+  const [port, setPort] = useState(String(node.port));
+  const [error, setError] = useState<string | null>(null);
+
+  const save = useMutation({
+    mutationFn: () => api.updateNode(node.id, { protocol, host: host.trim(), port: Number(port) }),
+    onSuccess: () => {
+      setEditing(false);
+      setError(null);
+      qc.invalidateQueries({ queryKey: ['nodes'] });
+    },
+    onError: (e: unknown) => setError(e instanceof Error ? e.message : t('nodes.editError')),
+  });
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setProtocol(node.protocol);
+          setHost(node.host);
+          setPort(String(node.port));
+          setError(null);
+          setEditing(true);
+        }}
+        title={t('nodes.editEndpoint')}
+        className="font-mono text-xs text-slate-400 hover:text-concert-400"
+      >
+        {node.protocol}://{node.host}:{node.port}
+      </button>
+    );
+  }
+
+  const inputCls =
+    'rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-xs text-slate-100 outline-none focus:border-concert-500 disabled:opacity-50';
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1">
+        <select
+          value={protocol}
+          onChange={(e) => setProtocol(e.target.value as 'http' | 'https')}
+          disabled={save.isPending}
+          aria-label="protocol"
+          className={inputCls}
+        >
+          <option value="http">http</option>
+          <option value="https">https</option>
+        </select>
+        <input
+          value={host}
+          onChange={(e) => setHost(e.target.value)}
+          placeholder={t('nodes.host')}
+          disabled={save.isPending}
+          aria-label={t('nodes.host')}
+          className={cn(inputCls, 'w-32')}
+        />
+        <span className="text-slate-500">:</span>
+        <input
+          type="number"
+          min={1}
+          max={65535}
+          value={port}
+          onChange={(e) => setPort(e.target.value)}
+          disabled={save.isPending}
+          aria-label={t('nodes.port')}
+          className={cn(inputCls, 'w-20')}
+        />
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => save.mutate()}
+          disabled={save.isPending || !host.trim() || !port}
+          className="text-xs font-medium text-concert-400 disabled:opacity-50"
+        >
+          {save.isPending ? t('nodes.saving') : t('nodes.save')}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setEditing(false);
+            setError(null);
+          }}
+          className="text-xs text-slate-500 hover:text-slate-300"
+        >
+          {t('nodes.cancel')}
+        </button>
+      </div>
+      {error ? <span className="text-xs text-rose-400">{error}</span> : null}
+    </div>
   );
 }
 
