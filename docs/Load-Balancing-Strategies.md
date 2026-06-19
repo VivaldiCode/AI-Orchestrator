@@ -66,12 +66,31 @@ If the chosen node refuses the connection or returns a 5xx **before any response
 sent**, the dispatcher transparently retries another node, up to `failoverRetries` times. Once
 streaming has begun, the response is committed to that node.
 
+## Concurrency limit (hard cap)
+
+Each node's **max concurrency** is a **hard cap**: the dispatcher reserves a slot before sending,
+and never dispatches to a node already at its limit. With `maxConcurrency = 1`, a node runs exactly
+one inference at a time — ideal for a personal Mac where a second concurrent model would thrash.
+
+When **every** candidate node is at its cap, an inference request is handled in this order:
+
+1. **Overflow** to a cloud provider, if the request can (see below) — `/api/chat`, `/api/generate`,
+   `/v1/chat/completions` for a model with an [equivalence chain](#model-equivalence-chains) or, with
+   Cloud overflow on, the pinned/first provider's default model.
+2. Otherwise **queue**: the request waits for a node slot to free (up to the request timeout), then
+   runs — it is **not** piled onto a node past its cap. Endpoints that can't overflow (e.g.
+   `/api/embed`) always take this path under load.
+
+So with three nodes at `maxConcurrency = 1` and a burst of requests, at most three run locally at
+once; the rest overflow to the cloud (when eligible) or wait their turn. If the wait exceeds the
+request timeout, the client gets a `503`.
+
 ## Cloud overflow (spillover)
 
 A node's **max concurrency** also acts as its capacity gate for overflow: when _every_ candidate
 node is at or above its max concurrency (or none are healthy), and **Cloud overflow** is enabled,
-the request is sent to a configured cloud provider instead of queueing on busy nodes. With
-overflow off, behaviour is unchanged (requests still queue on the nodes). See
+the request is sent to a configured cloud provider instead of waiting for a node. With overflow off
+(and no equivalence chain), the request **queues** for a local slot instead. See
 [Adding Providers → Cloud overflow](Adding-Providers.md).
 
 ## Model equivalence chains
