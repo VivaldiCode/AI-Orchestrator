@@ -648,6 +648,21 @@ function ModelEquivalenceSection() {
     queryKey: ['model-equivalents'],
     queryFn: api.listModelEquivalents,
   });
+  // Live model catalog per provider (same source the Playground uses) so each
+  // member offers real model names — you can't typo the local name into a cloud
+  // member, which is the #1 way an equivalence chain silently breaks.
+  const optionsQuery = useQuery({
+    queryKey: ['playground-options'],
+    queryFn: api.playgroundOptions,
+    staleTime: 60_000,
+  });
+  const modelsFor = (pt: string): string[] => {
+    const set = new Set<string>();
+    for (const g of optionsQuery.data?.groups ?? []) {
+      if (g.providerType === pt) for (const m of g.models) set.add(m);
+    }
+    return [...set].sort();
+  };
   const [editingId, setEditingId] = useState<string | null>(null);
   const [label, setLabel] = useState('');
   const [members, setMembers] = useState<{ providerType: ProviderType; model: string }[]>([
@@ -734,6 +749,7 @@ function ModelEquivalenceSection() {
           <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="≈27B class" />
         </Field>
         <p className="text-xs text-slate-500">{t('providers.equivProximityHint')}</p>
+        <p className="text-xs text-slate-500">{t('providers.equivModelHint')}</p>
         <div className="space-y-2">
           {members.map((m, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -755,13 +771,23 @@ function ModelEquivalenceSection() {
                   </option>
                 ))}
               </Select>
-              <Input
-                value={m.model}
-                placeholder={t('providers.equivModel')}
-                onChange={(e) =>
-                  setMembers((ms) => ms.map((x, j) => (j === i ? { ...x, model: e.target.value } : x)))
-                }
-              />
+              <div className="flex-1">
+                <Input
+                  list={`equiv-models-${i}`}
+                  value={m.model}
+                  placeholder={t('providers.equivModel')}
+                  onChange={(e) =>
+                    setMembers((ms) =>
+                      ms.map((x, j) => (j === i ? { ...x, model: e.target.value } : x)),
+                    )
+                  }
+                />
+                <datalist id={`equiv-models-${i}`}>
+                  {modelsFor(m.providerType).map((mm) => (
+                    <option key={mm} value={mm} />
+                  ))}
+                </datalist>
+              </div>
               <button
                 type="button"
                 aria-label="remove"

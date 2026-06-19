@@ -8,6 +8,8 @@ export interface RequestEventInput {
   nodeId: string | null;
   provider: string;
   model: string;
+  /** Substitute model actually sent upstream, when it differs from `model`. */
+  targetModel?: string | null;
   endpoint: string;
   status: number;
   latencyMs: number | null;
@@ -32,14 +34,22 @@ export class AnalyticsRecorder {
       e.promptTokens != null || e.completionTokens != null
         ? (e.promptTokens ?? 0) + (e.completionTokens ?? 0)
         : null;
+    // Price by the model the provider actually served (the substitute target when
+    // an equivalence chain redirected the request), falling back to the asked model.
     const costUsd =
-      this.prices?.costOf(e.provider, e.model, e.promptTokens, e.completionTokens) ?? null;
+      this.prices?.costOf(
+        e.provider,
+        e.targetModel ?? e.model,
+        e.promptTokens,
+        e.completionTokens,
+      ) ?? null;
     try {
       await this.db.insert(requestEvents).values({
         requestId: e.requestId,
         nodeId: e.nodeId,
         provider: e.provider,
         model: e.model,
+        targetModel: e.targetModel ?? null,
         endpoint: e.endpoint,
         status: e.status,
         latencyMs: e.latencyMs,
