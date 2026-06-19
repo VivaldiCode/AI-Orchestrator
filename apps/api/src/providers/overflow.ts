@@ -523,14 +523,15 @@ export async function runOverflow(
 }
 
 /**
- * Resolve the ordered cloud overflow chain for a requested model. Uses the
- * model's equivalence group (closest first) mapped to usable OpenAI-compatible
- * providers + their equivalent model; falls back to the single pinned/first
- * overflow provider with its default model when no group applies.
+ * Resolve the ordered **equivalence chain** for a requested model: the model's
+ * group (closest first) mapped to usable OpenAI-compatible providers + their
+ * equivalent model. Skips disabled / no-key / over-budget members. Empty when
+ * the model has no equivalence group — defining a group is itself the opt-in, so
+ * this is NOT gated by the generic cloud-overflow toggle (the caller adds the
+ * no-group default-model fallback only when overflow is enabled).
  */
-export function resolveOverflowChain(
+export function resolveEquivalenceChain(
   pm: ProviderManager,
-  settings: Settings,
   requestedModel: string,
 ): { provider: ProviderConfig; model: string }[] {
   const out: { provider: ProviderConfig; model: string }[] = [];
@@ -549,10 +550,6 @@ export function resolveOverflowChain(
     ) {
       out.push({ provider: cfg, model: member.model });
     }
-  }
-  if (out.length === 0) {
-    const fallback = pickOverflowProvider(pm, settings);
-    if (fallback?.defaultModel) out.push({ provider: fallback, model: fallback.defaultModel });
   }
   return out;
 }
