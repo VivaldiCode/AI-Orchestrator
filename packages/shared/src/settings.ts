@@ -46,6 +46,16 @@ export const settingsSchema = z.object({
    */
   cloudOverflowProviderId: z.string().max(100).default(''),
   /**
+   * Spill EMBEDDINGS (`/api/embed`, `/api/embeddings`) to a cloud provider's
+   * `/v1/embeddings` when no local node can serve them. Off by default —
+   * embeddings encode your content, so this sends it to the cloud.
+   */
+  embedOverflow: z.boolean().default(false),
+  /** Provider to send overflow embeddings to (must be OpenAI-compatible). */
+  embedOverflowProviderId: z.string().max(100).default(''),
+  /** Embedding model to request on that provider (e.g. text-embedding-3-small). */
+  embedOverflowModel: z.string().max(200).default(''),
+  /**
    * Privacy mode: force ALL inference to stay on the local cluster — never use
    * cloud providers or cloud overflow. Equivalent to marking every request
    * local-only. Per-request opt-in is also available (header/body flag).

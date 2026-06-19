@@ -577,3 +577,192 @@ export async function runOverflowChain(
   // Unreachable when chain is non-empty (last member is final), but be safe.
   throw badGateway('All overflow providers failed to handle the request.');
 }
+
+/** Endpoints eligible for embedding overflow. */
+export function isEmbedEndpoint(endpoint: string): boolean {
+  return endpoint === '/api/embed' || endpoint === '/api/embeddings';
+}
+
+/**
+ * Choose the provider for embedding overflow — the one pinned in settings, which
+ * must be enabled, OpenAI-compatible, keyed, in-budget, and paired with an embed
+ * model. Returns null when overflow isn't fully configured.
+ */
+export function pickEmbedProvider(pm: ProviderManager, settings: Settings): ProviderConfig | null {
+  if (!settings.embedOverflowProviderId || !settings.embedOverflowModel) return null;
+  const cfg = pm.getConfig(settings.embedOverflowProviderId);
+  if (
+    !cfg ||
+    !cfg.enabled ||
+    !pm.isOpenAIFamily(cfg.type) ||
+    !cfg.credentials.apiKey ||
+    !pm.baseUrlFor(cfg) ||
+    pm.overBudget(cfg)
+  ) {
+    return null;
+  }
+  return cfg;
+}
+
+/** Inbound embed body → the OpenAI `/v1/embeddings` `input` (string or string[]). */
+export function parseEmbedInput(
+  endpoint: string,
+  body: Record<string, unknown>,
+): string | string[] | null {
+  if (endpoint === '/api/embeddings') {
+    return typeof body.prompt === 'string' && body.prompt ? body.prompt : null;
+  }
+  const input = body.input;
+  if (typeof input === 'string' && input) return input;
+  if (Array.isArray(input) && input.length > 0 && input.every((x) => typeof x === 'string')) {
+    return input as string[];
+  }
+  return null;
+}
+
+interface OpenAIEmbedResponse {
+  data?: { embedding?: number[] }[];
+  usage?: { prompt_tokens?: number };
+}
+
+/**
+ * Embedding overflow: translate an inbound `/api/embed` / `/api/embeddings`
+ * request to the provider's `/v1/embeddings`, then translate the response back to
+ * the inbound Ollama shape. Used only when no local node can serve embeddings and
+ * `embedOverflow` is on. Hijacks the reply; returns true once it has committed a
+ * response (success or a surfaced provider error), false if it can't even start.
+ */
+export async function runEmbedOverflow(
+  deps: OverflowDeps,
+  request: FastifyRequest,
+  reply: FastifyReply,
+  opts: DispatchOptions,
+  embedModel: string,
+): Promise<boolean> {
+  const { provider, providerManager, hub, recorder } = deps;
+  const baseUrl = providerManager.baseUrlFor(provider);
+  if (!baseUrl || !embedModel) return false;
+
+  let body: Record<string, unknown> = {};
+  const buf = request.body as Buffer | undefined;
+  if (buf && buf.length) {
+    try {
+      body = JSON.parse(buf.toString('utf8')) as Record<string, unknown>;
+    } catch {
+      body = {};
+    }
+  }
+  const input = parseEmbedInput(opts.endpoint, body);
+  if (input == null) return false;
+  const reportModel = opts.model ?? embedModel;
+  const isLegacy = opts.endpoint === '/api/embeddings';
+
+  const id = requestId();
+  const started = performance.now();
+  hub.broadcast({
+    type: 'request:start',
+    id,
+    nodeId: null,
+    provider: provider.type,
+    model: reportModel,
+    endpoint: opts.endpoint,
+    clientIp: opts.clientIp ?? null,
+    at: nowIso(),
+  });
+
+  const record = async (
+    status: number,
+    promptTokens: number | null,
+    error: string | null,
+  ): Promise<void> => {
+    const latencyMs = Math.round(performance.now() - started);
+    hub.broadcast({
+      type: 'request:end',
+      id,
+      nodeId: null,
+      provider: provider.type,
+      model: reportModel,
+      endpoint: opts.endpoint,
+      status,
+      latencyMs,
+      promptTokens,
+      completionTokens: null,
+      clientIp: opts.clientIp ?? null,
+      at: nowIso(),
+    });
+    await recorder.record({
+      requestId: id,
+      nodeId: null,
+      provider: provider.type,
+      model: reportModel,
+      targetModel: embedModel !== reportModel ? embedModel : null,
+      endpoint: opts.endpoint,
+      status,
+      latencyMs,
+      promptTokens,
+      completionTokens: null,
+      error,
+      clientKeyId: opts.clientKeyId,
+    });
+  };
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), config.requestTimeoutMs);
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    accept: '*/*',
+    authorization: `Bearer ${provider.credentials.apiKey ?? ''}`,
+  };
+
+  reply.hijack();
+  const res: ServerResponse = reply.raw;
+  res.on('close', () => ctrl.abort());
+
+  let upstream: Response;
+  try {
+    upstream = await fetch(`${baseUrl}/v1/embeddings`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ model: embedModel, input }),
+      signal: ctrl.signal,
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    await record(502, null, (err as Error).message);
+    res.writeHead(502, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: `embedding overflow failed: ${(err as Error).message}` }));
+    return true;
+  }
+
+  const text = await safeText(upstream);
+  clearTimeout(timer);
+  logger.info(
+    { provider: provider.name, endpoint: opts.endpoint, status: upstream.status },
+    'embeddings overflowed to cloud provider',
+  );
+  if (!upstream.ok) {
+    await record(upstream.status, null, text || `upstream ${upstream.status}`);
+    res.writeHead(upstream.status, { 'content-type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: text || `provider returned ${upstream.status}` }));
+    return true;
+  }
+
+  let json: OpenAIEmbedResponse = {};
+  try {
+    json = JSON.parse(text) as OpenAIEmbedResponse;
+  } catch {
+    /* empty */
+  }
+  const vectors = (json.data ?? []).map((d) => d.embedding ?? []);
+  const promptTokens = json.usage?.prompt_tokens ?? null;
+  // Translate back: legacy /api/embeddings → single `embedding`; /api/embed → `embeddings[]`.
+  const out = isLegacy ? { embedding: vectors[0] ?? [] } : { model: reportModel, embeddings: vectors };
+  const outText = JSON.stringify(out);
+  res.writeHead(200, {
+    'content-type': 'application/json; charset=utf-8',
+    'x-orchestrator-overflow': provider.name,
+  });
+  res.end(outText);
+  await record(200, promptTokens, null);
+  return true;
+}

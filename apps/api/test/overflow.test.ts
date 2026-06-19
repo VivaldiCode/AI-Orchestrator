@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { Settings } from '@ai-orchestrator/shared';
 import {
   OllamaStreamTranslator,
+  isEmbedEndpoint,
   openAIJsonToOllama,
   overflowEnabled,
   overflowSupports,
+  parseEmbedInput,
+  pickEmbedProvider,
   pickOverflowProvider,
   toOpenAIRequest,
 } from '../src/providers/overflow';
@@ -22,6 +25,9 @@ const BASE_SETTINGS: Settings = {
   maxToolCalls: 5,
   cloudOverflow: true,
   cloudOverflowProviderId: '',
+  embedOverflow: false,
+  embedOverflowProviderId: '',
+  embedOverflowModel: '',
   privacyMode: false,
 };
 
@@ -51,6 +57,7 @@ const DEFAULT_BASE: Record<string, string> = {
 function pmStub(configs: ProviderConfig[]): ProviderManager {
   return {
     list: () => configs,
+    getConfig: (id: string) => configs.find((c) => c.id === id),
     isOpenAIFamily: (t: string) => OPENAI_FAMILY.includes(t),
     baseUrlFor: (c: ProviderConfig) => c.baseUrl ?? DEFAULT_BASE[c.type] ?? null,
     overBudget: (c: ProviderConfig) => c.budgetMonthlyUsd > 0,
@@ -103,6 +110,40 @@ describe('pickOverflowProvider', () => {
   it('skips providers that are over budget (reroutes to the next)', () => {
     const configs = [provider({ id: 'broke', budgetMonthlyUsd: 50 }), provider({ id: 'ok' })];
     expect(pickOverflowProvider(pmStub(configs), BASE_SETTINGS)?.id).toBe('ok');
+  });
+});
+
+describe('embedding overflow helpers', () => {
+  it('detects embed endpoints', () => {
+    expect(isEmbedEndpoint('/api/embed')).toBe(true);
+    expect(isEmbedEndpoint('/api/embeddings')).toBe(true);
+    expect(isEmbedEndpoint('/api/chat')).toBe(false);
+  });
+
+  it('parses the inbound embed input (string, array, legacy prompt)', () => {
+    expect(parseEmbedInput('/api/embed', { input: 'hi' })).toBe('hi');
+    expect(parseEmbedInput('/api/embed', { input: ['a', 'b'] })).toEqual(['a', 'b']);
+    expect(parseEmbedInput('/api/embeddings', { prompt: 'hi' })).toBe('hi');
+    expect(parseEmbedInput('/api/embed', {})).toBeNull();
+    expect(parseEmbedInput('/api/embed', { input: 123 })).toBeNull();
+    expect(parseEmbedInput('/api/embeddings', { input: 'hi' })).toBeNull(); // legacy needs `prompt`
+  });
+
+  it('picks the pinned embed provider only when fully configured', () => {
+    const ok: Settings = {
+      ...BASE_SETTINGS,
+      embedOverflowProviderId: 'oa',
+      embedOverflowModel: 'text-embedding-3-small',
+    };
+    expect(pickEmbedProvider(pmStub([provider({ id: 'oa' })]), ok)?.id).toBe('oa');
+    expect(pickEmbedProvider(pmStub([provider({ id: 'oa' })]), { ...ok, embedOverflowModel: '' })).toBeNull();
+    expect(
+      pickEmbedProvider(pmStub([provider({ id: 'oa' })]), { ...ok, embedOverflowProviderId: 'zzz' }),
+    ).toBeNull();
+    expect(pickEmbedProvider(pmStub([provider({ id: 'oa' })]), BASE_SETTINGS)).toBeNull();
+    expect(
+      pickEmbedProvider(pmStub([provider({ id: 'oa', budgetMonthlyUsd: 10 })]), ok),
+    ).toBeNull(); // over budget
   });
 });
 

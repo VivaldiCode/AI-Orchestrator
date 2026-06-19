@@ -81,11 +81,17 @@ When **every** candidate node is at its cap, an inference request is handled in 
    runs — it is **not** piled onto a node past its cap. Endpoints that can't overflow (e.g.
    `/api/embed`) always take this path under load.
 
-> **Embeddings stay local.** `/api/embed` and `/api/embeddings` are never spilled to the cloud — they
-> always go to an Ollama node (good for privacy, since embeddings encode your content). If a node
-> returns 404 on the newer `/api/embed` (older Ollama only has the legacy `/api/embeddings`), the
-> dispatcher transparently retries that same node's `/api/embeddings` and translates the result back,
-> so embeddings keep working without a cloud trip or an Ollama upgrade.
+> **Embeddings stay local by default.** `/api/embed` and `/api/embeddings` are not part of the chat
+> overflow above — they go to an Ollama node (good for privacy, since embeddings encode your content).
+> If a node returns 404 on the newer `/api/embed` (older Ollama only has the legacy `/api/embeddings`),
+> the dispatcher transparently retries that same node's `/api/embeddings` and translates the result
+> back, so embeddings keep working without a cloud trip or an Ollama upgrade.
+>
+> **Opt-in embedding overflow.** If you _do_ want a cloud fallback, enable **Embedding overflow** in
+> Settings and pick a provider + embedding model (e.g. `text-embedding-3-small`). Then, when **no**
+> local node can serve an embedding (none has the model, all are saturated, or every node 404s it),
+> the request is translated to that provider's `/v1/embeddings` and back to the Ollama shape. Off by
+> default — it sends your embedding inputs to the cloud.
 
 So with three nodes at `maxConcurrency = 1` and a burst of requests, at most three run locally at
 once; the rest overflow to the cloud (when eligible) or wait their turn. If the wait exceeds the
