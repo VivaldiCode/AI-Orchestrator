@@ -209,7 +209,7 @@ export class Dispatcher {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       // Reserve a slot on an under-cap node, waiting for one to free rather than
       // overloading a node past its maxConcurrency.
-      const node = await this.acquireSlot(pool, tried, opts.estimatedTokens ?? 0, deadline, request);
+      const node = await this.acquireSlot(pool, tried, opts.estimatedTokens ?? 0, deadline, reply);
       if (!node) break;
       tried.add(node.id);
       const committed = await this.attempt(node, request, reply, opts);
@@ -237,7 +237,7 @@ export class Dispatcher {
     tried: Set<string>,
     estimatedTokens: number,
     deadline: number,
-    request: FastifyRequest,
+    reply: FastifyReply,
   ): Promise<ManagedNode | null> {
     for (;;) {
       const remaining = pool.filter((n) => !tried.has(n.id));
@@ -254,8 +254,11 @@ export class Dispatcher {
         if (node && this.registry.tryReserve(node.id)) return node;
         continue;
       }
+      // Stop waiting if the client hung up. NB: check the RESPONSE socket, not
+      // request.raw — request.raw.destroyed is true once the body is read into a
+      // buffer, which would (wrongly) abort every queued request immediately.
       const left = deadline - performance.now();
-      if (left <= 0 || request.raw?.destroyed) return null;
+      if (left <= 0 || reply.raw?.destroyed) return null;
       await this.registry.waitForSlot(Math.min(left, 1000));
     }
   }

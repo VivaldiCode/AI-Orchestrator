@@ -41,6 +41,10 @@ function mockRequest(body: unknown): FastifyRequest {
     url: '/api/chat',
     headers: { 'content-type': 'application/json' },
     body: Buffer.from(JSON.stringify(body)),
+    // Mirror real Fastify: once the body is parsed into a buffer the request's
+    // readable side is destroyed. The dispatcher must NOT treat this as a client
+    // disconnect (it watches the reply socket instead), or queued requests 503.
+    raw: { destroyed: true },
   } as unknown as FastifyRequest;
 }
 
