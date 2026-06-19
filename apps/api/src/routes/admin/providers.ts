@@ -1,13 +1,16 @@
+import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import {
   createModelRouteSchema,
   createProviderSchema,
   updateProviderSchema,
+  upsertModelEquivalentGroupSchema,
+  type ModelEquivalentGroup,
   type Provider,
 } from '@ai-orchestrator/shared';
 import { db } from '../../db/client';
-import { modelRoutes, providers, type ProviderRow } from '../../db/schema';
+import { modelEquivalents, modelRoutes, providers, type ProviderRow } from '../../db/schema';
 import { encryptSecret } from '../../lib/crypto';
 import { badRequest, notFound } from '../../lib/errors';
 import { fetchProviderBalance } from '../../providers/balance';
@@ -185,6 +188,74 @@ export function registerProviderRoutes(app: FastifyInstance): void {
       .where(eq(modelRoutes.id, id))
       .returning({ id: modelRoutes.id });
     if (rows.length === 0) throw notFound('Model route not found.');
+    await app.providers.load();
+    return reply.code(204).send();
+  });
+
+  // --- model equivalence groups --------------------------------------------
+  // Operator-defined groups of "similar" models across providers (ordered by
+  // proximity) used to redirect a request to the closest model elsewhere when
+  // the local cluster can't serve it.
+  app.get('/model-equivalents', read, async (_req, reply) => {
+    const rows = await db.select().from(modelEquivalents);
+    const byGroup = new Map<string, ModelEquivalentGroup>();
+    for (const r of rows.sort((a, b) => a.position - b.position)) {
+      let g = byGroup.get(r.groupId);
+      if (!g) {
+        g = { id: r.groupId, label: r.label, members: [] };
+        byGroup.set(r.groupId, g);
+      }
+      g.members.push({
+        providerType: r.providerType as ModelEquivalentGroup['members'][number]['providerType'],
+        providerId: r.providerId,
+        model: r.model,
+      });
+    }
+    return reply.send([...byGroup.values()]);
+  });
+
+  app.post('/model-equivalents', write, async (req, reply) => {
+    const input = parseWith(upsertModelEquivalentGroupSchema, req.body);
+    const groupId = randomUUID();
+    await db.insert(modelEquivalents).values(
+      input.members.map((m, i) => ({
+        groupId,
+        label: input.label,
+        providerId: m.providerId ?? null,
+        providerType: m.providerType,
+        model: m.model,
+        position: i,
+      })),
+    );
+    await app.providers.load();
+    return reply.code(201).send({ id: groupId });
+  });
+
+  app.put('/model-equivalents/:id', write, async (req, reply) => {
+    const groupId = pathId(req.params);
+    const input = parseWith(upsertModelEquivalentGroupSchema, req.body);
+    await db.delete(modelEquivalents).where(eq(modelEquivalents.groupId, groupId));
+    await db.insert(modelEquivalents).values(
+      input.members.map((m, i) => ({
+        groupId,
+        label: input.label,
+        providerId: m.providerId ?? null,
+        providerType: m.providerType,
+        model: m.model,
+        position: i,
+      })),
+    );
+    await app.providers.load();
+    return reply.send({ id: groupId });
+  });
+
+  app.delete('/model-equivalents/:id', write, async (req, reply) => {
+    const groupId = pathId(req.params);
+    const rows = await db
+      .delete(modelEquivalents)
+      .where(eq(modelEquivalents.groupId, groupId))
+      .returning({ id: modelEquivalents.id });
+    if (rows.length === 0) throw notFound('Equivalence group not found.');
     await app.providers.load();
     return reply.code(204).send();
   });

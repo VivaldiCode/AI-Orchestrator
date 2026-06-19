@@ -9,7 +9,7 @@ import { badGateway, notFound, serviceUnavailable } from '../lib/errors';
 import type { AnalyticsRecorder } from '../analytics/recorder';
 import type { RealtimeHub } from '../realtime/hub';
 import type { ProviderManager } from '../providers/manager';
-import { overflowEnabled, pickOverflowProvider, runOverflow } from '../providers/overflow';
+import { overflowEnabled, resolveOverflowChain, runOverflowChain } from '../providers/overflow';
 import type { RequestArchive } from '../archive/index';
 import { sanitizeHeaders } from '../archive/index';
 import type { NodeRegistry } from './registry';
@@ -162,30 +162,24 @@ export class Dispatcher {
     const settings = this.getSettings();
     const pool = this.candidates(opts.model, opts.estimatedTokens);
 
-    // Cloud overflow: when no candidate node has spare capacity (all saturated,
-    // or none healthy at all), spill to a configured cloud provider instead of
-    // queueing on busy nodes. Disabled / no usable provider → unchanged below.
+    // Cloud overflow / equivalence chain: when the local cluster can't serve the
+    // request — every candidate node is saturated, OR no node has the model at
+    // all — descend the model's equivalence chain to redirect to the closest
+    // model on another provider. Disabled / no usable target → unchanged below.
     // Privacy: a per-request local-only flag or global privacy mode disables it.
     const localOnly = opts.localOnly === true || settings.privacyMode;
-    if (
-      !localOnly &&
-      overflowEnabled(settings, opts.endpoint) &&
-      !pool.some((n) => n.runtime.inFlight < n.maxConcurrency)
-    ) {
+    const localUnavailable =
+      pool.length === 0 || !pool.some((n) => n.runtime.inFlight < n.maxConcurrency);
+    if (!localOnly && overflowEnabled(settings, opts.endpoint) && localUnavailable) {
       const pm = this.getProviders();
-      const provider = pm ? pickOverflowProvider(pm, settings) : null;
-      if (pm && provider) {
-        await runOverflow(
-          {
-            provider,
-            providerManager: pm,
-            hub: this.hub,
-            recorder: this.recorder,
-            archive: this.archive,
-          },
+      const chain = pm ? resolveOverflowChain(pm, settings, opts.model ?? '') : [];
+      if (pm && chain.length > 0) {
+        await runOverflowChain(
+          { providerManager: pm, hub: this.hub, recorder: this.recorder, archive: this.archive },
           request,
           reply,
           opts,
+          chain,
         );
         return;
       }

@@ -184,6 +184,17 @@ export const en = {
   'providers.pricingTitle': 'Pricing (USD / 1M tokens)',
   'providers.noPricing': 'No pricing set — add rates in Model pricing below.',
   'providers.perMtokNote': 'USD per 1M tokens (input / output)',
+  'providers.equivTitle': 'Model equivalence',
+  'providers.equivSubtitle':
+    "Groups of similar models across providers. When the local cluster can't serve a model, the request is redirected to the closest model on another provider.",
+  'providers.equivGroupName': 'Group name',
+  'providers.equivProximityHint':
+    'Order members by proximity — closest first. Use ollama for the local cluster.',
+  'providers.equivProvider': 'Provider',
+  'providers.equivModel': 'Model',
+  'providers.equivAddMember': '+ member',
+  'providers.equivAddGroup': 'New group',
+  'providers.equivEmpty': 'No equivalence groups yet.',
   'providers.authMode': 'Authentication',
   'providers.authApiKey': 'API key',
   'providers.authSubscription': 'Subscription (Grok login)',

@@ -251,19 +251,27 @@ export interface OverflowDeps {
 
 /**
  * Execute a cloud-overflow request: translate, call the provider, translate the
- * response back, and record realtime + analytics events. Hijacks the reply.
+ * response back, and record realtime + analytics events. Hijacks the reply on a
+ * committed response.
+ *
+ * `modelOverride` substitutes the cloud model (the equivalence-chain target);
+ * defaults to the provider's default model. When `final` is false (this is not
+ * the last member of the chain) a provider error returns `'failed'` WITHOUT
+ * writing to the client, so the caller can try the next equivalent provider.
  */
 export async function runOverflow(
   deps: OverflowDeps,
   request: FastifyRequest,
   reply: FastifyReply,
   opts: DispatchOptions,
-): Promise<void> {
+  modelOverride?: string,
+  final = true,
+): Promise<'committed' | 'failed'> {
   const { provider, providerManager, hub, recorder } = deps;
   const baseUrl = providerManager.baseUrlFor(provider);
-  const targetModel = provider.defaultModel ?? '';
+  const targetModel = modelOverride ?? provider.defaultModel ?? '';
   if (!baseUrl || !targetModel) {
-    // Should not happen (pickOverflowProvider guards), but be defensive.
+    if (!final) return 'failed';
     throw badGateway('Overflow provider is not fully configured.');
   }
   // Echo the model the client asked for, not the cloud target.
@@ -377,6 +385,7 @@ export async function runOverflow(
   } catch (err) {
     clearTimeout(timer);
     await record(502, null, null, (err as Error).message);
+    if (!final) return 'failed';
     throw badGateway(`Overflow provider request failed: ${(err as Error).message}`);
   }
 
@@ -390,25 +399,30 @@ export async function runOverflow(
     'request overflowed to cloud provider',
   );
 
-  reply.hijack();
-  const res: ServerResponse = reply.raw;
-  res.on('close', () => ctrl.abort());
-
-  // Provider error → surface it in the inbound API's error shape.
+  // Provider error → if there are more chain members to try, return 'failed'
+  // WITHOUT committing so the caller can fall through; otherwise surface it.
   if (!upstream.ok) {
     const text = await safeText(upstream);
     clearTimeout(timer);
-    if (format === 'openai') {
-      res.writeHead(upstream.status, buildResponseHeaders(upstream.headers));
-      res.end(text);
-    } else {
-      res.writeHead(upstream.status, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ error: text || `provider returned ${upstream.status}` }));
-    }
     await record(upstream.status, null, null, text || `upstream ${upstream.status}`);
     archiveExchange(upstream.status, text, null, null);
-    return;
+    if (!final) return 'failed';
+    reply.hijack();
+    const errRes: ServerResponse = reply.raw;
+    errRes.on('close', () => ctrl.abort());
+    if (format === 'openai') {
+      errRes.writeHead(upstream.status, buildResponseHeaders(upstream.headers));
+      errRes.end(text);
+    } else {
+      errRes.writeHead(upstream.status, { 'content-type': 'application/json; charset=utf-8' });
+      errRes.end(JSON.stringify({ error: text || `provider returned ${upstream.status}` }));
+    }
+    return 'committed';
   }
+
+  reply.hijack();
+  const res: ServerResponse = reply.raw;
+  res.on('close', () => ctrl.abort());
 
   // OpenAI inbound (/v1): the provider's response already matches — pass through.
   if (format === 'openai') {
@@ -419,7 +433,7 @@ export async function runOverflow(
       res.end();
       clearTimeout(timer);
       await record(upstream.status, null, null, null);
-      return;
+      return 'committed';
     }
     const [toClient, toParse] = upstream.body.tee();
     const readable = Readable.fromWeb(
@@ -441,7 +455,7 @@ export async function runOverflow(
         clearTimeout(timer);
       }
     })();
-    return;
+    return 'committed';
   }
 
   // Ollama inbound (/api/chat, /api/generate): translate the response.
@@ -463,7 +477,7 @@ export async function runOverflow(
     res.end(outText);
     await record(200, out.promptTokens, out.completionTokens, null);
     archiveExchange(200, outText, out.promptTokens, out.completionTokens);
-    return;
+    return 'committed';
   }
 
   // Streaming: OpenAI SSE → Ollama NDJSON, line by line.
@@ -505,4 +519,62 @@ export async function runOverflow(
   } finally {
     clearTimeout(timer);
   }
+  return 'committed';
+}
+
+/**
+ * Resolve the ordered cloud overflow chain for a requested model. Uses the
+ * model's equivalence group (closest first) mapped to usable OpenAI-compatible
+ * providers + their equivalent model; falls back to the single pinned/first
+ * overflow provider with its default model when no group applies.
+ */
+export function resolveOverflowChain(
+  pm: ProviderManager,
+  settings: Settings,
+  requestedModel: string,
+): { provider: ProviderConfig; model: string }[] {
+  const out: { provider: ProviderConfig; model: string }[] = [];
+  for (const member of pm.resolveChain(requestedModel)) {
+    if (member.providerType === 'ollama') continue; // local handled before overflow
+    const cfg = member.providerId
+      ? pm.getConfig(member.providerId)
+      : pm.list().find((c) => c.enabled && c.type === member.providerType);
+    if (
+      cfg &&
+      cfg.enabled &&
+      pm.isOpenAIFamily(cfg.type) &&
+      !!cfg.credentials.apiKey &&
+      !!pm.baseUrlFor(cfg) &&
+      !pm.overBudget(cfg)
+    ) {
+      out.push({ provider: cfg, model: member.model });
+    }
+  }
+  if (out.length === 0) {
+    const fallback = pickOverflowProvider(pm, settings);
+    if (fallback?.defaultModel) out.push({ provider: fallback, model: fallback.defaultModel });
+  }
+  return out;
+}
+
+/**
+ * Try each member of the overflow chain in order: the first whose provider
+ * responds commits the answer; provider errors fall through to the next. The
+ * last member always commits (success or a surfaced error).
+ */
+export async function runOverflowChain(
+  deps: Omit<OverflowDeps, 'provider'>,
+  request: FastifyRequest,
+  reply: FastifyReply,
+  opts: DispatchOptions,
+  chain: { provider: ProviderConfig; model: string }[],
+): Promise<void> {
+  for (let i = 0; i < chain.length; i++) {
+    const { provider, model } = chain[i];
+    const final = i === chain.length - 1;
+    const result = await runOverflow({ ...deps, provider }, request, reply, opts, model, final);
+    if (result === 'committed') return;
+  }
+  // Unreachable when chain is non-empty (last member is final), but be safe.
+  throw badGateway('All overflow providers failed to handle the request.');
 }
