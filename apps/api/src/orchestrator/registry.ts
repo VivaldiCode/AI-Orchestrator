@@ -28,6 +28,8 @@ function rowToManaged(row: NodeRow, runtime: RuntimeState): ManagedNode {
  */
 export class NodeRegistry {
   private readonly map = new Map<string, ManagedNode>();
+  /** Resolvers waiting for a concurrency slot to free (see waitForSlot). */
+  private readonly slotWaiters = new Set<() => void>();
 
   constructor(private readonly db: DB) {}
 
@@ -79,6 +81,47 @@ export class NodeRegistry {
   decInFlight(id: string): void {
     const n = this.map.get(id);
     if (n) n.runtime.inFlight = Math.max(0, n.runtime.inFlight - 1);
+    this.wakeSlotWaiters();
+  }
+
+  /**
+   * Atomically reserve a concurrency slot on a node, honouring `maxConcurrency`
+   * as a HARD cap: returns false (without incrementing) when the node is already
+   * at capacity or unknown. Node's single-threaded event loop makes the
+   * check-then-increment atomic, so dispatch never exceeds the cap. The caller
+   * owns exactly one matching decInFlight once the request finishes.
+   */
+  tryReserve(id: string): boolean {
+    const n = this.map.get(id);
+    if (!n) return false;
+    if (n.runtime.inFlight >= n.maxConcurrency) return false;
+    n.runtime.inFlight++;
+    return true;
+  }
+
+  /** Wake everyone waiting on waitForSlot — a slot may have just opened up. */
+  private wakeSlotWaiters(): void {
+    if (this.slotWaiters.size === 0) return;
+    const waiters = [...this.slotWaiters];
+    this.slotWaiters.clear();
+    for (const resolve of waiters) resolve();
+  }
+
+  /**
+   * Resolve when a concurrency slot is released, or after `timeoutMs` as a
+   * re-poll safety net. Used by the dispatcher to wait for a free node instead
+   * of overloading one when every candidate is at capacity.
+   */
+  waitForSlot(timeoutMs: number): Promise<void> {
+    return new Promise((resolve) => {
+      const done = (): void => {
+        this.slotWaiters.delete(done);
+        clearTimeout(timer);
+        resolve();
+      };
+      const timer = setTimeout(done, timeoutMs);
+      this.slotWaiters.add(done);
+    });
   }
 
   recordSuccess(id: string): void {

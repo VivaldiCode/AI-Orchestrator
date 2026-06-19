@@ -200,7 +200,7 @@ export const pt: Dict = {
     'Grupos de modelos semelhantes entre provedores. Quando o cluster local não consegue servir um modelo, o pedido é redirecionado para o modelo mais próximo noutro provedor.',
   'providers.equivGroupName': 'Nome do grupo',
   'providers.equivProximityHint':
-    'Ordena os membros por proximidade — o mais próximo primeiro. Usa ollama para o cluster local.',
+    'Ordena os membros por proximidade — o mais próximo primeiro. O modelo que quer redirecionar precisa ser um membro (ex.: ollama/gemma:27b como nº 1) — o nome do grupo é só um rótulo.',
   'providers.equivProvider': 'Provedor',
   'providers.equivModel': 'Modelo',
   'providers.equivModelPick': 'Selecione um modelo',

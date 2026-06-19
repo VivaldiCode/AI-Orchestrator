@@ -159,3 +159,49 @@ describe('Dispatcher (integration with mock Ollama)', () => {
     ).rejects.toThrow();
   });
 });
+
+describe('Dispatcher hard concurrency cap', () => {
+  const settings: Settings = {
+    strategy: 'least-connections',
+    modelAware: true,
+    contextAware: false,
+    autoPull: false,
+    failoverRetries: 0,
+    triageEnabled: false,
+    triageModel: '',
+    maxToolCalls: 5,
+    cloudOverflow: false,
+    cloudOverflowProviderId: '',
+    privacyMode: false,
+  };
+  const recorder = { record: async () => {} } as unknown as AnalyticsRecorder;
+
+  it('never exceeds a node maxConcurrency, queueing the rest until a slot frees', async () => {
+    const slow = await startMockOllama({ label: 'slow', delayMs: 80 });
+    const reg = new NodeRegistry(db);
+    const node = reg.upsert(fakeRow('44444444-4444-4444-4444-444444444444', slow.port));
+    node.runtime.status = 'up';
+    node.runtime.models = ['llama3.2'];
+    node.maxConcurrency = 1; // hard cap of one in-flight request
+    const disp = new Dispatcher(reg, new RealtimeHub(), recorder, () => settings);
+
+    // Fire three at once: with maxConcurrency=1 they must serialise, not pile on.
+    const replies = [mockReply(), mockReply(), mockReply()];
+    await Promise.all(
+      replies.map((r) =>
+        disp.proxyOllama(mockRequest({ model: 'llama3.2', stream: false }), r.reply, {
+          endpoint: '/api/chat',
+          model: 'llama3.2',
+          clientKeyId: null,
+        }),
+      ),
+    );
+    await Promise.all(replies.map((r) => r.done));
+
+    expect(slow.count()).toBe(3);
+    expect(slow.maxConcurrent()).toBe(1); // the node never saw 2+ at once
+    expect(node.runtime.inFlight).toBe(0); // every reserved slot released
+    for (const r of replies) expect(r.raw.statusCode).toBe(200);
+    await slow.close();
+  });
+});
