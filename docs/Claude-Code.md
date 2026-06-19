@@ -14,12 +14,12 @@ dialects.
 
 When a request hits `/v1/messages`, the orchestrator decides where it goes:
 
-| The requested model… | Goes to | Fidelity |
-| --- | --- | --- |
-| maps to an **Anthropic** provider (or is an unmapped `claude-*` model and you have an Anthropic provider configured) | **passthrough** to the real Anthropic API with your provider key | full (native tools + streaming) |
-| maps to a **local model** via the model registry | **translated** Anthropic⇄OpenAI and dispatched to your **Macs** (with failover) | best-effort (text + tools + streaming) |
-| maps to an **OpenAI-compatible** provider | translated and sent to that provider | best-effort |
-| (nodes saturated, overflow enabled) | spills to a cloud provider | best-effort |
+| The requested model…                                                                                                 | Goes to                                                                         | Fidelity                               |
+| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------- |
+| maps to an **Anthropic** provider (or is an unmapped `claude-*` model and you have an Anthropic provider configured) | **passthrough** to the real Anthropic API with your provider key                | full (native tools + streaming)        |
+| maps to a **local model** via the model registry                                                                     | **translated** Anthropic⇄OpenAI and dispatched to your **Macs** (with failover) | best-effort (text + tools + streaming) |
+| maps to an **OpenAI-compatible** provider                                                                            | translated and sent to that provider                                            | best-effort                            |
+| (nodes saturated, overflow enabled)                                                                                  | spills to a cloud provider                                                      | best-effort                            |
 
 Translation covers system prompts, multi-turn messages, images, **tool calling**
 (`tool_use`/`tool_result` ⇄ OpenAI `tool_calls`), `tool_choice`, sampling
@@ -65,9 +65,9 @@ behaviour while gaining observability and a budget guardrail.
 Map the Claude model name to a local model in **Model Routes**:
 
 | Alias (what Claude Code asks for) | Target (a model your nodes have) |
-| --- | --- |
-| `claude-3-5-sonnet-20241022` | `qwen2.5-coder:32b` |
-| `claude-3-5-haiku-20241022` | `llama3.1:8b` |
+| --------------------------------- | -------------------------------- |
+| `claude-3-5-sonnet-20241022`      | `qwen2.5-coder:32b`              |
+| `claude-3-5-haiku-20241022`       | `llama3.1:8b`                    |
 
 Requests for that alias are translated and load-balanced across your nodes. Tool
 calls work as long as the target model supports function calling. Latency and

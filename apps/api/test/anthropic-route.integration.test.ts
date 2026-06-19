@@ -117,12 +117,16 @@ function startMockOpenAINode(): Promise<{ port: number; close: () => Promise<voi
         res.write(
           'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\\"city\\":\\"Lisbon\\"}"}}]}}]}\n\n',
         );
-        res.write('data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":9,"completion_tokens":4}}\n\n');
+        res.write(
+          'data: {"choices":[{"delta":{},"finish_reason":"tool_calls"}],"usage":{"prompt_tokens":9,"completion_tokens":4}}\n\n',
+        );
       } else {
         res.write('data: {"choices":[{"delta":{"role":"assistant"}}]}\n\n');
         res.write('data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n');
         res.write('data: {"choices":[{"delta":{"content":" world"}}]}\n\n');
-        res.write('data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":5,"completion_tokens":2}}\n\n');
+        res.write(
+          'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":5,"completion_tokens":2}}\n\n',
+        );
       }
       res.write('data: [DONE]\n\n');
       res.end();
@@ -133,7 +137,13 @@ function startMockOpenAINode(): Promise<{ port: number; close: () => Promise<voi
       JSON.stringify({
         id: 'chatcmpl-1',
         object: 'chat.completion',
-        choices: [{ index: 0, message: { role: 'assistant', content: 'Hello world' }, finish_reason: 'stop' }],
+        choices: [
+          {
+            index: 0,
+            message: { role: 'assistant', content: 'Hello world' },
+            finish_reason: 'stop',
+          },
+        ],
         usage: { prompt_tokens: 5, completion_tokens: 2 },
       }),
     );
@@ -180,7 +190,10 @@ function startMockAnthropic(): Promise<{
 
 const NODE_ID = '44444444-4444-4444-4444-444444444444';
 
-function buildApp(opts: { resolve?: () => unknown; list?: () => unknown[] }, port: number): {
+function buildApp(
+  opts: { resolve?: () => unknown; list?: () => unknown[] },
+  port: number,
+): {
   app: FastifyInstance;
   registry: NodeRegistry;
 } {
@@ -224,7 +237,11 @@ describe('runAnthropicMessages (translate + passthrough)', () => {
     const { reply, raw, done } = mockReply();
     await runAnthropicMessages(
       app,
-      mockRequest({ model: 'llama3.1', max_tokens: 100, messages: [{ role: 'user', content: 'hi' }] }),
+      mockRequest({
+        model: 'llama3.1',
+        max_tokens: 100,
+        messages: [{ role: 'user', content: 'hi' }],
+      }),
       reply,
     );
     await done;
@@ -241,7 +258,12 @@ describe('runAnthropicMessages (translate + passthrough)', () => {
     const { reply, raw, done } = mockReply();
     await runAnthropicMessages(
       app,
-      mockRequest({ model: 'llama3.1', max_tokens: 100, stream: true, messages: [{ role: 'user', content: 'hi' }] }),
+      mockRequest({
+        model: 'llama3.1',
+        max_tokens: 100,
+        stream: true,
+        messages: [{ role: 'user', content: 'hi' }],
+      }),
       reply,
     );
     await done;
@@ -300,7 +322,11 @@ describe('runAnthropicMessages (translate + passthrough)', () => {
     const { reply, raw, done } = mockReply();
     await runAnthropicMessages(
       app,
-      mockRequest({ model: 'claude-3-5-sonnet-20241022', max_tokens: 50, messages: [{ role: 'user', content: 'hi' }] }),
+      mockRequest({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 50,
+        messages: [{ role: 'user', content: 'hi' }],
+      }),
       reply,
     );
     await done;

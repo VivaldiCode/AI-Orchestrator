@@ -6,7 +6,7 @@
 
 **Gateway self-hosted que espelha a API do Ollama e balanceia a inferência entre todos os seus Macs — e, opcionalmente, entre provedores de IA na nuvem (Anthropic, OpenAI, xAI, Amazon Bedrock).**
 
-[English](README.md) · **Português**
+[English](README.md) · **Português** · [Español](README.es.md)
 
 _Como Vivaldi regendo uma orquestra — uma batuta, muitos instrumentos, em perfeita sintonia._
 
@@ -33,7 +33,7 @@ todos os nós, com health checks, failover automático, dashboard em tempo real 
   de roteamento ciente de modelo e failover automático.
 - **Multi-provedor** — camada compatível com OpenAI (`/v1`) para provedores na nuvem; segredos
   criptografados em repouso.
-- **Dashboard em tempo real** (React + Vite) — bilíngue (EN/PT).
+- **Dashboard em tempo real** (React + Vite) — trilíngue (EN/PT/ES).
 - **Analytics** — vazão, latência p50/p95/p99, tokens e erros, com PostgreSQL + TimescaleDB.
 - **Roda 100% em Docker** e **nasce com testes** (unit + e2e).
 

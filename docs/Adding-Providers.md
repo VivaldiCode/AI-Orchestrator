@@ -6,15 +6,15 @@ returned by the API.
 
 ## Supported providers
 
-| Type                | Transport          | Streaming        | Notes                           |
-| ------------------- | ------------------ | ---------------- | ------------------------------- |
-| `ollama`            | local nodes        | ✅               | the default; no provider needed |
-| `openai`            | OpenAI `/v1`       | ✅               | proxied with your key           |
+| Type                | Transport          | Streaming        | Notes                                                    |
+| ------------------- | ------------------ | ---------------- | -------------------------------------------------------- |
+| `ollama`            | local nodes        | ✅               | the default; no provider needed                          |
+| `openai`            | OpenAI `/v1`       | ✅               | proxied with your key                                    |
 | `xai`               | xAI `/v1`          | ✅               | API key **or** [subscription login](xAI-Subscription.md) |
-| `mistral`           | Mistral `/v1`      | ✅               | OpenAI-compatible               |
-| `openai-compatible` | custom `baseUrl`   | ✅               | any compatible endpoint         |
-| `anthropic`         | Messages API (SDK) | ⏳ non-streaming | translated to OpenAI shape      |
-| `bedrock`           | Converse API (SDK) | ⏳ non-streaming | translated to OpenAI shape      |
+| `mistral`           | Mistral `/v1`      | ✅               | OpenAI-compatible                                        |
+| `openai-compatible` | custom `baseUrl`   | ✅               | any compatible endpoint                                  |
+| `anthropic`         | Messages API (SDK) | ⏳ non-streaming | translated to OpenAI shape                               |
+| `bedrock`           | Converse API (SDK) | ⏳ non-streaming | translated to OpenAI shape                               |
 
 > The fully end-to-end-exercised path is the local Ollama cluster. Cloud adapters ship with
 > audited SDKs and clear extension points; streaming for Anthropic/Bedrock is on the roadmap.

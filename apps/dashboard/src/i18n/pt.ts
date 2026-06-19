@@ -198,7 +198,8 @@ export const pt: Dict = {
   'providers.reconnect': 'Religar',
   'providers.disconnect': 'Desligar',
   'providers.connecting': 'A ligar…',
-  'providers.deviceInstructions': 'Abre o link, inicia sessão e introduz este código para autorizar:',
+  'providers.deviceInstructions':
+    'Abre o link, inicia sessão e introduz este código para autorizar:',
   'providers.deviceWaiting': 'À espera de aprovação…',
   'providers.openLink': 'Abrir página de autorização',
   'providers.expiresLabel': 'expira',

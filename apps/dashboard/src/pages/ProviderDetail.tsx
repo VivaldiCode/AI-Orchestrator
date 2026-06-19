@@ -24,9 +24,10 @@ export function ProviderDetailPage() {
   const providersQuery = useQuery({ queryKey: ['providers'], queryFn: api.listProviders });
   const realProvider = (providersQuery.data ?? []).find((p) => p.id === id);
   // The local cluster is not a DB row — synthesize it so it gets a detail page.
-  const provider: { id: string; name: string; type: string; authMode: string } | undefined = isOllama
-    ? { id: 'ollama', name: t('providers.localOllama'), type: 'ollama', authMode: 'api-key' }
-    : realProvider;
+  const provider: { id: string; name: string; type: string; authMode: string } | undefined =
+    isOllama
+      ? { id: 'ollama', name: t('providers.localOllama'), type: 'ollama', authMode: 'api-key' }
+      : realProvider;
   const type = provider?.type ?? '';
 
   const pricesQuery = useQuery({ queryKey: ['prices'], queryFn: api.listPrices });
@@ -106,26 +107,30 @@ export function ProviderDetailPage() {
         {/* Balance — cloud providers only (the local cluster has no account balance) */}
         {!isOllama ? (
           <Card>
-            <h2 className="mb-3 text-lg font-medium text-slate-100">{t('providers.balanceTitle')}</h2>
+            <h2 className="mb-3 text-lg font-medium text-slate-100">
+              {t('providers.balanceTitle')}
+            </h2>
             {balanceQuery.isLoading ? (
-            <Spinner label={t('common.loading')} />
-          ) : balance?.available ? (
-            <div>
-              <div className="text-3xl font-semibold text-emerald-400">
-                {money(balance.balanceUsd ?? 0)}
+              <Spinner label={t('common.loading')} />
+            ) : balance?.available ? (
+              <div>
+                <div className="text-3xl font-semibold text-emerald-400">
+                  {money(balance.balanceUsd ?? 0)}
+                </div>
+                <div className="mt-1 text-xs text-slate-500">
+                  {t('providers.balanceLive')}
+                  {balance.source ? ` · ${balance.source}` : ''}
+                  {balance.note ? ` · ${balance.note}` : ''}
+                </div>
               </div>
-              <div className="mt-1 text-xs text-slate-500">
-                {t('providers.balanceLive')}
-                {balance.source ? ` · ${balance.source}` : ''}
-                {balance.note ? ` · ${balance.note}` : ''}
+            ) : (
+              <div className="text-sm text-slate-400">
+                <div>{t('providers.balanceUnavailable')}</div>
+                {balance?.note ? (
+                  <div className="mt-1 text-xs text-slate-500">{balance.note}</div>
+                ) : null}
               </div>
-            </div>
-          ) : (
-            <div className="text-sm text-slate-400">
-              <div>{t('providers.balanceUnavailable')}</div>
-              {balance?.note ? <div className="mt-1 text-xs text-slate-500">{balance.note}</div> : null}
-            </div>
-          )}
+            )}
           </Card>
         ) : null}
 
@@ -190,7 +195,9 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
   return (
     <div className="rounded-lg bg-slate-950 p-3">
       <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={`mt-0.5 text-lg font-semibold ${accent ? 'text-emerald-400' : 'text-slate-100'}`}>
+      <div
+        className={`mt-0.5 text-lg font-semibold ${accent ? 'text-emerald-400' : 'text-slate-100'}`}
+      >
         {value}
       </div>
     </div>
@@ -227,7 +234,7 @@ function PromptRow({ entry }: { entry: ArchiveEntry }) {
             {entry.status}
           </span>
           <span>
-            {(entry.promptTokens ?? 0)}→{entry.completionTokens ?? 0} tok
+            {entry.promptTokens ?? 0}→{entry.completionTokens ?? 0} tok
           </span>
           <span>{entry.latencyMs} ms</span>
         </span>
