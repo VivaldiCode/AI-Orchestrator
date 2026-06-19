@@ -4,6 +4,7 @@ import type {
   ApiKey,
   ApiKeyCreated,
   ArchiveList,
+  DebugEvent,
   CreateApiKeyInput,
   CreateMcpServerInput,
   CreateNodeInput,
@@ -240,6 +241,16 @@ export const api = {
   getSettings: () => request<Settings>('/admin/settings'),
   updateSettings: (input: UpdateSettingsInput) =>
     request<Settings>('/admin/settings', { method: 'PUT', body: input }),
+
+  // debug
+  debugEvents: (opts: { errors?: boolean; provider?: string; limit?: number } = {}) => {
+    const p = new URLSearchParams();
+    if (opts.errors) p.set('errors', '1');
+    if (opts.provider) p.set('provider', opts.provider);
+    if (opts.limit) p.set('limit', String(opts.limit));
+    const qs = p.toString();
+    return request<DebugEvent[]>(`/admin/debug/events${qs ? `?${qs}` : ''}`);
+  },
 
   // analytics
   analytics: (query: Partial<AnalyticsQuery> = {}) => {
