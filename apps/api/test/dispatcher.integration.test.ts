@@ -86,6 +86,9 @@ describe('Dispatcher (integration with mock Ollama)', () => {
     maxToolCalls: 5,
     cloudOverflow: false,
     cloudOverflowProviderId: '',
+    embedOverflow: false,
+    embedOverflowProviderId: '',
+    embedOverflowModel: '',
     privacyMode: false,
   };
   const recorder = { record: async () => {} } as unknown as AnalyticsRecorder;
@@ -191,6 +194,9 @@ describe('Dispatcher hard concurrency cap', () => {
     maxToolCalls: 5,
     cloudOverflow: false,
     cloudOverflowProviderId: '',
+    embedOverflow: false,
+    embedOverflowProviderId: '',
+    embedOverflowModel: '',
     privacyMode: false,
   };
   const recorder = { record: async () => {} } as unknown as AnalyticsRecorder;

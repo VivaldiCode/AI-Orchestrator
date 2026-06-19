@@ -10,9 +10,12 @@ import type { AnalyticsRecorder } from '../analytics/recorder';
 import type { RealtimeHub } from '../realtime/hub';
 import type { ProviderManager } from '../providers/manager';
 import {
+  isEmbedEndpoint,
   overflowSupports,
+  pickEmbedProvider,
   pickOverflowProvider,
   resolveEquivalenceChain,
+  runEmbedOverflow,
   runOverflowChain,
 } from '../providers/overflow';
 import type { RequestArchive } from '../archive/index';
@@ -225,7 +228,26 @@ export class Dispatcher {
       }
     }
 
+    // Embedding overflow (opt-in): /api/embed + /api/embeddings never use the chat
+    // overflow above; when no local node can serve them and embedOverflow is on,
+    // translate to a cloud provider's /v1/embeddings instead.
+    const tryEmbedOverflow = async (): Promise<boolean> => {
+      if (localOnly || !isEmbedEndpoint(opts.endpoint) || !settings.embedOverflow) return false;
+      const pm = this.getProviders();
+      if (!pm) return false;
+      const provider = pickEmbedProvider(pm, settings);
+      if (!provider) return false;
+      return runEmbedOverflow(
+        { provider, providerManager: pm, hub: this.hub, recorder: this.recorder, archive: this.archive },
+        request,
+        reply,
+        opts,
+        settings.embedOverflowModel,
+      );
+    };
+
     if (pool.length === 0) {
+      if (await tryEmbedOverflow()) return;
       throw serviceUnavailable('No healthy nodes available to handle the request.');
     }
     const maxAttempts = Math.min(pool.length, settings.failoverRetries + 1);
@@ -241,6 +263,8 @@ export class Dispatcher {
       const committed = await this.attempt(node, request, reply, opts);
       if (committed) return;
     }
+    // Every local node failed (e.g. all 404'd embeddings) → try cloud embed overflow.
+    if (await tryEmbedOverflow()) return;
     if (tried.size === 0) {
       throw serviceUnavailable(
         'All nodes are at their concurrency limit; timed out waiting for a free slot.',
@@ -338,12 +362,28 @@ export class Dispatcher {
 
     // Legacy-Ollama fallback: older nodes 404 on the newer /api/embed endpoint.
     // Retry the same node's /api/embeddings (translating the shapes) — stays
-    // local. If that also fails, the original 404 is surfaced below.
+    // local. If that also fails, treat it as a node failure and fail over so the
+    // caller can try another node or cloud embedding overflow.
     if (upstream.status === 404 && opts.endpoint === '/api/embed') {
       const fb = await this.embedFallback(node, request, ctrl.signal).catch(() => null);
       if (fb) {
         logger.info({ nodeId: node.id }, '/api/embed 404 → fell back to /api/embeddings');
         upstream = fb;
+      } else {
+        clearTimeout(timer);
+        this.registry.decInFlight(node.id);
+        this.registry.recordError(node.id);
+        await this.finish(
+          id,
+          node.id,
+          opts,
+          404,
+          performance.now() - started,
+          null,
+          null,
+          'node cannot serve embeddings (/api/embed 404, no /api/embeddings fallback)',
+        );
+        return false;
       }
     }
 
