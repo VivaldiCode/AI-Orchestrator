@@ -81,6 +81,12 @@ When **every** candidate node is at its cap, an inference request is handled in 
    runs — it is **not** piled onto a node past its cap. Endpoints that can't overflow (e.g.
    `/api/embed`) always take this path under load.
 
+> **Embeddings stay local.** `/api/embed` and `/api/embeddings` are never spilled to the cloud — they
+> always go to an Ollama node (good for privacy, since embeddings encode your content). If a node
+> returns 404 on the newer `/api/embed` (older Ollama only has the legacy `/api/embeddings`), the
+> dispatcher transparently retries that same node's `/api/embeddings` and translates the result back,
+> so embeddings keep working without a cloud trip or an Ollama upgrade.
+
 So with three nodes at `maxConcurrency = 1` and a burst of requests, at most three run locally at
 once; the rest overflow to the cloud (when eligible) or wait their turn. If the wait exceeds the
 request timeout, the client gets a `503`.

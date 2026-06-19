@@ -33,6 +33,16 @@ export async function startMockOllama(
       res.end(JSON.stringify({ models: models.map((m) => ({ name: m })) }));
       return;
     }
+    // Legacy embeddings endpoint (older Ollama). Note: /api/embed is intentionally
+    // NOT handled → 404, so the dispatcher's legacy fallback can be exercised.
+    if (req.method === 'POST' && url.startsWith('/api/embeddings')) {
+      req.on('data', () => {});
+      req.on('end', () => {
+        res.setHeader('content-type', 'application/json');
+        res.end(JSON.stringify({ embedding: [0.1, 0.2, 0.3] }));
+      });
+      return;
+    }
     if (
       req.method === 'POST' &&
       (url.startsWith('/api/chat') ||

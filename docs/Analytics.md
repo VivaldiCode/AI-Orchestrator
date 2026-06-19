@@ -41,11 +41,13 @@ The dashboard **Overview** shows your active **providers** next to the nodes —
 ## Debug view
 
 The dashboard **Debug** page lists recent requests newest-first, with an **Errors only** toggle. Each
-row shows the endpoint, model, provider/node, status and latency; failed rows also show the **error
-reason** — for a cloud provider that's the **upstream error text** (e.g. `the model "gemma4:26b" does
-not exist`), which usually pinpoints a wrong substitute-model name, a bad API key, or an
-over-budget/expired provider. Expand a row to see the raw **request and response bodies** (when the
-request archive is enabled). Backed by `GET /admin/debug/events?errors=1`.
+row shows the endpoint, model, status and latency, plus **which node (Mac) or provider** served it —
+locally-served requests show the **node name** (e.g. `Mac Pro M3`) rather than just `ollama`, so a
+failing node is obvious at a glance. Failed rows also show the **error reason** — for a cloud provider
+that's the **upstream error text** (e.g. `the model "gemma4:26b" does not exist`), which usually
+pinpoints a wrong substitute-model name, a bad API key, or an over-budget/expired provider. Expand a
+row to see the raw **request and response bodies** (when the request archive is enabled). Backed by
+`GET /admin/debug/events?errors=1`.
 
 When an equivalence chain redirects a request, the row shows the **substitute model actually sent**
 next to the asked-for one — `gemma4:26b → grok-2-latest` — so you can tell at a glance whether the
