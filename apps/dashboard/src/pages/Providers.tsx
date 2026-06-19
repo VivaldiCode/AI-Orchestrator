@@ -637,6 +637,78 @@ function XaiSubscriptionPanel({ provider: p }: { provider: Provider }) {
 const EQUIV_PROVIDER_TYPES: ProviderType[] = ['ollama', ...PROVIDER_TYPES];
 
 /**
+ * Model field for one equivalence member: a styled dropdown of the provider's
+ * live model catalog (so you pick a real name instead of typing the local one),
+ * with a "type manually" escape hatch for models the catalog doesn't list. Falls
+ * back to a plain input when there is no catalog yet (provider down / no key).
+ */
+function MemberModelField({
+  models,
+  value,
+  onChange,
+}: {
+  models: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const { t } = useI18n();
+  const [manualToggle, setManualToggle] = useState(false);
+  const known = value !== '' && models.includes(value);
+  // Manual input when: the user asked for it, there's no catalog, or the current
+  // value isn't a catalog entry (e.g. editing a group set to a local name).
+  const manual = manualToggle || models.length === 0 || (value !== '' && !known);
+
+  if (manual) {
+    return (
+      <div className="flex flex-1 items-center gap-1">
+        <Input
+          value={value}
+          placeholder={t('providers.equivModel')}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        {models.length > 0 ? (
+          <button
+            type="button"
+            title={t('providers.equivPickFromList')}
+            onClick={() => {
+              setManualToggle(false);
+              onChange('');
+            }}
+            className="shrink-0 px-1 text-slate-500 hover:text-slate-200"
+          >
+            ▾
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+  return (
+    <Select
+      className="flex-1"
+      value={known ? value : ''}
+      onChange={(e) => {
+        if (e.target.value === '__manual__') {
+          setManualToggle(true);
+          onChange('');
+        } else {
+          onChange(e.target.value);
+        }
+      }}
+    >
+      <option value="" disabled>
+        {t('providers.equivModelPick')}
+      </option>
+      {models.map((mm) => (
+        <option key={mm} value={mm}>
+          {mm}
+        </option>
+      ))}
+      <option value="__manual__">{t('providers.equivModelManual')}</option>
+    </Select>
+  );
+}
+
+/**
  * Manage model equivalence groups: ordered sets of "similar" models across
  * providers. When the local cluster can't serve a model, the request is
  * redirected to the closest model on another provider (top of the list first).
@@ -771,23 +843,13 @@ function ModelEquivalenceSection() {
                   </option>
                 ))}
               </Select>
-              <div className="flex-1">
-                <Input
-                  list={`equiv-models-${i}`}
-                  value={m.model}
-                  placeholder={t('providers.equivModel')}
-                  onChange={(e) =>
-                    setMembers((ms) =>
-                      ms.map((x, j) => (j === i ? { ...x, model: e.target.value } : x)),
-                    )
-                  }
-                />
-                <datalist id={`equiv-models-${i}`}>
-                  {modelsFor(m.providerType).map((mm) => (
-                    <option key={mm} value={mm} />
-                  ))}
-                </datalist>
-              </div>
+              <MemberModelField
+                models={modelsFor(m.providerType)}
+                value={m.model}
+                onChange={(v) =>
+                  setMembers((ms) => ms.map((x, j) => (j === i ? { ...x, model: v } : x)))
+                }
+              />
               <button
                 type="button"
                 aria-label="remove"

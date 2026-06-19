@@ -205,6 +205,9 @@ export const es: Dict = {
     'Ordena los miembros por proximidad — el más cercano primero. Usa ollama para el clúster local.',
   'providers.equivProvider': 'Proveedor',
   'providers.equivModel': 'Modelo',
+  'providers.equivModelPick': 'Selecciona un modelo',
+  'providers.equivModelManual': '✏️ Escribir manualmente…',
+  'providers.equivPickFromList': 'Elegir del catálogo',
   'providers.equivModelHint':
     'Usa el nombre del modelo del propio proveedor (p. ej. grok-2-latest, gpt-4o) — no el nombre del modelo local.',
   'providers.equivAddMember': '+ miembro',
