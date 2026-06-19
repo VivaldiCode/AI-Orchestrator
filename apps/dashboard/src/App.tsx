@@ -10,6 +10,7 @@ import { ProvidersPage } from './pages/Providers';
 import { ProviderDetailPage } from './pages/ProviderDetail';
 import { PlaygroundPage } from './pages/Playground';
 import { AnalyticsPage } from './pages/Analytics';
+import { DebugPage } from './pages/Debug';
 import { ApiKeysPage } from './pages/ApiKeys';
 import { SettingsPage } from './pages/Settings';
 import { UsersPage } from './pages/Users';
@@ -43,6 +44,7 @@ export function App() {
         <Route path="mcp" element={<McpPage />} />
         <Route path="skills" element={<SkillsPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="debug" element={<DebugPage />} />
         <Route path="api-keys" element={<ApiKeysPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="authentication" element={<AuthenticationPage />} />

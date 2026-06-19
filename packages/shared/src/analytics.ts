@@ -78,3 +78,19 @@ export const analyticsSummarySchema = z.object({
   nodeKeys: z.array(z.string()),
 });
 export type AnalyticsSummary = z.infer<typeof analyticsSummarySchema>;
+
+/** One recorded request, for the Debug view (newest first; errors carry a reason). */
+export interface DebugEvent {
+  requestId: string;
+  at: string;
+  endpoint: string;
+  model: string;
+  provider: string;
+  nodeId: string | null;
+  status: number;
+  latencyMs: number | null;
+  promptTokens: number | null;
+  completionTokens: number | null;
+  /** Failure reason (e.g. the upstream provider's error text), or null on success. */
+  error: string | null;
+}

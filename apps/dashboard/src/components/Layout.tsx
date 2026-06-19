@@ -18,6 +18,7 @@ const NAV: { to: string; key: TranslationKey; end: boolean; perm?: Permission }[
   { to: '/mcp', key: 'nav.mcp', end: false, perm: 'providers:read' },
   { to: '/skills', key: 'nav.skills', end: false, perm: 'providers:read' },
   { to: '/analytics', key: 'nav.analytics', end: false, perm: 'analytics:read' },
+  { to: '/debug', key: 'nav.debug', end: false, perm: 'analytics:read' },
   { to: '/api-keys', key: 'nav.apiKeys', end: false, perm: 'apikeys:read' },
   { to: '/users', key: 'nav.users', end: false, perm: 'users:read' },
   { to: '/authentication', key: 'nav.auth', end: false, perm: 'users:write' },

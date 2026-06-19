@@ -38,6 +38,15 @@ The dashboard **Overview** shows your active **providers** next to the nodes —
 **distinct models** served in 24h, and **24h speed** (tokens/s). Backed by
 `GET /admin/providers/metrics`.
 
+## Debug view
+
+The dashboard **Debug** page lists recent requests newest-first, with an **Errors only** toggle. Each
+row shows the endpoint, model, provider/node, status and latency; failed rows also show the **error
+reason** — for a cloud provider that's the **upstream error text** (e.g. `upstream 404: the model
+"gemma4:26b" does not exist`), which usually pinpoints a wrong substitute-model name, a bad API key,
+or an over-budget/expired provider. Expand a row to see the raw **request and response bodies** (when
+the request archive is enabled). Backed by `GET /admin/debug/events?errors=1`.
+
 ## Performance
 
 Queries run directly against the hypertable; TimescaleDB prunes chunks by time range. For very
