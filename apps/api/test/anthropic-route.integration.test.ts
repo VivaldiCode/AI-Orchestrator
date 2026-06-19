@@ -20,6 +20,7 @@ const SETTINGS: Settings = {
   triageEnabled: false,
   triageModel: '',
   maxToolCalls: 5,
+  requestLogMax: 0,
   cloudOverflow: false,
   cloudOverflowProviderId: '',
   embedOverflow: false,

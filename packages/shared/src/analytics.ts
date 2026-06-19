@@ -93,6 +93,8 @@ export interface DebugEvent {
   nodeId: string | null;
   /** Name of the node that served it (the Mac), when served locally; null for cloud. */
   nodeName: string | null;
+  /** Originating client IP, or null when unknown. */
+  clientIp: string | null;
   status: number;
   latencyMs: number | null;
   promptTokens: number | null;

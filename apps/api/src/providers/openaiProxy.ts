@@ -104,6 +104,7 @@ export async function proxyOpenAI(
       completionTokens,
       error,
       clientKeyId: target.clientKeyId,
+      clientIp: target.clientIp ?? null,
     });
   };
 

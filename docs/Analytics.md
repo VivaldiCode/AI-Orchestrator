@@ -46,8 +46,14 @@ locally-served requests show the **node name** (e.g. `Mac Pro M3`) rather than j
 failing node is obvious at a glance. Failed rows also show the **error reason** — for a cloud provider
 that's the **upstream error text** (e.g. `the model "gemma4:26b" does not exist`), which usually
 pinpoints a wrong substitute-model name, a bad API key, or an over-budget/expired provider. Expand a
-row to see the raw **request and response bodies** (when the request archive is enabled). Backed by
-`GET /admin/debug/events?errors=1`.
+row to see the raw **request and response bodies** (when the request archive is enabled) plus the
+full detail — **client IP**, served-by node/provider, timing, token counts, model→target, request id.
+**Filter** by IP, provider, model, endpoint or status (server-side). Backed by
+`GET /admin/debug/events` with optional `errors`, `ip`, `provider`, `model`, `endpoint`, `status`,
+`nodeId` query params.
+
+**Retention.** Settings → **Max saved requests** keeps only the most recent N requests in the log
+(oldest trimmed cyclically); `0` = unlimited. Set it to e.g. `1000000` to cap storage.
 
 When an equivalence chain redirects a request, the row shows the **substitute model actually sent**
 next to the asked-for one — `gemma4:26b → grok-2-latest` — so you can tell at a glance whether the

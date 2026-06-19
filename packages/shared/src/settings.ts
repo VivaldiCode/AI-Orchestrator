@@ -36,6 +36,11 @@ export const settingsSchema = z.object({
   /** Safety cap on MCP tool calls per request (phase-2 autonomous loop). */
   maxToolCalls: z.number().int().min(0).max(50).default(5),
   /**
+   * Max recorded requests to keep in the log (Debug/Analytics), trimmed
+   * cyclically oldest-first. 0 = unlimited (keep everything).
+   */
+  requestLogMax: z.number().int().min(0).max(20_000_000).default(0),
+  /**
    * Spill inference to a cloud provider when every candidate node is saturated
    * (in-flight ≥ maxConcurrency) or none are healthy. Off by default (cloud costs).
    */

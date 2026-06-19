@@ -163,6 +163,7 @@ export const settings = pgTable('settings', {
   triageEnabled: boolean('triage_enabled').notNull().default(false),
   triageModel: text('triage_model').notNull().default(''),
   maxToolCalls: integer('max_tool_calls').notNull().default(5),
+  requestLogMax: integer('request_log_max').notNull().default(0),
   cloudOverflow: boolean('cloud_overflow').notNull().default(false),
   cloudOverflowProviderId: text('cloud_overflow_provider_id').notNull().default(''),
   embedOverflow: boolean('embed_overflow').notNull().default(false),
@@ -231,6 +232,7 @@ export const requestEvents = pgTable(
     costUsd: doublePrecision('cost_usd'),
     error: text('error'),
     clientKeyId: uuid('client_key_id'),
+    clientIp: text('client_ip'),
   },
   (t) => [
     index('request_events_node_time_idx').on(t.nodeId, t.time),

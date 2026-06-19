@@ -339,6 +339,7 @@ export async function runOverflow(
       completionTokens,
       error,
       clientKeyId: opts.clientKeyId,
+      clientIp: opts.clientIp ?? null,
     });
   };
 
@@ -703,6 +704,7 @@ export async function runEmbedOverflow(
       completionTokens: null,
       error,
       clientKeyId: opts.clientKeyId,
+      clientIp: opts.clientIp ?? null,
     });
   };
 
