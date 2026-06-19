@@ -31,6 +31,13 @@ curl "http://localhost:11435/admin/analytics?bucket=5m&from=2026-06-01T00:00:00Z
 Parameters: `from`, `to` (ISO 8601), `bucket` (`1m`/`5m`/`1h`/`1d`), and optional `nodeId`,
 `model`, `provider` filters.
 
+## Overview providers panel
+
+The dashboard **Overview** shows your active **providers** next to the nodes — each card with live
+**in-flight** calls (derived from realtime start/end events, per provider), **24h average latency**,
+**distinct models** served in 24h, and **24h speed** (tokens/s). Backed by
+`GET /admin/providers/metrics`.
+
 ## Performance
 
 Queries run directly against the hypertable; TimescaleDB prunes chunks by time range. For very

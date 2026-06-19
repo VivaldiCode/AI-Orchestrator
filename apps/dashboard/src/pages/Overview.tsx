@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { NodeWithRuntime } from '@ai-orchestrator/shared';
+import type { NodeWithRuntime, ProviderMetrics } from '@ai-orchestrator/shared';
 import { api } from '../lib/api';
 import { useI18n } from '../i18n';
 import type { TranslationKey } from '../i18n/en';
@@ -76,6 +76,52 @@ function NodeLiveCard({ node }: { node: NodeWithRuntime }) {
   );
 }
 
+function ProviderLiveCard({ p }: { p: ProviderMetrics }) {
+  const { t, fmt } = useI18n();
+  return (
+    <Card>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-concert-400" />
+          <span className="font-medium text-slate-100">{p.name}</span>
+        </div>
+        <span className="text-xs uppercase tracking-wide text-slate-500">{p.type}</span>
+      </div>
+      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+        <div>
+          <div className="text-lg font-semibold text-concert-500">{p.inFlight}</div>
+          <div className="text-[10px] uppercase text-slate-500">{t('overview.cardInFlight')}</div>
+        </div>
+        <div>
+          <div className="text-lg font-semibold text-slate-100">{fmt.latency(p.avgLatencyMs)}</div>
+          <div className="text-[10px] uppercase text-slate-500">{t('overview.cardLatency')}</div>
+        </div>
+        <div>
+          <div className="text-lg font-semibold text-slate-100">{p.models24h}</div>
+          <div className="text-[10px] uppercase text-slate-500">{t('overview.cardModels')}</div>
+        </div>
+      </div>
+      <div className="mt-3 flex items-center justify-between rounded-lg bg-slate-900/60 px-3 py-2 text-xs">
+        <span className="uppercase tracking-wide text-slate-500">{t('overview.cardSpeed')}</span>
+        {p.tokensPerSecond != null ? (
+          <span className="font-medium text-concert-300">
+            {fmt.number(Math.round(p.tokensPerSecond))} tok/s
+            <span className="ml-2 font-normal text-slate-500">
+              · {fmt.number(p.requests24h)} {t('overview.cardReq24h')}
+            </span>
+          </span>
+        ) : (
+          <span className="text-slate-600">
+            {p.requests24h > 0
+              ? `${fmt.number(p.requests24h)} ${t('overview.cardReq24h')}`
+              : t('overview.perfNoData')}
+          </span>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export function OverviewPage() {
   const { t, fmt, lang } = useI18n();
   const time = (iso: string) =>
@@ -91,6 +137,12 @@ export function OverviewPage() {
   });
   const runtime = useRealtimeStore((s) => s.runtime);
   const events = useRealtimeStore((s) => s.events);
+  const providerMetrics = useQuery({
+    queryKey: ['provider-metrics'],
+    queryFn: api.providerMetrics,
+    refetchInterval: 15_000,
+  });
+  const providers = providerMetrics.data ?? [];
 
   const nodes = (nodesQuery.data ?? []).map((n) => ({ ...n, runtime: runtime[n.id] ?? n.runtime }));
   const online = nodes.filter((n) => n.runtime.status === 'up').length;
@@ -129,6 +181,17 @@ export function OverviewPage() {
           </div>
         )}
       </section>
+
+      {providers.length > 0 ? (
+        <section>
+          <h2 className="mb-3 text-lg font-medium text-slate-100">{t('overview.providers')}</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {providers.map((p) => (
+              <ProviderLiveCard key={p.id} p={p} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section>
         <h2 className="mb-3 text-lg font-medium text-slate-100">{t('overview.liveRequests')}</h2>

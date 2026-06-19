@@ -162,3 +162,18 @@ export const upsertModelEquivalentGroupSchema = z.object({
   members: z.array(modelEquivalentMemberSchema).min(1).max(20),
 });
 export type UpsertModelEquivalentGroupInput = z.infer<typeof upsertModelEquivalentGroupSchema>;
+
+/** Live + 24h metrics for an active provider (for the Overview providers panel). */
+export interface ProviderMetrics {
+  id: string;
+  name: string;
+  type: string;
+  enabled: boolean;
+  /** Requests currently in flight to this provider type. */
+  inFlight: number;
+  requests24h: number;
+  avgLatencyMs: number | null;
+  tokensPerSecond: number | null;
+  /** Distinct models served by this provider in the last 24h. */
+  models24h: number;
+}

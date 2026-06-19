@@ -160,6 +160,48 @@ export async function getNodePerformance(windowHours = 24): Promise<Map<string, 
   return map;
 }
 
+export interface ProviderPerf {
+  requests: number;
+  avgLatencyMs: number | null;
+  tokensPerSecond: number | null;
+  models: number;
+}
+
+/** Per-provider performance over a recent window (24h default), keyed by provider type. */
+export async function getProviderPerformance(windowHours = 24): Promise<Map<string, ProviderPerf>> {
+  const rows = await sql<
+    {
+      provider: string;
+      requests: number;
+      avg_latency: number | null;
+      total_tokens: number;
+      total_latency_ms: number;
+      models: number;
+    }[]
+  >`
+    SELECT provider,
+      count(*)::int AS requests,
+      avg(latency_ms)::float AS avg_latency,
+      coalesce(sum(total_tokens), 0)::float AS total_tokens,
+      coalesce(sum(latency_ms), 0)::float AS total_latency_ms,
+      count(DISTINCT model)::int AS models
+    FROM request_events
+    WHERE time >= now() - make_interval(hours => ${windowHours}::int)
+    GROUP BY provider
+  `;
+  const map = new Map<string, ProviderPerf>();
+  for (const r of rows) {
+    const seconds = r.total_latency_ms / 1000;
+    map.set(r.provider, {
+      requests: r.requests,
+      avgLatencyMs: r.avg_latency,
+      tokensPerSecond: seconds > 0 && r.total_tokens > 0 ? r.total_tokens / seconds : null,
+      models: r.models,
+    });
+  }
+  return map;
+}
+
 /**
  * Compute the analytics summary over the requested window. Runs directly
  * against the `request_events` hypertable (TimescaleDB optimises `time_bucket`
