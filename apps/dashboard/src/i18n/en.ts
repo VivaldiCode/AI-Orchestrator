@@ -201,6 +201,9 @@ export const en = {
     'Order members by proximity — closest first. Use ollama for the local cluster.',
   'providers.equivProvider': 'Provider',
   'providers.equivModel': 'Model',
+  'providers.equivModelPick': 'Select a model',
+  'providers.equivModelManual': '✏️ Type manually…',
+  'providers.equivPickFromList': 'Pick from the catalog',
   'providers.equivModelHint':
     "Use the provider's own model name (e.g. grok-2-latest, gpt-4o) — not the local model name.",
   'providers.equivAddMember': '+ member',
