@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   oauthProviderTypeSchema,
   roleSchema,
+  type OAuthProvider,
   type OAuthProviderType,
   type Role,
 } from '@ai-orchestrator/shared';
@@ -48,31 +49,45 @@ export function AuthenticationPage() {
     queryFn: api.listOAuthProviders,
   });
   const [form, setForm] = useState(EMPTY);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['oauth-providers'] });
   const fail = (e: unknown, fallback: TranslationKey) =>
     setError(e instanceof Error ? e.message : t(fallback));
+  const reset = () => {
+    setForm(EMPTY);
+    setEditingId(null);
+    setError(null);
+    invalidate();
+  };
+  // Everything except the secret (which is keep-on-blank when editing).
+  const fields = () => ({
+    type: form.type,
+    displayName: form.displayName,
+    issuer: form.issuer,
+    clientId: form.clientId,
+    scopes: splitCsv(form.scopes),
+    allowedDomains: splitCsv(form.allowedDomains),
+    defaultRole: form.defaultRole,
+    enabled: form.enabled,
+  });
 
   const create = useMutation({
-    mutationFn: () =>
-      api.createOAuthProvider({
-        type: form.type,
-        displayName: form.displayName,
-        issuer: form.issuer,
-        clientId: form.clientId,
-        clientSecret: form.clientSecret,
-        scopes: splitCsv(form.scopes),
-        allowedDomains: splitCsv(form.allowedDomains),
-        defaultRole: form.defaultRole,
-        enabled: form.enabled,
-      }),
-    onSuccess: () => {
-      setForm(EMPTY);
-      setError(null);
-      invalidate();
-    },
+    mutationFn: () => api.createOAuthProvider({ ...fields(), clientSecret: form.clientSecret }),
+    onSuccess: reset,
     onError: (e: unknown) => fail(e, 'sso.addError'),
+  });
+
+  const update = useMutation({
+    mutationFn: () =>
+      api.updateOAuthProvider(editingId as string, {
+        ...fields(),
+        // Only rotate the secret when a new one is typed; blank keeps the stored one.
+        ...(form.clientSecret ? { clientSecret: form.clientSecret } : {}),
+      }),
+    onSuccess: reset,
+    onError: (e: unknown) => fail(e, 'sso.updateError'),
   });
 
   const toggle = useMutation({
@@ -88,9 +103,26 @@ export function AuthenticationPage() {
     onError: (e: unknown) => fail(e, 'sso.deleteError'),
   });
 
+  const startEdit = (p: OAuthProvider) => {
+    setEditingId(p.id);
+    setForm({
+      type: p.type,
+      displayName: p.displayName,
+      issuer: p.issuer,
+      clientId: p.clientId,
+      clientSecret: '',
+      scopes: p.scopes.join(', '),
+      allowedDomains: p.allowedDomains.join(', '),
+      defaultRole: p.defaultRole,
+      enabled: p.enabled,
+    });
+    setError(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    create.mutate();
+    (editingId ? update : create).mutate();
   };
 
   const providers = providersQuery.data ?? [];
@@ -103,7 +135,9 @@ export function AuthenticationPage() {
       </header>
 
       <Card>
-        <h2 className="mb-4 text-lg font-medium text-slate-100">{t('sso.addProvider')}</h2>
+        <h2 className="mb-4 text-lg font-medium text-slate-100">
+          {editingId ? t('sso.editProvider') : t('sso.addProvider')}
+        </h2>
         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label={t('sso.type')}>
             <Select
@@ -149,7 +183,8 @@ export function AuthenticationPage() {
               value={form.clientSecret}
               onChange={(e) => setForm({ ...form, clientSecret: e.target.value })}
               autoComplete="off"
-              required
+              placeholder={editingId ? t('providers.apiKeyKeep') : undefined}
+              required={!editingId}
             />
           </Field>
           <Field label={t('sso.scopes')}>
@@ -177,10 +212,21 @@ export function AuthenticationPage() {
               ))}
             </Select>
           </Field>
-          <div className="flex items-end">
-            <Button type="submit" disabled={create.isPending}>
-              {create.isPending ? t('sso.addingButton') : t('sso.addButton')}
+          <div className="flex items-end gap-2">
+            <Button type="submit" disabled={create.isPending || update.isPending}>
+              {editingId
+                ? update.isPending
+                  ? t('providers.saving')
+                  : t('providers.save')
+                : create.isPending
+                  ? t('sso.addingButton')
+                  : t('sso.addButton')}
             </Button>
+            {editingId ? (
+              <Button type="button" variant="ghost" onClick={reset}>
+                {t('providers.cancel')}
+              </Button>
+            ) : null}
           </div>
         </form>
         <p className="mt-3 text-xs text-slate-500">{t('sso.redirectHint')}</p>
@@ -225,6 +271,9 @@ export function AuthenticationPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
+                      <Button variant="ghost" onClick={() => startEdit(p)}>
+                        {t('providers.edit')}
+                      </Button>
                       <Button
                         variant="ghost"
                         onClick={() => toggle.mutate({ id: p.id, enabled: !p.enabled })}
