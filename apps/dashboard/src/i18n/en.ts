@@ -366,6 +366,7 @@ export const en = {
   'sso.title': 'Authentication (SSO)',
   'sso.subtitle': 'Let people sign in with Google, Microsoft, Okta or any OIDC provider.',
   'sso.addProvider': 'Add a provider',
+  'sso.editProvider': 'Edit provider',
   'sso.type': 'Type',
   'sso.type.google': 'Google',
   'sso.type.microsoft': 'Microsoft',
