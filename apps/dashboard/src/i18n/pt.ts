@@ -369,6 +369,7 @@ export const pt: Dict = {
   'sso.title': 'Autenticação (SSO)',
   'sso.subtitle': 'Permita login com Google, Microsoft, Okta ou qualquer provedor OIDC.',
   'sso.addProvider': 'Adicionar provedor',
+  'sso.editProvider': 'Editar provedor',
   'sso.type': 'Tipo',
   'sso.type.google': 'Google',
   'sso.type.microsoft': 'Microsoft',

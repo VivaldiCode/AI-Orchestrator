@@ -372,6 +372,7 @@ export const es: Dict = {
   'sso.subtitle':
     'Permite que la gente inicie sesión con Google, Microsoft, Okta o cualquier proveedor OIDC.',
   'sso.addProvider': 'Añadir un proveedor',
+  'sso.editProvider': 'Editar proveedor',
   'sso.type': 'Tipo',
   'sso.type.google': 'Google',
   'sso.type.microsoft': 'Microsoft',
