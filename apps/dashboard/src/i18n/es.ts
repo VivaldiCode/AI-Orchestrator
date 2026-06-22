@@ -373,6 +373,9 @@ export const es: Dict = {
     'Permite que la gente inicie sesión con Google, Microsoft, Okta o cualquier proveedor OIDC.',
   'sso.addProvider': 'Añadir un proveedor',
   'sso.editProvider': 'Editar proveedor',
+  'sso.requireVerifiedEmail': 'Exigir correo verificado',
+  'sso.requireVerifiedEmailHint':
+    'Desactiva solo para un IdP self-hosted de confianza (p. ej. Pocket-ID) que no verifica correos.',
   'sso.type': 'Tipo',
   'sso.type.google': 'Google',
   'sso.type.microsoft': 'Microsoft',

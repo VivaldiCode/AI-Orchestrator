@@ -159,6 +159,7 @@ describe('createOAuthProviderSchema', () => {
     expect(p.enabled).toBe(true);
     expect(p.allowedDomains).toEqual([]);
     expect(p.defaultRole).toBe('viewer');
+    expect(p.requireVerifiedEmail).toBe(true);
   });
 
   it('rejects a non-URL issuer', () => {

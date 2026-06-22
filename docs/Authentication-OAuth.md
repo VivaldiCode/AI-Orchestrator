@@ -129,13 +129,22 @@ endpoint, not in the `id_token`. When the `id_token` carries no `email`, the orc
 `/userinfo` with the access token (verifying its `sub` matches the `id_token`) and uses those claims
 for the allowlist check.
 
-A blocked login returns a **specific** reason (not a generic 403) so you can tell what to fix:
+A blocked login renders a **branded HTML page** (not raw JSON) with a **specific** reason so you can
+tell what to fix:
 
 | Message | Cause | Fix |
 | --- | --- | --- |
 | `…did not return an email…` | No `email` claim in `id_token` **or** `/userinfo` | Grant the `email` scope; have the IdP expose email |
-| `Email "x" is not marked as verified…` | IdP sent `email_verified: false` | Verify the address in the IdP |
+| `Email "x" is not marked as verified…` | IdP sent `email_verified: false` | Verify the address in the IdP, **or** turn off **Require verified email** for this provider |
 | `Email domain "x" is not in this provider's allowed list (…)` | Domain not on the list | Add the domain (the message lists what's allowed) |
+
+### Require verified email (per provider)
+
+Each provider has a **Require verified email** toggle (default **on**). Keep it on for public IdPs
+(Google/Microsoft), where `email_verified` is meaningful. Turn it **off** only for a trusted
+self-hosted IdP — e.g. **Pocket-ID**, which manages users and emails but reports
+`email_verified: false` — so domain-restricted sign-in still works. The domain allowlist is always
+enforced regardless of this toggle.
 
 ## Status & next steps
 
