@@ -33,6 +33,7 @@ const EMPTY = {
   allowedDomains: '',
   defaultRole: 'viewer' as Role,
   enabled: true,
+  requireVerifiedEmail: true,
 };
 
 const splitCsv = (s: string) =>
@@ -71,6 +72,7 @@ export function AuthenticationPage() {
     allowedDomains: splitCsv(form.allowedDomains),
     defaultRole: form.defaultRole,
     enabled: form.enabled,
+    requireVerifiedEmail: form.requireVerifiedEmail,
   });
 
   const create = useMutation({
@@ -115,6 +117,7 @@ export function AuthenticationPage() {
       allowedDomains: p.allowedDomains.join(', '),
       defaultRole: p.defaultRole,
       enabled: p.enabled,
+      requireVerifiedEmail: p.requireVerifiedEmail,
     });
     setError(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -212,6 +215,18 @@ export function AuthenticationPage() {
               ))}
             </Select>
           </Field>
+          <label className="flex items-center gap-3 self-end text-sm text-slate-200">
+            <input
+              type="checkbox"
+              checked={form.requireVerifiedEmail}
+              onChange={(e) => setForm({ ...form, requireVerifiedEmail: e.target.checked })}
+              className="h-4 w-4 accent-concert-500"
+            />
+            <span>
+              {t('sso.requireVerifiedEmail')}
+              <span className="block text-xs text-slate-500">{t('sso.requireVerifiedEmailHint')}</span>
+            </span>
+          </label>
           <div className="flex items-end gap-2">
             <Button type="submit" disabled={create.isPending || update.isPending}>
               {editingId

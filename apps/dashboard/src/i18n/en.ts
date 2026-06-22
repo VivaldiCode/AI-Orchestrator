@@ -367,6 +367,9 @@ export const en = {
   'sso.subtitle': 'Let people sign in with Google, Microsoft, Okta or any OIDC provider.',
   'sso.addProvider': 'Add a provider',
   'sso.editProvider': 'Edit provider',
+  'sso.requireVerifiedEmail': 'Require verified email',
+  'sso.requireVerifiedEmailHint':
+    'Turn off only for a trusted self-hosted IdP (e.g. Pocket-ID) that does not verify emails.',
   'sso.type': 'Type',
   'sso.type.google': 'Google',
   'sso.type.microsoft': 'Microsoft',

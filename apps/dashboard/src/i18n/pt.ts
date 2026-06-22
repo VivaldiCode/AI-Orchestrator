@@ -370,6 +370,9 @@ export const pt: Dict = {
   'sso.subtitle': 'Permita login com Google, Microsoft, Okta ou qualquer provedor OIDC.',
   'sso.addProvider': 'Adicionar provedor',
   'sso.editProvider': 'Editar provedor',
+  'sso.requireVerifiedEmail': 'Exigir email verificado',
+  'sso.requireVerifiedEmailHint':
+    'Desative apenas para um IdP self-hosted confiável (ex.: Pocket-ID) que não verifica emails.',
   'sso.type': 'Tipo',
   'sso.type.google': 'Google',
   'sso.type.microsoft': 'Microsoft',

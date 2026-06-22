@@ -131,6 +131,7 @@ export const oauthProviders = pgTable('oauth_providers', {
   enabled: boolean('enabled').notNull().default(true),
   allowedDomains: jsonb('allowed_domains').notNull().$type<string[]>().default([]),
   defaultRole: text('default_role').notNull().default('viewer'),
+  requireVerifiedEmail: boolean('require_verified_email').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

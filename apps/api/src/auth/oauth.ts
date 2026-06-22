@@ -84,6 +84,7 @@ export class OAuthService {
         enabled: input.enabled,
         allowedDomains: normalizeDomains(input.allowedDomains),
         defaultRole: input.defaultRole,
+        requireVerifiedEmail: input.requireVerifiedEmail,
       })
       .returning();
     return this.toProvider(row);
@@ -104,6 +105,8 @@ export class OAuthService {
     if (patch.allowedDomains !== undefined)
       values.allowedDomains = normalizeDomains(patch.allowedDomains);
     if (patch.defaultRole !== undefined) values.defaultRole = patch.defaultRole;
+    if (patch.requireVerifiedEmail !== undefined)
+      values.requireVerifiedEmail = patch.requireVerifiedEmail;
     if (Object.keys(values).length === 0) return this.toProvider(current);
     const [row] = await this.db
       .update(oauthProviders)
@@ -144,8 +147,10 @@ export class OAuthService {
           'The SSO provider did not return an email. Request the "email" scope and ensure the provider exposes it (id_token or /userinfo).',
         );
       }
-      if (claims.email_verified === false) {
-        throw forbidden(`Email "${email}" is not marked as verified by the SSO provider.`);
+      if (provider.requireVerifiedEmail && claims.email_verified === false) {
+        throw forbidden(
+          `Email "${email}" is not marked as verified by the SSO provider. If this is a trusted self-hosted IdP, turn off "require verified email" for this provider.`,
+        );
       }
       const domain = email.split('@')[1];
       if (!domain || !allowed.includes(domain)) {
@@ -242,6 +247,7 @@ export class OAuthService {
       enabled: row.enabled,
       allowedDomains: row.allowedDomains ?? [],
       defaultRole: row.defaultRole as Role,
+      requireVerifiedEmail: row.requireVerifiedEmail,
       hasClientSecret: !!row.clientSecretEncrypted,
       createdAt: row.createdAt.toISOString(),
     };

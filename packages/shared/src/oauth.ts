@@ -22,6 +22,12 @@ const providerFields = {
   allowedDomains: z.array(z.string().min(1).max(255)).max(50),
   /** Role granted to users provisioned on first SSO login. */
   defaultRole: roleSchema,
+  /**
+   * Require the IdP to assert a verified email (`email_verified`) before sign-in.
+   * Keep on for public IdPs (Google/Microsoft); turn off only for a trusted
+   * self-hosted IdP (e.g. Pocket-ID) that manages emails but doesn't verify them.
+   */
+  requireVerifiedEmail: z.boolean(),
 };
 
 /** Payload to register a provider. `clientSecret` only travels inbound. */
@@ -32,6 +38,7 @@ export const createOAuthProviderSchema = z.object({
   enabled: providerFields.enabled.default(true),
   allowedDomains: providerFields.allowedDomains.default([]),
   defaultRole: providerFields.defaultRole.default('viewer'),
+  requireVerifiedEmail: providerFields.requireVerifiedEmail.default(true),
 });
 export type CreateOAuthProviderInput = z.infer<typeof createOAuthProviderSchema>;
 
@@ -52,6 +59,7 @@ export const oauthProviderSchema = z.object({
   enabled: providerFields.enabled,
   allowedDomains: providerFields.allowedDomains,
   defaultRole: providerFields.defaultRole,
+  requireVerifiedEmail: providerFields.requireVerifiedEmail,
   hasClientSecret: z.boolean(),
   createdAt: z.string(),
 });
