@@ -36,6 +36,7 @@ export interface OidcConfig {
   authorizationEndpoint: string;
   tokenEndpoint: string;
   jwksUri: string;
+  userinfoEndpoint?: string | null;
 }
 
 const discoveryCache = new Map<string, { cfg: OidcConfig; expires: number }>();
@@ -52,6 +53,7 @@ export async function discover(issuer: string): Promise<OidcConfig> {
     authorizationEndpoint: String(doc.authorization_endpoint ?? ''),
     tokenEndpoint: String(doc.token_endpoint ?? ''),
     jwksUri: String(doc.jwks_uri ?? ''),
+    userinfoEndpoint: typeof doc.userinfo_endpoint === 'string' ? doc.userinfo_endpoint : null,
   };
   if (!cfg.authorizationEndpoint || !cfg.tokenEndpoint || !cfg.jwksUri) {
     throw new Error('Incomplete OIDC discovery document');
@@ -180,6 +182,20 @@ export async function exchangeCode(
       accept: 'application/json',
     },
     body: body.toString(),
+  });
+}
+
+/**
+ * Fetch the OIDC `/userinfo` endpoint with the access token. Used to obtain
+ * claims (notably `email`/`email_verified`) that some providers (e.g. Pocket-ID)
+ * return only from userinfo, not in the id_token.
+ */
+export async function fetchUserinfo(
+  userinfoEndpoint: string,
+  accessToken: string,
+): Promise<Record<string, unknown>> {
+  return fetchJson<Record<string, unknown>>(userinfoEndpoint, {
+    headers: { authorization: `Bearer ${accessToken}`, accept: 'application/json' },
   });
 }
 

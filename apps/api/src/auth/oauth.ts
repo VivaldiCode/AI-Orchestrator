@@ -25,6 +25,11 @@ interface HandoffEntry {
   expires: number;
 }
 
+/** Domains are case/whitespace-insensitive — store and compare them normalized. */
+function normalizeDomains(domains: string[]): string[] {
+  return domains.map((d) => d.trim().toLowerCase()).filter(Boolean);
+}
+
 /**
  * OAuth/OIDC provider configuration, user provisioning, and the short-lived
  * one-time handoff that delivers minted tokens to the SPA after the redirect
@@ -77,7 +82,7 @@ export class OAuthService {
         clientSecretEncrypted: encryptSecret(input.clientSecret),
         scopes: input.scopes,
         enabled: input.enabled,
-        allowedDomains: input.allowedDomains,
+        allowedDomains: normalizeDomains(input.allowedDomains),
         defaultRole: input.defaultRole,
       })
       .returning();
@@ -96,7 +101,8 @@ export class OAuthService {
       values.clientSecretEncrypted = encryptSecret(patch.clientSecret);
     if (patch.scopes !== undefined) values.scopes = patch.scopes;
     if (patch.enabled !== undefined) values.enabled = patch.enabled;
-    if (patch.allowedDomains !== undefined) values.allowedDomains = patch.allowedDomains;
+    if (patch.allowedDomains !== undefined)
+      values.allowedDomains = normalizeDomains(patch.allowedDomains);
     if (patch.defaultRole !== undefined) values.defaultRole = patch.defaultRole;
     if (Object.keys(values).length === 0) return this.toProvider(current);
     const [row] = await this.db
@@ -126,13 +132,26 @@ export class OAuthService {
    * always creates a dedicated SSO account.
    */
   async findOrProvisionUser(provider: OAuthProviderRow, claims: IdTokenClaims): Promise<UserRow> {
-    const email = typeof claims.email === 'string' ? claims.email.toLowerCase() : null;
-    const allowed = provider.allowedDomains ?? [];
+    const email = typeof claims.email === 'string' ? claims.email.trim().toLowerCase() : null;
+    // Normalize the allowlist (trim + lowercase) so matching is case/whitespace-insensitive.
+    const allowed = (provider.allowedDomains ?? [])
+      .map((d) => d.trim().toLowerCase())
+      .filter(Boolean);
     if (allowed.length > 0) {
-      const domain = email?.split('@')[1];
-      const verified = claims.email_verified !== false;
-      if (!email || !verified || !domain || !allowed.includes(domain)) {
-        throw forbidden('Your email domain is not allowed for this provider.');
+      // Specific reasons (vs one opaque "not allowed") so admins can diagnose the IdP.
+      if (!email) {
+        throw forbidden(
+          'The SSO provider did not return an email. Request the "email" scope and ensure the provider exposes it (id_token or /userinfo).',
+        );
+      }
+      if (claims.email_verified === false) {
+        throw forbidden(`Email "${email}" is not marked as verified by the SSO provider.`);
+      }
+      const domain = email.split('@')[1];
+      if (!domain || !allowed.includes(domain)) {
+        throw forbidden(
+          `Email domain "${domain ?? ''}" is not in this provider's allowed list (${allowed.join(', ')}).`,
+        );
       }
     }
 

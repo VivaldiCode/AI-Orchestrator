@@ -2,7 +2,14 @@ import { createServer, type Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { SignJWT, exportJWK, generateKeyPair, type JWK } from 'jose';
 import { createOAuthProviderSchema } from '@ai-orchestrator/shared';
-import { generatePkce, openState, sealState, verifyIdToken } from '../src/lib/oidc';
+import {
+  discover,
+  fetchUserinfo,
+  generatePkce,
+  openState,
+  sealState,
+  verifyIdToken,
+} from '../src/lib/oidc';
 import { createHash } from 'node:crypto';
 
 const ISS = 'https://idp.test';
@@ -11,6 +18,8 @@ const KID = 'test-key-1';
 
 let server: Server;
 let jwksUri: string;
+let baseUrl: string;
+let lastUserinfoAuth: string | undefined;
 let privateKey: Awaited<ReturnType<typeof generateKeyPair>>['privateKey'];
 
 async function sign(
@@ -30,14 +39,32 @@ beforeAll(async () => {
   const pair = await generateKeyPair('RS256');
   privateKey = pair.privateKey;
   const jwk: JWK = { ...(await exportJWK(pair.publicKey)), kid: KID, alg: 'RS256', use: 'sig' };
-  server = createServer((_req, res) => {
+  server = createServer((req, res) => {
     res.setHeader('content-type', 'application/json');
+    if (req.url === '/.well-known/openid-configuration') {
+      res.end(
+        JSON.stringify({
+          issuer: baseUrl,
+          authorization_endpoint: `${baseUrl}/authorize`,
+          token_endpoint: `${baseUrl}/token`,
+          jwks_uri: `${baseUrl}/jwks`,
+          userinfo_endpoint: `${baseUrl}/userinfo`,
+        }),
+      );
+      return;
+    }
+    if (req.url === '/userinfo') {
+      lastUserinfoAuth = req.headers.authorization;
+      res.end(JSON.stringify({ sub: 'user-1', email: 'Contato@Acme.COM', email_verified: true }));
+      return;
+    }
     res.end(JSON.stringify({ keys: [jwk] }));
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const addr = server.address();
   const port = typeof addr === 'object' && addr ? addr.port : 0;
-  jwksUri = `http://127.0.0.1:${port}/jwks`;
+  baseUrl = `http://127.0.0.1:${port}`;
+  jwksUri = `${baseUrl}/jwks`;
 });
 
 afterAll(async () => {
@@ -87,6 +114,21 @@ describe('PKCE', () => {
     const { verifier, challenge } = generatePkce();
     expect(verifier).toMatch(/^[A-Za-z0-9_-]+$/);
     expect(challenge).toBe(createHash('sha256').update(verifier).digest('base64url'));
+  });
+});
+
+describe('discover + userinfo', () => {
+  it('parses userinfo_endpoint from the discovery document', async () => {
+    const cfg = await discover(baseUrl);
+    expect(cfg.userinfoEndpoint).toBe(`${baseUrl}/userinfo`);
+    expect(cfg.jwksUri).toBe(`${baseUrl}/jwks`);
+  });
+
+  it('fetchUserinfo sends the bearer token and returns claims', async () => {
+    const ui = await fetchUserinfo(`${baseUrl}/userinfo`, 'tok-abc');
+    expect(lastUserinfoAuth).toBe('Bearer tok-abc');
+    expect(ui.email).toBe('Contato@Acme.COM');
+    expect(ui.email_verified).toBe(true);
   });
 });
 
