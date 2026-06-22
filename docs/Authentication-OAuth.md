@@ -105,7 +105,8 @@ Configured on a new **Settings → Authentication** dashboard panel (admin only)
   allowlist (`RS256`/`PS256`/`ES256`) — blocks algorithm-confusion. JWKS is cached and rotated by
   `jose`.
 - ✅ Validate `iss`, `aud`, `exp` and the `nonce` we issued; enforce `allowed_domains` (with a
-  verified email) when configured.
+  verified email) when configured. If `email` is absent from the `id_token`, fetch it from
+  `/userinfo` — but only trust those claims when their `sub` matches the `id_token`'s.
 - ✅ **PKCE** (S256) + a `state` and `nonce` sealed in an **encrypted, HttpOnly, SameSite=Lax,
   single-use** cookie (AES-256-GCM); `state` is cross-checked on callback.
 - ✅ Tokens are delivered to the SPA via a **single-use, 60-second handoff code** — they never ride
@@ -115,7 +116,26 @@ Configured on a new **Settings → Authentication** dashboard panel (admin only)
 
 Verified end-to-end against a mock OIDC IdP (`docker/mock-oidc.mjs`) and unit-tested in
 `apps/api/test/oidc.test.ts` (accepts valid; rejects tampered / wrong-aud / wrong-iss / expired /
-nonce-mismatch).
+nonce-mismatch; parses `userinfo_endpoint`; `fetchUserinfo` sends the bearer token).
+
+## Email-domain allowlist & troubleshooting
+
+When **Allowed email domains** is set, sign-in requires a **verified** email whose domain is on the
+list. Domains are matched **case- and whitespace-insensitively** (`Guilhermepinto.PT ` ≡
+`guilhermepinto.pt`) and stored normalized.
+
+Some IdPs (notably **Pocket-ID**) return `email`/`email_verified` only from the **`/userinfo`**
+endpoint, not in the `id_token`. When the `id_token` carries no `email`, the orchestrator now calls
+`/userinfo` with the access token (verifying its `sub` matches the `id_token`) and uses those claims
+for the allowlist check.
+
+A blocked login returns a **specific** reason (not a generic 403) so you can tell what to fix:
+
+| Message | Cause | Fix |
+| --- | --- | --- |
+| `…did not return an email…` | No `email` claim in `id_token` **or** `/userinfo` | Grant the `email` scope; have the IdP expose email |
+| `Email "x" is not marked as verified…` | IdP sent `email_verified: false` | Verify the address in the IdP |
+| `Email domain "x" is not in this provider's allowed list (…)` | Domain not on the list | Add the domain (the message lists what's allowed) |
 
 ## Status & next steps
 

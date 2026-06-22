@@ -6,6 +6,7 @@ import {
   buildAuthUrl,
   discover,
   exchangeCode,
+  fetchUserinfo,
   generatePkce,
   openState,
   randomToken,
@@ -142,6 +143,24 @@ export function registerOAuthRoutes(app: FastifyInstance): void {
       });
     } catch (err) {
       throw unauthorized(`SSO id_token verification failed: ${(err as Error).message}`);
+    }
+
+    // Some IdPs (e.g. Pocket-ID) return email/email_verified only from /userinfo,
+    // not in the id_token. Fetch it when missing so the email-domain allowlist can
+    // be enforced; the userinfo `sub` must match the id_token `sub` (OIDC §5.3.2).
+    if (!claims.email && cfg.userinfoEndpoint && tokenRes.access_token) {
+      try {
+        const ui = await fetchUserinfo(cfg.userinfoEndpoint, tokenRes.access_token);
+        if (ui.sub === claims.sub) {
+          if (typeof ui.email === 'string') claims.email = ui.email;
+          if (ui.email_verified !== undefined) claims.email_verified = ui.email_verified as boolean;
+          if (!claims.name && typeof ui.name === 'string') claims.name = ui.name;
+          if (!claims.preferred_username && typeof ui.preferred_username === 'string')
+            claims.preferred_username = ui.preferred_username;
+        }
+      } catch {
+        // userinfo is optional — if email is still missing, provisioning gives a clear error
+      }
     }
 
     const userRow = await app.oauth.findOrProvisionUser(provider, claims);
